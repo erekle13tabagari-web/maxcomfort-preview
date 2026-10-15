@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ka">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>კატალოგი · მაქს კომფორტი</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#11274A">
+<script>try{var t=localStorage.getItem('ande-theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="icon" href="../brand/logo/mc-symbol-primary.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/ande.css">
+</head>
+<body data-page="catalog">
+<div data-layout="header"></div>
+
+<main id="main">
+  <div class="wrap">
+    <nav class="crumbs" aria-label="ნავიგაცია" data-crumbs></nav>
+    <div class="phead">
+      <h1 data-title>კატალოგი</h1>
+      <p class="phead__count" data-count></p>
+    </div>
+    <div class="subchips" data-subchips></div>
+    <p class="speccard" data-demo-note hidden style="margin-bottom:20px">ეს კატეგორია ივსება. სრული ასორტიმენტისა და ფასებისთვის <button class="textlink" type="button" data-chat-open>დაგვიკავშირდით</button>.</p>
+
+    <div class="catlayout">
+      <aside class="filters" aria-label="ფილტრები" data-filters></aside>
+
+      <div>
+        <div class="toolbar">
+          <div class="toolbar__left">
+            <button class="btn btn--outline btn--sm filtersbtn" type="button" data-sheet-open><svg class="ico"><use href="#i-sliders"/></svg>ფილტრები <span class="act__count" style="position:static;border:0" data-fcount data-n="0">0</span></button>
+          </div>
+          <div class="toolbar__right">
+            <label class="sr-only" for="sort">დალაგება</label>
+            <span class="select"><select id="sort" data-sort>
+              <option value="popular">პოპულარობით</option>
+              <option value="price-asc">ფასი: ზრდადობით</option>
+              <option value="price-desc">ფასი: კლებადობით</option>
+              <option value="name">დასახელებით</option>
+            </select><svg class="ico"><use href="#i-chev"/></svg></span>
+            <div class="viewtoggle" role="group" aria-label="ხედი">
+              <button type="button" data-view="grid" aria-pressed="true" aria-label="ბადე"><svg class="ico"><use href="#i-grid"/></svg></button>
+              <button type="button" data-view="list" aria-pressed="false" aria-label="სია"><svg class="ico"><use href="#i-list"/></svg></button>
+            </div>
+          </div>
+        </div>
+        <div class="activechips" data-active hidden></div>
+
+        <div class="pgrid pgrid--3" data-results></div>
+
+        <div class="empty" data-empty hidden>
+          <span class="empty__ico"><svg class="ico"><use href="#i-search"/></svg></span>
+          <h2>ვერაფერი მოიძებნა</h2>
+          <p>სცადეთ ფილტრების შეცვლა ან გასუფთავება. თუ ვერ პოულობთ საჭირო პროდუქტს, ჩვენი კონსულტანტი დაგეხმარებათ.</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center"><button class="btn btn--primary" type="button" data-reset>ფილტრების გასუფთავება</button><button class="btn btn--outline" type="button" data-chat-open>კონსულტაცია</button></div>
+        </div>
+
+        <div class="more" data-more hidden>
+          <p data-more-text></p>
+          <div class="more__bar"><i></i></div>
+          <button class="btn btn--outline" type="button" data-more-btn>მეტის ჩვენება</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- mobile filters -->
+  <div class="sheet" data-sheet aria-hidden="true">
+    <div class="sheet__scrim" data-sheet-close></div>
+    <div class="sheet__panel" role="dialog" aria-modal="true" aria-label="ფილტრები">
+      <div class="sheet__grab"></div>
+      <div class="sheet__body" data-sheet-body></div>
+      <div class="sheet__foot"><button class="btn btn--outline" type="button" data-reset>გასუფთავება</button><button class="btn btn--primary" type="button" data-sheet-close data-sheet-apply>ნახვა</button></div>
+    </div>
+  </div>
+</main>
+
+<div data-layout="footer"></div>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/layout.js"></script>
+<script src="assets/js/ande.js"></script>
+<script src="assets/js/page-catalog.js"></script>
+</body>
+</html>
