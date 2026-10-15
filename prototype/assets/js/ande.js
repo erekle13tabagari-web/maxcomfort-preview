@@ -76,6 +76,9 @@
   var PRODUCTS = window.ANDE_PRODUCTS || [];
   var BYID = {};
   PRODUCTS.forEach(function (p) { BYID[p.id] = p; });
+  // ids of duplicates merged in data.js still open (and count as) the product they became
+  var ALIASES = window.ANDE_ALIASES || {};
+  Object.keys(ALIASES).forEach(function (id) { if (BYID[ALIASES[id]]) BYID[id] = BYID[ALIASES[id]]; });
 
   /* ---------------- colour variants ----------------
      One model in several colours is one listing with a colour choice (p.variants, p.color), not a
@@ -181,6 +184,22 @@
       return '<li><a class="doc" href="' + esc(fileHref(d.f)) + '" target="_blank" rel="noopener" download>' + ico('i-download') +
         '<span>' + esc(d.t) + '<small>PDF</small></span></a></li>';
     }).join('') + '</ul>';
+  }
+
+  // a specification's icon, when the site's icon set has one (Max Comfort adds the brand book's
+  // specification icons as b-*; without them nothing is drawn)
+  var SPEC_ICONS = [
+    [/სიმძლავრ/, 'spec-power'], [/ფართობ/, 'spec-area'], [/წნევ/, 'spec-pressure'], [/ტემპერატურ/, 'spec-temperature'],
+    [/ხმაურ|dB/i, 'spec-noise'], [/წონ/, 'spec-weight'], [/სიღრმ/, 'spec-depth'], [/დიამეტრ|ზომ|გაბარიტ|სიმაღლ|სიგან/, 'spec-dimensions'],
+    [/საწვავ|გაზ/, 'spec-gas'], [/ენერგოკლას|ენერგოეფექტ/, 'spec-energy'], [/ეფექტურ|SEER|SCOP|COP/, 'spec-efficiency'],
+    [/ძაბვ|ელექტრ/, 'spec-electric'], [/wi-?fi/i, 'spec-wifi'], [/ცხელი წყ/, 'spec-hotwater'], [/კოდ/, 'spec-code'], [/გარანტ/, 'svc-warranty']
+  ];
+  function specIcon(name) {
+    for (var i = 0; i < SPEC_ICONS.length; i++) if (SPEC_ICONS[i][0].test(name)) {
+      var id = 'b-' + SPEC_ICONS[i][1];
+      return document.getElementById(id) ? ico(id) : '';
+    }
+    return '';
   }
 
   var url = {
@@ -918,7 +937,7 @@
   var pages = [];
   window.ANDE = {
     products: PRODUCTS, byId: function (id) { return BYID[id]; }, CATALOG: CATALOG, findCat: findCat, findSub: findSub, subImg: subImg,
-    img: img, money: money, priceHTML: priceHTML, collapse: collapse, swatches: swatchesHTML, energy: energyHTML, docs: docsHTML, fileHref: fileHref, esc: esc, ico: ico, param: param, url: url, brandName: brandName, keySpecs: keySpecs, canBuy: canBuy,
+    img: img, money: money, priceHTML: priceHTML, specIcon: specIcon, collapse: collapse, swatches: swatchesHTML, energy: energyHTML, docs: docsHTML, fileHref: fileHref, esc: esc, ico: ico, param: param, url: url, brandName: brandName, keySpecs: keySpecs, canBuy: canBuy,
     card: card, cart: cart, wish: wish, compare: compare, recent: recent, search: search, store: store,
     toast: toast, openModal: openModal, closeModal: closeModal, contactForm: contactForm, openLightbox: openLightbox, openChat: openChat,
     fieldErr: fieldErr, phoneOk: phoneOk, caps: georgianCaps, reduceMotion: reduceMotion, $: $, $$: $$,

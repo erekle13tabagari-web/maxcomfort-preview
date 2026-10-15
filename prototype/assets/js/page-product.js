@@ -11,6 +11,7 @@ ANDE.page(function (A) {
     main.innerHTML = '<div class="wrap"><div class="empty" style="margin:40px 0 80px"><span class="empty__ico">' + ico('i-search') + '</span><h2>პროდუქტი ვერ მოიძებნა</h2><p>შესაძლოა ბმული მოძველებულია. სცადეთ ძიება ან დაათვალიერეთ კატალოგი.</p><a class="btn btn--primary" href="catalog.html">კატალოგი</a></div></div>';
     return;
   }
+  if (String(p.id) !== A.param('id')) history.replaceState(null, '', A.url.product(p.id) + location.hash);   // a merged duplicate's old link
   A.recent.push(p.id);
   var cat = A.findCat(p.cat), sub = A.findSub(p.cat, p.sub);
 
@@ -50,7 +51,7 @@ ANDE.page(function (A) {
       '<div class="pinfo__meta">' + (p.art ? '<button class="copy" type="button" data-copy="' + esc(p.art) + '" title="კოდის კოპირება">კოდი ' + esc(p.art) + ico('i-copy') + '</button>' : '') +
         '<span class="stock ' + (p.stock ? 'stock--in">მარაგშია' : 'stock--out">შეკვეთით') + '</span>' +
         '<a class="textlink" href="' + A.url.catalog(cat.id, sub.id) + '">' + sub.name + '</a></div>' +
-      (key.length ? '<dl class="keyspecs">' + key.map(function (s) { return '<div class="keyspec"><dt>' + esc(s[0]) + '</dt><dd>' + esc(s[1]) + '</dd></div>'; }).join('') +
+      (key.length ? '<dl class="keyspecs">' + key.map(function (s) { return '<div class="keyspec"><dt>' + A.specIcon(s[0]) + esc(s[0]) + '</dt><dd>' + esc(s[1]) + '</dd></div>'; }).join('') +
         '<a class="link-arrow keyspecs__all" href="#specs">ყველა მახასიათებელი' + ico('i-arrow') + '</a></dl>' : '') +
       (p.variants ? '<div class="pcolors"><p class="pcolors__label">ფერი: <b>' + p.color.n + '</b></p>' + A.swatches(p, 'pcolors__set') + '</div>' : '') +
       '<div class="buybox" data-buybox>' +
