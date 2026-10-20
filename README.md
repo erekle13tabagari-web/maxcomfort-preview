@@ -1,6 +1,5 @@
-# Max Comfort: new website preview
+# Max Comfort website preview
 
-Prototype of the new Max Comfort website, shared for feedback. Not the live shop:
-prices, stock and orders here are demo data.
+A preview for feedback: https://erekle13tabagari-web.github.io/maxcomfort-preview/
 
-Open: https://erekle13tabagari-web.github.io/maxcomfort-preview/
+Not the live site. Orders and requests are not sent anywhere; sign-in codes are shown on screen.

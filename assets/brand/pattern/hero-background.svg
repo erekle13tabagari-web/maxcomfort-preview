@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 720" width="1440" height="720">
+  <!-- The home hero background as it renders at 1440 px: MC Cloud field with the three roof lines
+       (51.5° pitch) placed and cropped as on the site. Coordinates are flat (no transforms) so the
+       file opens cleanly in Illustrator and Figma. -->
+  <title>Max Comfort hero background</title>
+  <defs><clipPath id="frame"><rect width="1440" height="720"/></clipPath></defs>
+  <rect width="1440" height="720" fill="#F3F3F5"/>                                   <!-- MC Cloud -->
+  <g clip-path="url(#frame)" fill="none" stroke-width="39" stroke-linejoin="miter">
+    <path d="M482 750.5 L836.8 304.2 L1191.6 750.5" stroke="#FFFFFF"/>               <!-- MC White -->
+    <path d="M783.6 750.5 L1085.2 371.7 L1386.8 750.5" stroke="#EAEAF2"/>            <!-- MC Blue 10 % -->
+    <path d="M1032 750.5 L1262.6 460.4 L1493.3 750.5" stroke="#E6E5E9"/>             <!-- MC Wall -->
+  </g>
+</svg>

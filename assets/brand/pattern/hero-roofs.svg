@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 720" width="1240" height="720" fill="none" stroke-width="44" stroke-linejoin="miter">
+  <!-- Hero roof lines: three peaks at the logo's 51.5° pitch. Transparent; meant for an
+       MC Cloud (#F3F3F5) background. The legs run past the bottom edge so they end clean. -->
+  <title>Max Comfort hero roof lines</title>
+  <path d="M80 740 L480 237 L880 740" stroke="#FFFFFF"/>   <!-- MC White -->
+  <path d="M420 740 L760 313 L1100 740" stroke="#EAEAF2"/> <!-- MC Blue 10 % -->
+  <path d="M700 740 L960 413 L1220 740" stroke="#E6E5E9"/> <!-- MC Wall -->
+</svg>

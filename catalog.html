@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ka">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>კატალოგი · მაქს კომფორტი</title>
+<meta name="description" content="გათბობის, კონდიცირების, ვენტილაციისა და წყალმომარაგების პროდუქცია: ფილტრები ბრენდით, სიმძლავრით და ფასით.">
+<meta name="theme-color" content="#2B3179">
+<link rel="icon" href="assets/brand/logo/mc-symbol-primary.svg" type="image/svg+xml">
+<link rel="preload" href="assets/fonts/MCSansGeorgian-Bold.woff" as="font" type="font/woff" crossorigin>
+<link rel="preload" href="assets/fonts/MCSansGeorgian-Regular.woff" as="font" type="font/woff" crossorigin>
+<link rel="stylesheet" href="assets/css/mc.css">
+<script>try{var t=localStorage.getItem('mc.theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+<script src="assets/js/config.js"></script>
+<script type="module" src="assets/js/catalog.js"></script>
+</head>
+<body data-page="catalog">
+<div id="mc-header"></div>
+
+<main id="main" class="wrap">
+  <div data-crumbs></div>
+  <div class="phead">
+    <div><h1 class="h1" data-title>კატალოგი</h1><p data-lead></p></div>
+    <span class="phead__count" data-count></span>
+  </div>
+  <nav class="pills" data-pills aria-label="ქვეკატეგორიები"></nav>
+
+  <div class="shop">
+    <aside class="filters" aria-label="ფილტრები">
+      <div class="filters__head"><h2>ფილტრები</h2><button class="iconbtn" data-close aria-label="დახურვა"><svg class="ui" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+      <div data-filters-body></div>
+      <div class="filters__apply"><button class="btn btn--block" data-apply>ნახვა</button></div>
+    </aside>
+
+    <section aria-label="პროდუქცია">
+      <div class="toolbar">
+        <div class="toolbar__l">
+          <button class="btn btn--ghost btn--sm fbtn" data-open-filters><svg class="ui ui--sm" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/></svg>ფილტრები</button>
+          <div data-chips style="display:contents"></div>
+        </div>
+        <div class="toolbar__r">
+          <label class="sr" for="sort">დალაგება</label>
+          <select class="select" id="sort" data-sort></select>
+          <div class="density" role="group" aria-label="ბადე">
+            <button class="is-on" data-density="3" aria-label="3 სვეტი"><svg class="ui" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5"/><rect x="13.5" y="4" width="6.5" height="6.5"/><rect x="4" y="13.5" width="6.5" height="6.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5"/></svg></button>
+            <button data-density="4" aria-label="4 სვეტი"><svg class="ui" viewBox="0 0 24 24"><path d="M4 4h4v4H4zM10 4h4v4h-4zM16 4h4v4h-4zM4 10h4v4H4zM10 10h4v4h-4zM16 10h4v4h-4zM4 16h4v4H4zM10 16h4v4h-4zM16 16h4v4h-4z"/></svg></button>
+          </div>
+        </div>
+      </div>
+      <div class="grid grid--shop" data-grid></div>
+      <div class="more" data-more hidden><small></small><div class="more__bar"><i></i></div><button class="btn btn--ghost"></button></div>
+    </section>
+  </div>
+</main>
+
+<div id="mc-footer"></div>
+</body>
+</html>
