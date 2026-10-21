@@ -1,4 +1,4 @@
-import { boot, $, $$, esc, bi, ui, arrow, card, num, money, crumbs, search, groupLead, openLayer, closeLayers, params, C } from './core.js';
+import { boot, $, $$, esc, bi, ui, arrow, card, num, money, crumbs, search, groupLead, lineKey, openLayer, closeLayers, params, C } from './core.js';
 
 const PAGE = 24;
 const SKIP = new Set(['კოდი', 'მოდელი', 'დასახელება', 'მწარმოებელი', 'ზომები', 'ზომა', 'ტიპი', 'უზრუნველყოფილია', 'გაბარიტები', 'კავშირის დიამეტრი', 'კავშირების დიამეტრი']);
@@ -33,8 +33,11 @@ function writeState(push) {
 }
 
 /* ---------- filtering ---------- */
+let best = new Map();   // a search: line or colour group -> its best match, the card it shows
 function scope() {
-  let list = st.q ? search(db, st.q).flatMap(p => p.group ? db.groups.get(p.group) : [p]) : db.products;
+  const hits = st.q ? search(db, st.q) : [];
+  best = new Map(hits.map(p => [lineKey(p), p]));
+  let list = st.q ? hits.flatMap(p => p.series ? db.series.get(p.series) : p.group ? db.groups.get(p.group) : [p]) : db.products;
   if (st.c) list = list.filter(p => p.cat === st.c);
   if (st.s) list = list.filter(p => p.sub === st.s);
   return list;
@@ -50,14 +53,18 @@ function preds(except) {
   Object.entries(st.specs).forEach(([k, v]) => { if (except !== 'f.' + k && v.length) f.push(p => v.includes(specVal(p, k))); });
   return p => f.every(fn => fn(p));
 }
+/** One card per model line or colour group: the size the filters or the search point at, else the first. */
 function collapse(list) {
   const out = [], seen = new Set();
   list.forEach(p => {
-    if (!p.group) return out.push(p);
-    if (seen.has(p.group)) return;
-    seen.add(p.group);
-    const inList = list.filter(x => x.group === p.group);
-    out.push(st.color.length ? inList.find(x => st.color.includes(x.color.id)) || inList[0] : inList[0]);
+    const k = lineKey(p);
+    if (!p.series && !p.group) return out.push(p);
+    if (seen.has(k)) return;
+    seen.add(k);
+    const inList = list.filter(x => lineKey(x) === k);
+    const hit = best.get(k);
+    const first = p.series ? db.series.get(p.series).find(x => inList.includes(x)) : inList[0];   // a line opens on its smallest size
+    out.push((hit && inList.includes(hit) && hit) || (st.color.length && inList.find(x => x.color && st.color.includes(x.color.id))) || first);
   });
   return out;
 }
@@ -178,13 +185,15 @@ function chips() {
 let results = [];
 function render(keepPage) {
   const sc = scope();
-  results = sorted(collapse(sc.filter(preds())));
+  const all = sc.filter(preds());
+  results = sorted(collapse(all));
   if (!keepPage) shown = PAGE;
   head();
   $('[data-filters-body]').innerHTML = facets(sc);
   syncDual();
   $('[data-chips]').innerHTML = chips();
-  $('[data-count]').textContent = results.length + ' პროდუქტი';
+  // cards are lines; the models in them are counted too
+  $('[data-count]').textContent = results.length + ' პროდუქტი' + (all.length > results.length ? ' · ' + all.length + ' მოდელი' : '');
   $('[data-apply]').textContent = 'ნახვა (' + results.length + ')';
   const grid = $('[data-grid]');
   if (!results.length) {

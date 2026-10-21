@@ -315,8 +315,68 @@ function index(data) {
     p.q = norm([p.title, p.name, p.sku, p.brandName, p.brand, p.subName, p.catName, p.type, p.line].join(' '));
     byId.set(p.id, p);
     if (p.group) (groups.get(p.group) || groups.set(p.group, []).get(p.group)).push(p);
-    if (p.series) (series.get(p.series) || series.set(p.series, []).get(p.series)).push(p);
   });
-  series.forEach(list => list.sort((a, b) => a.sizeSort - b.sizeSort));
+  modelLines(data.products);
+  data.products.forEach(p => { if (p.series) (series.get(p.series) || series.set(p.series, []).get(p.series)).push(p); });
+  // by size; at the same size the plain model first (150 მმ before 150 მმ Q)
+  series.forEach(list => list.sort((a, b) => a.sizeSort - b.sizeSort || String(a.size).length - String(b.size).length));
   return { ...data, cats, subs, brandsById, byId, groups, series };
+}
+
+/* ---------- model lines ----------
+   Models that look the same are one line: one card in the listings, the sizes chosen on the product page. Every
+   size stays a product of its own (its code, price, stock, cart line and Bitrix order row), so nothing changes for
+   the orders or the CRM. The catalog names some lines (series, size); the rest are found here, so a catalog from
+   Bitrix gets them too: one brand and subcategory, and names that differ only in their numbers (CA 150 MD ...
+   150 მმ, CA 160 MD ...) or the very same photo (Gulliver BS, BSD ...). */
+const UNITS = new Set(['მმ', 'სმ', 'მ', 'ლ', 'L', 'W', 'kW', 'კვტ', 'HP', 'მ²', 'მ³/სთ', 'ბარი', 'bar', 'V']);
+function modelLines(products) {
+  const sets = new Map();
+  const add = (key, p) => (sets.get(key) || sets.set(key, []).get(key)).push(p);
+  const base = p => [p.cat, p.sub, p.brand].join('|');
+  products.forEach(p => {
+    if (!p.series) add('n|' + base(p) + '|' + p.title.split(/\s+/).map(t => (/\d/.test(t) ? t.replace(/\d+(?:[.,]\d+)?/g, '#') : t.toLowerCase())).join(' '), p);
+  });
+  const named = list => new Set(list.map(p => p.title)).size > 1;   // a colour group alone is no line
+  sets.forEach((list, key) => { if (named(list)) line(key, list); });
+  sets.clear();
+  products.forEach(p => { if (!p.series && p.src[0]) add('p|' + base(p) + '|' + p.src[0], p); });
+  sets.forEach((list, key) => { if (named(list)) line(key, list); });
+}
+/** The size label of each model: the words its name does not share with the others, with their unit. */
+function line(key, list) {
+  const titles = [...new Set(list.map(p => p.title))];
+  const toks = titles.map(t => t.split(/\s+/));
+  const common = new Set(toks[0].filter(w => toks.every(ts => ts.includes(w))));
+  const code = (w, p) => w === p.sku || /^\d{5,}$/.test(w);
+  const label = (p, unitsOnly) => {
+    const ts = p.title.split(/\s+/), parts = [];
+    ts.forEach((w, i) => {
+      if (common.has(w) || code(w, p)) return;
+      const s = UNITS.has(ts[i + 1]) ? w + ' ' + ts[i + 1] : w;
+      if (!parts.includes(s)) parts.push(s);
+    });
+    const withUnit = parts.filter(s => / \S+$/.test(s));
+    // "150 მმ" is enough when the bare 150 is the same number (CA 150 MD ... 150 მმ)
+    const out = unitsOnly && withUnit.length ? withUnit : parts.filter(s => !withUnit.some(u => u !== s && u.split(' ')[0] === s));
+    return out.join(' ') || p.sku || p.title;
+  };
+  const unique = f => new Set(list.map(f)).size === titles.length;
+  const pick = unique(p => label(p, true)) ? p => label(p, true) : unique(p => label(p, false)) ? p => label(p, false) : p => p.title;
+  list.forEach((p, i) => {
+    p.series = 'a:' + key;
+    p.size = pick(p);
+    const n = parseFloat(String(p.size).replace(',', '.').replace(/^[^\d]*/, ''));
+    p.sizeSort = isNaN(n) ? i : n;
+  });
+}
+
+/** What a line's sizes are: ზომა (მმ), სიმძლავრე (kW, W, HP), მოცულობა (ლ) or მოდელი. */
+export function sizeKind(list) {
+  // the unit after the number, also when a letter follows (150 მმ Q, 315 მმ E W)
+  const units = list.map(p => (String(p.size).match(/\d\s*(მმ|სმ|kW|კვტ|W|HP|ლ|L)(?![A-Za-z0-9ა-ჰ])/) || [])[1]);
+  if (units.every(u => u === 'მმ' || u === 'სმ')) return 'ზომა';
+  if (units.every(u => /^(kW|კვტ|W|HP)$/.test(u || ''))) return 'სიმძლავრე';
+  if (units.every(u => u === 'ლ' || u === 'L')) return 'მოცულობა';
+  return 'მოდელი';
 }

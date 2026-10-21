@@ -1,4 +1,4 @@
-import { boot, $, $$, esc, bi, ui, arrow, card, money, num, groupLead, priceHTML, reveal, store, C, t, safeUrl } from './core.js';
+import { boot, $, $$, esc, bi, ui, arrow, card, money, num, groupLead, lineKey, priceHTML, reveal, store, C, t, safeUrl } from './core.js';
 import { livePosts, postCard } from './posts.js';
 
 const HERO = 'assets/img/hero/';
@@ -141,7 +141,7 @@ const RAIL = [
 function railItems(db, f) {
   const seen = new Set();
   return db.products.filter(f)
-    .map(p => groupLead(db, p)).filter(p => !seen.has(p.id) && seen.add(p.id))
+    .map(p => groupLead(db, p)).filter(p => !seen.has(lineKey(p)) && seen.add(lineKey(p)))   // one card per line
     .sort((a, b) => (/\/(mc|lib)-/.test(b.src[0]) - /\/(mc|lib)-/.test(a.src[0])) || (!!b.energy - !!a.energy) || (b.price - a.price))
     .slice(0, 12);
 }

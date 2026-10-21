@@ -1,4 +1,5 @@
 import { boot, $, $$, esc, bi, ui, arrow, card, num, money, crumbs, priceHTML, energyTag, energyTags, EKINDS, store, callback, openLayer, params } from './core.js';
+import { sizeKind } from './api.js';
 
 let db, p;
 const ASSURE = `<div class="assure pdp__assure">
@@ -68,7 +69,9 @@ function options() {
       const cur = sizes.get(v.size);
       if (!cur || (p.color && v.color && v.color.id === p.color.id)) sizes.set(v.size, v);
     });
-    html += `<div><div class="opt__t">სიმძლავრე <span>${esc(p.spec['ფართობი, მ²'] ? 'ოთახისთვის ' + p.spec['ფართობი, მ²'].replace(/მ²/g, '').replace(/\s*-\s*/, '-').trim() + ' მ²' : '')}</span></div><div class="sizes">${[...sizes.values()].map(v => `<button class="size ${v.size === p.size ? 'is-on' : ''}" data-go="${v.id}"><b>${esc(v.size)}</b><small>${v.price != null ? money(v.price) : 'მოთხოვნით'}</small></button>`).join('')}</div></div>`;
+    const kind = sizeKind(db.series.get(p.series));   // ზომა, სიმძლავრე, მოცულობა or მოდელი
+    const room = kind === 'სიმძლავრე' && p.spec['ფართობი, მ²'] ? 'ოთახისთვის ' + p.spec['ფართობი, მ²'].replace(/მ²/g, '').replace(/\s*-\s*/, '-').trim() + ' მ²' : '';
+    html += `<div><div class="opt__t">${kind} <span>${esc(room || (kind === 'მოდელი' ? '' : p.size))}</span></div><div class="sizes">${[...sizes.values()].map(v => `<button class="size ${v.size === p.size ? 'is-on' : ''}" data-go="${v.id}"><b>${esc(v.size)}</b><small>${v.price != null ? money(v.price) : 'მოთხოვნით'}</small></button>`).join('')}</div></div>`;
   }
   return html;
 }
@@ -198,7 +201,8 @@ function wire() {
       history.replaceState(null, '', 'product.html?id=' + v.id + '#' + tab);
       const y = scrollY;
       const swap = () => { render(); scrollTo(0, y); };
-      document.startViewTransition ? document.startViewTransition(swap) : swap();
+      // a transition cut short (another click, leaving the page) is no error
+      if (document.startViewTransition) document.startViewTransition(swap).ready.catch(() => {}); else swap();
       return;
     }
     const th = e.target.closest('[data-g]');

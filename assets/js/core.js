@@ -1,6 +1,6 @@
 /* Shared by every page: helpers, the cart/favourites/compare store, header and footer,
    search, drawers, the callback window and the product card. */
-import { catalog, content, draftOn, lead as sendLead, norm, account, phoneE164 } from './api.js';
+import { catalog, content, draftOn, lead as sendLead, norm, account, phoneE164, sizeKind } from './api.js';
 
 export const C = window.MC_CONFIG;
 export const $ = (s, el = document) => el.querySelector(s);
@@ -240,6 +240,24 @@ export function keySpecs(p, n = 2) {
   if (s['მასალა']) out.push(['spec-code', s['მასალა']]);
   return out.slice(0, n);
 }
+/** One card per model line (sizes) or colour group: what the listings collapse on. */
+export const lineKey = p => p.series || p.group || 'p' + p.id;
+/** A line of several sizes on a card: "5 ზომა · 150-315 მმ", and its lowest price. */
+export function lineInfo(db, p) {
+  const list = p.series && db.series.get(p.series);
+  const sizes = list ? [...new Set(list.map(v => v.size))] : [];
+  if (sizes.length < 2) return null;
+  const kind = sizeKind(list);
+  // the smallest and largest number with their unit: "90-150 მმ" (also for MF 90 მმ ... MG 150 მმ)
+  const nums = sizes.map(s => String(s).match(/(\d+(?:[.,]\d+)?)\s*(მმ|სმ|kW|კვტ|W|HP|ლ|L)(?![A-Za-z0-9ა-ჰ])/)).filter(Boolean);
+  const val = m => parseFloat(m[1].replace(',', '.'));
+  const lo = nums.reduce((x, m) => (!x || val(m) < val(x) ? m : x), null), hi = nums.reduce((x, m) => (!x || val(m) > val(x) ? m : x), null);
+  const range = kind === 'მოდელი' ? sizes.slice(0, 3).join(', ') + (sizes.length > 3 ? '…' : '')
+    : lo && hi ? (lo[1] === hi[1] ? `${lo[1]} ${lo[2]}` : `${lo[1]}-${hi[1]} ${lo[2]}`) : `${sizes[0]} - ${sizes[sizes.length - 1]}`;
+  const prices = list.map(v => v.price).filter(v => v != null);
+  const icon = { 'ზომა': 'spec-dimensions', 'სიმძლავრე': 'spec-power', 'მოცულობა': 'prd-cylinder', 'მოდელი': 'spec-code' }[kind];
+  return { icon, text: `${sizes.length} ${kind}${range ? ' · ' + range : ''}`, from: prices.length && new Set(prices).size > 1 ? Math.min(...prices) : null };
+}
 /** The variant a listing shows for a colour group: in stock first, then the cheapest. */
 export function groupLead(db, p, color) {
   if (!p.group) return p;
@@ -257,7 +275,10 @@ export function swatches(db, p, cls = 'sw') {
 export function card(db, p, { cls = '', eager = false } = {}) {
   const two = p.src[1] && p.src[1] !== p.src[0];
   const ek = energyTags(p)[0], e = ek ? energyTag(ek[1], ek[0], ek[2]) : '';
-  const specs = keySpecs(p).map(([i, t]) => `<span>${bi(i)}${esc(t)}</span>`).join('');
+  const li = lineInfo(db, p);
+  // a line shows its sizes instead of this one size's figures
+  const specs = li ? `<span class="card__line">${bi(li.icon)}${esc(li.text)}</span>` : keySpecs(p).map(([i, t]) => `<span>${bi(i)}${esc(t)}</span>`).join('');
+  const price = li && li.from != null ? `<span class="price num">${money(li.from)}<small class="price__from">-დან</small></span>` : priceHTML(p);
   const fav = store.has('fav', p.id), cmp = store.has('cmp', p.id);
   return `<article class="card ${cls}" data-id="${p.id}">
   <div class="card__media">
@@ -278,7 +299,7 @@ export function card(db, p, { cls = '', eager = false } = {}) {
     <div class="card__brand"><span>${esc(p.brandName || p.subName)}</span>${p.line ? `<span>${esc(p.line)}</span>` : ''}</div>
     <a class="card__title" href="${p.url}">${esc(p.title)}</a>
     ${specs ? `<div class="card__specs">${specs}</div>` : ''}
-    <div class="card__foot">${priceHTML(p)}${swatches(db, p)}</div>
+    <div class="card__foot">${price}${swatches(db, p)}</div>
   </div>
 </article>`;
 }
@@ -360,7 +381,7 @@ function header(db, page) {
   </div>
   <div class="strip__r">
     <a href="about.html#services">მიწოდება და მონტაჟი</a>
-    <a href="media.html">მედია ცენტრი</a>
+    <a href="media.html?t=faq">Q&amp;A/კითხვა პასუხი</a>
     <a href="about.html">ჩვენ შესახებ</a>
     <button class="strip__cb" data-callback>შეუკვეთეთ ზარი</button>
   </div>
@@ -545,8 +566,9 @@ export function search(db, q) {
     .filter(p => words.every(w => p.q.includes(w)))
     .map(p => ({ p, s: (norm(p.title).startsWith(words[0]) ? 3 : 0) + (norm(p.title).includes(words.join(' ')) ? 2 : 0) + (p.stock ? 1 : 0) + (p.src[0] && /\/(mc|lib)-/.test(p.src[0]) ? 1 : 0) }))
     .sort((a, b) => b.s - a.s)
-    .map(x => groupLead(db, x.p))
-    .filter(p => !seen.has(p.id) && seen.add(p.id));
+    // one result per line or colour group: its best match (CA 200 finds the 200 of the CA line)
+    .map(x => x.p)
+    .filter(p => !seen.has(lineKey(p)) && seen.add(lineKey(p)));
 }
 
 /* ---------- callback / price request ---------- */
