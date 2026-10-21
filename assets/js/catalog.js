@@ -1,4 +1,4 @@
-import { boot, $, $$, esc, bi, ui, arrow, card, num, money, crumbs, search, groupLead, openLayer, closeLayers, params } from './core.js';
+import { boot, $, $$, esc, bi, ui, arrow, card, num, money, crumbs, search, groupLead, openLayer, closeLayers, params, C } from './core.js';
 
 const PAGE = 24;
 const SKIP = new Set(['კოდი', 'მოდელი', 'დასახელება', 'მწარმოებელი', 'ზომები', 'ზომა', 'ტიპი', 'უზრუნველყოფილია', 'გაბარიტები', 'კავშირის დიამეტრი', 'კავშირების დიამეტრი']);
@@ -145,7 +145,9 @@ function head() {
   if (st.q) trail.push(['ძიება', null]);
   $('[data-crumbs]').innerHTML = crumbs(trail);
   $('[data-title]').textContent = title;
-  $('[data-lead]').textContent = cat && !sub ? cat.lead : '';
+  // a brand's page: its text from the admin panel (brands)
+  const about = brand && !cat && !st.q ? ((C.cms || {}).brands || []).find(b => b && b.id === brand.id) : null;
+  $('[data-lead]').textContent = cat && !sub ? cat.lead : about ? about.text || '' : '';
 
   const pills = cat
     ? `<a class="pill ${st.s ? '' : 'is-on'}" href="catalog.html?c=${cat.id}" data-nav>${bi(cat.icon)}ყველა <small>${cat.count}</small></a>` + cat.subs.filter(s => s.count).map(s => `<a class="pill ${st.s === s.id ? 'is-on' : ''}" href="catalog.html?c=${cat.id}&s=${s.id}" data-nav>${bi(s.icon)}${esc(s.name)} <small>${s.count}</small></a>`).join('')

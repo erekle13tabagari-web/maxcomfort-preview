@@ -1,8 +1,12 @@
 import { boot, $, $$, esc, bi, ui, money, C } from './core.js';
 
-const mapSrc = addr => 'https://www.google.com/maps?output=embed&q=' + encodeURIComponent('თბილისი, ' + addr);
+// the map shows the showroom's map address (admin panel: an address or coordinates), else its address in Tbilisi
+const mapSrc = s => 'https://www.google.com/maps?output=embed&q=' + encodeURIComponent(s.map || 'თბილისი, ' + s.address);
 
 boot({}).then(() => {
+  const tl = (C.cms || {}).timeline;
+  if (Array.isArray(tl) && tl.length) $('[data-timeline]').innerHTML = tl.filter(x => x && (x.year || x.text)).map(x => `<div><b>${esc(x.year)}</b><p>${esc(x.text)}</p></div>`).join('');
+
   const icons = { pickup: 'svc-showroom', tbilisi: 'svc-delivery', regions: 'svc-network' };
   $('[data-delivery]').innerHTML =
     C.delivery.map(d => `<div class="value">${bi(icons[d.id] || 'svc-delivery')}<h3>${esc(d.name)}</h3><p>${esc(d.note)}. ${d.price === 0 ? 'უფასოდ.' : 'ღირებულებას მენეჯერი დაგიდასტურებთ.'}</p></div>`).join('') +
@@ -19,7 +23,7 @@ boot({}).then(() => {
 
   const map = $('[data-map]');
   const show = i => {
-    map.innerHTML = `<iframe title="რუკა: ${esc(C.showrooms[i].address)}" src="${mapSrc(C.showrooms[i].address)}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`;
+    map.innerHTML = `<iframe title="რუკა: ${esc(C.showrooms[i].address)}" src="${mapSrc(C.showrooms[i])}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`;
     $$('[data-room]').forEach(b => { b.classList.toggle('is-on', +b.dataset.room === i); b.setAttribute('aria-pressed', +b.dataset.room === i); });
   };
   // the map loads only when it scrolls into view

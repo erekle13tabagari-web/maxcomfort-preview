@@ -1,4 +1,5 @@
-import { boot, $, $$, esc, bi, ui, arrow, card, money, num, groupLead, priceHTML, reveal, store } from './core.js';
+import { boot, $, $$, esc, bi, ui, arrow, card, money, num, groupLead, priceHTML, reveal, store, C, t, safeUrl } from './core.js';
+import { livePosts, postCard } from './posts.js';
 
 const HERO = 'assets/img/hero/';
 const SLIDES = [
@@ -21,14 +22,14 @@ const SLIDES = [
     eyebrow: 'Vortice', title: 'სუფთა ჰაერი სახლში',
     lead: 'რეკუპერატორი ცვლის ჰაერს და ინარჩუნებს სითბოს. საყოფაცხოვრებო და კომერციული ვენტილაცია, ჰაერსატარები და ცხაურები.',
     img: 'vent-hr300', w: 420, product: 900003, cat: 'ventilation',
-    chips: () => [['prd-heatpump', 'რეკუპერაცია', 'სითბო რჩება სახლში', 'left:2%;top:20%'], ['spec-wifi', 'IoT', 'მართვა აპლიკაციით', 'right:2%;bottom:20%']]
+    chips: () => [['prd-heatpump', 'რეკუპერაცია', 'სითბო რჩება სახლში', 'left:2%;top:20%'], ['val-technology', 'IoT', 'მართვა აპლიკაციით', 'right:2%;bottom:20%']]
   },
   {
     id: 'water', icon: 'sys-water', tab: 'წყალმომარაგება', note: 'წყლის გამაცხელებლები',
     eyebrow: 'ბოილერები, მილები, ფიტინგები', title: 'ცხელი წყალი ყოველთვის',
     lead: 'ელექტრო, გაზის და თბური ტუმბოს ბოილერები, მილები, ფიტინგები და ფილტრები: სრული სისტემა ერთ ადგილას.',
     img: 'water-7200v', w: 260, link: 'catalog.html?c=water&s=heaters', cat: 'water',
-    chips: () => [['spec-hotwater', '50-800 ლ', 'მოცულობის ბოილერები', 'left:6%;top:22%'], ['spec-temperature', 'თბური ტუმბო', 'დაზოგეთ ენერგია', 'right:6%;bottom:22%']]
+    chips: () => [['spec-hotwater', '50-800 ლ', 'მოცულობის ბოილერები', 'left:6%;top:22%'], ['val-sustainability', 'თბური ტუმბო', 'დაზოგეთ ენერგია', 'right:6%;bottom:22%']]
   }
 ];
 const DUR = 7000;
@@ -48,10 +49,11 @@ function heroHTML(db) {
     } else {
       from = `<div class="hero__from"><span>${db.cats.get(s.cat).count} პროდუქტი კატეგორიაში</span></div>`;
     }
+    const k = 'home.hero.' + s.id + '.';   // texts the admin panel can change
     copy.push(`<div class="hero__slide ${i ? '' : 'is-on'}" data-i="${i}" ${i ? 'aria-hidden="true"' : ''}>
-      <span class="eyebrow">${esc(s.eyebrow)}</span>
-      <h${i ? 2 : 1} class="display">${esc(s.title)}</h${i ? 2 : 1}>
-      <p class="lead">${esc(s.lead)}</p>
+      <span class="eyebrow" data-c="${k}eyebrow">${esc(t(k + 'eyebrow', s.eyebrow))}</span>
+      <h${i ? 2 : 1} class="display" data-c="${k}title">${esc(t(k + 'title', s.title))}</h${i ? 2 : 1}>
+      <p class="lead" data-c="${k}lead">${esc(t(k + 'lead', s.lead))}</p>
       <div class="hero__cta"><a class="btn btn--red" href="${href}">${s.group ? 'ყიდვა' : 'ნახვა'} ${arrow()}</a><a class="btn btn--ghost" href="catalog.html?c=${s.id}">კატეგორია</a></div>
       ${from}
     </div>`);
@@ -61,7 +63,7 @@ function heroHTML(db) {
     stage.push(`<div class="hero__prod ${s.wall ? 'hero__prod--wall' : ''} ${i ? '' : 'is-on'}" data-i="${i}" style="--w:${s.w}px">
       <img ${s.dark ? 'class="only-l" ' : ''}src="${HERO + img}.webp" alt="${esc(p ? p.title : s.tab)}" ${i ? 'loading="lazy"' : 'fetchpriority="high"'}>${s.dark ? `<img class="only-d" src="${HERO + s.dark}.webp" alt="" loading="lazy">` : ''}${chips}${colors}</div>`);
     tabs.push(`<button class="tab4 ${i ? '' : 'is-on'}" role="tab" aria-selected="${!i}" data-i="${i}" style="--dur:${DUR}ms">
-      <span class="tab4__bar"><i></i></span>${bi(s.icon)}<span><b>${esc(s.tab)}</b><small>${esc(s.note)}</small></span></button>`);
+      <span class="tab4__bar"><i></i></span>${bi(s.icon)}<span><b>${esc(s.tab)}</b><small data-c="home.hero.${s.id}.note">${esc(t(`home.hero.${s.id}.note`, s.note))}</small></span></button>`);
   });
   $('[data-hero-copy]').innerHTML = copy.join('');
   $('[data-hero-stage]').innerHTML = stage.join('');
@@ -167,65 +169,59 @@ function rail(db) {
   show(0);
 }
 
-/* ---------- spotlight: featured lines in an endless carousel ---------- */
-const SPOTS = [
-  {
-    key: 'ln', eyebrow: 'Mitsubishi Electric', title: 'Kirigamine Style', lead: 'კონდიციონერი, რომელიც ავეჯივით გამოიყურება: ღრმა ფერი გამჭვირვალე ზედა ფენის ქვეშ, ორმაგი ზონის კლიმატის კონტროლი, ჰაერის პლაზმური წმენდა და ჩაშენებული Wi-Fi.',
-    go: 'ნახეთ ფერები და ფასები',
-    build(db) {
-      const lead = db.byId.get(2159), group = db.groups.get(lead.group);
-      const series = db.series.get(lead.series), prices = series.map(x => x.price).filter(Boolean);
-      const imgs = { red: 'cool-ln-red', black: 'cool-ln-black', white: 'cool-ln-white' };
-      return {
-        url: lead.url,
-        looks: group.map(v => ({ id: v.id, name: v.color.name, hex: v.color.hex, img: HERO + imgs[v.color.id] + '.webp', url: v.url, alt: v.title + ', ' + v.color.name })),
-        facts: [[lead.energy.c, 'გაგრილება'], [lead.energy.h, 'გათბობა'],
-          [`${num(series[0].sizeSort / 10)}-${num((series[series.length - 1].sizeSort / 10).toFixed(1))}`, `kW, ${new Set(series.map(x => x.size)).size} სიმძლავრე`],
-          [money(Math.min(...prices)).replace(/\s*₾$/, ''), '₾-დან']]
-      };
+/* ---------- spotlight: featured lines in an endless carousel (admin panel: slides) ----------
+   A slide: eyebrow, title, lead, button, looks (colour or panel: picture, swatch, product or link) and facts.
+   A fact {auto: 'kw'} is the line's capacity range, {auto: 'price'} its lowest price; the line is the slide's
+   products, or every capacity of the looks' products.                                                     */
+const kwOf = p => parseFloat(String(p.spec['გაგრილების სიმძლავრე, kW'] || p.spec['სიმძლავრე, kW'] || (/kW/.test(p.size || '') ? p.size : '')).replace(',', '.')) || null;
+function spotData(db, s) {
+  const looks = (s.looks || []).filter(v => v && v.img && safeUrl(v.img, true)).map((v, k) => {
+    const p = v.product ? db.byId.get(+v.product) : null;
+    const url = v.url && safeUrl(v.url) ? v.url : p ? p.url : '';
+    return { id: k, name: v.name || '', hex: v.hex || '#888888', img: v.img, url, alt: [s.title, v.name].filter(Boolean).join(', ') };
+  });
+  const line = new Map();
+  ((s.products || []).length ? s.products.map(id => db.byId.get(+id))
+    : (s.looks || []).flatMap(v => { const p = v && db.byId.get(+v.product); return p ? (p.series && db.series.get(p.series)) || [p] : []; }))
+    .filter(Boolean).forEach(p => line.set(p.id, p));
+  const prods = [...line.values()];
+  const facts = (s.facts || []).map(f => {
+    if (f.auto === 'kw') {
+      const kw = [...new Set(prods.map(kwOf).filter(Boolean))].sort((a, b) => a - b);
+      return kw.length > 1 ? [`${num(kw[0].toFixed(1))}-${num(kw[kw.length - 1].toFixed(1))}`, `kW, ${kw.length} სიმძლავრე`] : kw.length ? [num(kw[0].toFixed(1)), 'kW'] : null;
     }
-  },
-  {
-    key: 's360', eyebrow: 'Samsung', title: '360 Cassette', lead: 'მრგვალი კასეტური კონდიციონერი, რომელიც ჰაერს 360°-ზე, თანაბრად ანაწილებს: ოთახის ყველა კუთხე გრილდება, პირდაპირი ცივი ნაკადის გარეშე. თეთრი ან შავი პანელი ნებისმიერ ჭერს ერგება.',
-    go: 'ნახეთ სიმძლავრეები',
-    build(db) {
-      const units = [910153, 910154, 910155, 910146].map(id => db.byId.get(id)).filter(Boolean);
-      const kw = units.map(p => parseFloat(String(p.spec['გაგრილების სიმძლავრე, kW'] || p.spec['სიმძლავრე, kW'] || '').replace(',', '.'))).filter(Boolean).sort((a, b) => a - b);
-      const url = (units[0] || {}).url || 'catalog.html?c=cooling&s=cassette';
-      return {
-        url,
-        looks: [{ id: 'white', name: 'თეთრი პანელი', hex: '#F4F4F1', img: HERO + 's360-white.webp', url, alt: 'Samsung 360 Cassette, თეთრი პანელი' },
-                { id: 'black', name: 'შავი პანელი', hex: '#1F1E22', img: HERO + 's360-black.webp', url, alt: 'Samsung 360 Cassette, შავი პანელი' }],
-        facts: [['360°', 'ჰაერის ნაკადი'],
-          kw.length ? [`${num(kw[0].toFixed(1))}-${num(kw[kw.length - 1].toFixed(1))}`, `kW, ${kw.length} სიმძლავრე`] : null,
-          ['2', 'პანელის ფერი']].filter(Boolean)
-      };
+    if (f.auto === 'price') {
+      const pr = prods.map(p => p.price).filter(Boolean);
+      return pr.length ? [money(Math.min(...pr)).replace(/\s*₾$/, ''), '₾-დან'] : null;
     }
-  }
-];
+    return f.b ? [f.b, f.t || ''] : null;
+  }).filter(Boolean);
+  return { url: (looks[0] || {}).url || 'catalog.html', looks, facts };
+}
 
 function spotSlide(s, d, i, n) {
   const first = d.looks[0];
-  return `<article class="spot__slide spot--${s.key}" aria-roledescription="slide" aria-label="${i + 1} / ${n}" data-key="${s.key}">
+  return `<article class="spot__slide spot--${s.style === 'round' ? 'round' : 'glow'}" aria-roledescription="slide" aria-label="${i + 1} / ${n}" data-key="${i}">
     <div class="spot__bg" aria-hidden="true"></div>
     <div class="wrap">
       <div class="spot__copy">
-        <span class="eyebrow">${esc(s.eyebrow)}</span>
+        ${s.eyebrow ? `<span class="eyebrow">${esc(s.eyebrow)}</span>` : ''}
         <h2 class="h1">${esc(s.title)}</h2>
-        <p class="lead">${esc(s.lead)}</p>
-        <div class="spot__colors">${d.looks.map((v, k) => `<button type="button" class="sw sw--lg ${k ? '' : 'is-on'}" style="--c:${v.hex}" data-look="${v.id}" aria-label="${esc(v.name)}"></button>`).join('')}<span class="spot__cname" data-cname>${esc(first.name)}</span></div>
-        <div class="spot__facts">${d.facts.map(([b, t]) => `<div><b>${esc(b)}</b><small>${esc(t)}</small></div>`).join('')}</div>
-        <a class="btn btn--red" data-go href="${first.url}">${esc(s.go)} ${arrow()}</a>
+        ${s.lead ? `<p class="lead">${esc(s.lead)}</p>` : ''}
+        ${d.looks.length > 1 ? `<div class="spot__colors">${d.looks.map((v, k) => `<button type="button" class="sw sw--lg ${k ? '' : 'is-on'}" style="--c:${esc(v.hex)}" data-look="${v.id}" aria-label="${esc(v.name)}"></button>`).join('')}<span class="spot__cname" data-cname>${esc(first.name)}</span></div>` : ''}
+        ${d.facts.length ? `<div class="spot__facts">${d.facts.map(([b, tx]) => `<div><b>${esc(b)}</b><small>${esc(tx)}</small></div>`).join('')}</div>` : ''}
+        <a class="btn btn--red" data-go href="${esc(first.url || d.url)}">${esc(s.button || 'ნახვა')} ${arrow()}</a>
       </div>
-      <div class="spot__stage">${d.looks.map((v, k) => `<img class="${k ? '' : 'is-on'}" data-look="${v.id}" src="${v.img}" alt="${esc(v.alt)}" loading="lazy">`).join('')}</div>
+      <div class="spot__stage">${d.looks.map((v, k) => `<img class="${k ? '' : 'is-on'}" data-look="${v.id}" src="${esc(v.img)}" alt="${esc(v.alt)}" loading="lazy">`).join('')}</div>
     </div>
   </article>`;
 }
 
 function spotlight(db) {
   const sec = $('[data-spot]'), track = $('[data-spot-track]', sec), dots = $('[data-spot-dots]', sec);
-  const data = SPOTS.map(s => ({ s, d: s.build(db) })).filter(x => x.d.looks.length);
+  const data = ((C.cms || {}).spots || []).filter(s => s && s.on !== false && s.title).map(s => ({ s, d: spotData(db, s) })).filter(x => x.d.looks.length);
   const n = data.length;
+  if (!n) { sec.hidden = true; return; }
   const slides = data.map(({ s, d }, i) => spotSlide(s, d, i, n));
   // endless: a copy of the last slide before the first and of the first after the last
   track.innerHTML = (n > 1 ? slides[n - 1] : '') + slides.join('') + (n > 1 ? slides[0] : '');
@@ -280,8 +276,8 @@ function spotlight(db) {
   sec.addEventListener('click', e => {
     const b = e.target.closest('.spot__colors [data-look]');
     if (!b) return;
-    const slide = b.closest('.spot__slide'), key = slide.dataset.key, d = data.find(x => x.s.key === key).d, v = d.looks.find(x => x.id == b.dataset.look);
-    $$(`.spot--${key}`, track).forEach(sl => {   // the copies follow, so the loop never jumps back to another colour
+    const slide = b.closest('.spot__slide'), key = slide.dataset.key, d = data[+key].d, v = d.looks.find(x => x.id == b.dataset.look);
+    $$(`.spot__slide[data-key="${key}"]`, track).forEach(sl => {   // the copies follow, so the loop never jumps back to another colour
       $$('.spot__colors .sw', sl).forEach(x => x.classList.toggle('is-on', x.dataset.look == v.id));
       $$('.spot__stage img', sl).forEach(x => x.classList.toggle('is-on', x.dataset.look == v.id));
       $('[data-cname]', sl).textContent = v.name;
@@ -291,14 +287,26 @@ function spotlight(db) {
   place(false);
 }
 
+/* brand strip: the admin panel's brands marked for it, in its order */
 function brands(db) {
-  const logos = ['mitsubishi-electric', 'beretta', 'riello', 'warmhaus', 'vortice', 'tiemme', 'samsung', 'emtas', 'omega', 'sira', 'maco', 'izocam', 'hitte', 'soprema', 'rovall', 'piazza', 'untes', 'teknix', 'sakra', 'fir', 'facot', 'hoffman-plus', 'sk-technik'];
-  const byLogo = new Map(db.brands.filter(b => b.logo).map(b => [b.logo, b]));
-  const one = logos.map(l => {
-    const b = byLogo.get(l);
-    return `<a ${b ? `href="catalog.html?b=${b.id}"` : 'tabindex="-1"'} aria-label="${esc(b ? b.name : l)}"><img class="only-l" src="assets/brand/partners/${l}.svg" alt="${esc(b ? b.name : l)}" loading="lazy"><img class="only-d" src="assets/brand/partners/${l}-dark.svg" alt="" loading="lazy"></a>`;
+  const list = ((C.cms || {}).brands || []).filter(b => b && b.strip && b.logo && safeUrl(b.logo, true));
+  if (!list.length) { $('#brands').hidden = true; return; }
+  const one = list.map(b => {
+    const inCat = b.id && db.brandsById.get(b.id);
+    const href = inCat ? 'catalog.html?b=' + encodeURIComponent(b.id) : b.site && /^https?:/i.test(b.site) ? b.site : '';
+    const go = href ? `href="${esc(href)}"${inCat ? '' : ' target="_blank" rel="noopener"'}` : 'tabindex="-1"';
+    const dark = b.logoDark && safeUrl(b.logoDark, true);
+    return `<a ${go} aria-label="${esc(b.name)}"><img ${dark ? 'class="only-l" ' : ''}src="${esc(b.logo)}" alt="${esc(b.name)}" loading="lazy">${dark ? `<img class="only-d" src="${esc(b.logoDark)}" alt="" loading="lazy">` : ''}</a>`;
   }).join('');
   $('[data-brands]').innerHTML = one + one.replace(/<a /g, '<a aria-hidden="true" tabindex="-1" ');
+}
+
+/* promotions running today (media centre) */
+function promos() {
+  const list = livePosts('promo').slice(0, 3);
+  if (!list.length) return;
+  $('[data-promos]').hidden = false;
+  $('[data-promos-list]').innerHTML = list.map(postCard).join('');
 }
 
 function seen(db) {
@@ -315,6 +323,7 @@ boot({ page: 'home' }).then(db => {
   windowHTML(db);
   rail(db);
   spotlight(db);
+  promos();
   brands(db);
   seen(db);
   reveal();

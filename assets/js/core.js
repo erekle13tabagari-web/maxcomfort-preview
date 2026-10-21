@@ -1,6 +1,6 @@
 /* Shared by every page: helpers, the cart/favourites/compare store, header and footer,
    search, drawers, the callback window and the product card. */
-import { catalog, lead as sendLead, norm, account } from './api.js';
+import { catalog, content, draftOn, lead as sendLead, norm, account, phoneE164 } from './api.js';
 
 export const C = window.MC_CONFIG;
 export const $ = (s, el = document) => el.querySelector(s);
@@ -8,6 +8,66 @@ export const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 export const params = () => new URLSearchParams(location.search);
 export { norm };
+
+/* ---------- site content (admin panel) ----------
+   An element with data-c="key" shows the admin panel's text for that key, or its own text when there is
+   none; data-rich marks formatted text. Texts the scripts draw go through t(key, own text) and carry the
+   same data-c. TEXTS keeps every key's own text, so the admin panel can show it and go back to it.    */
+const TEXTS = new Map();   // key -> { def, rich }
+function snapTexts() {
+  $$('[data-c]').forEach(el => {
+    if (!TEXTS.has(el.dataset.c)) TEXTS.set(el.dataset.c, { def: el.hasAttribute('data-rich') ? el.innerHTML.trim() : el.textContent.trim(), rich: el.hasAttribute('data-rich') });
+  });
+}
+const textOf = key => { const v = ((C.cms || {}).texts || {})[key]; return v == null || v === '' ? null : v; };
+/** The admin panel's text for key, or def. */
+export function t(key, def) {
+  if (!TEXTS.has(key)) TEXTS.set(key, { def, rich: false });
+  return textOf(key) ?? def;
+}
+function applyTexts(only) {
+  $$(only ? `[data-c="${CSS.escape(only)}"]` : '[data-c]').forEach(el => {
+    const key = el.dataset.c, v = textOf(key);
+    if (v == null && !only) return;
+    const val = v ?? (TEXTS.get(key) || {}).def ?? '';
+    if (el.hasAttribute('data-rich')) el.innerHTML = rich(val); else el.textContent = val;
+  });
+}
+
+/** Formatted text from the admin panel, cleaned: paragraphs, headings, bold, lists, links, pictures. */
+const RICH = new Set(['P', 'BR', 'H2', 'H3', 'H4', 'STRONG', 'B', 'EM', 'I', 'U', 'UL', 'OL', 'LI', 'A', 'BLOCKQUOTE', 'IMG', 'FIGURE', 'FIGCAPTION']);
+export function safeUrl(u, img = false) {
+  const s = String(u || '').trim(), m = /^([a-z][a-z0-9+.-]*):/i.exec(s);
+  if (img && /^data:image\/(png|jpe?g|webp|gif);base64,/i.test(s)) return true;   // pictures saved in the preview's browser
+  return !!s && (!m || /^(https?|mailto|tel)$/i.test(m[1]));
+}
+export function rich(html) {
+  const doc = new DOMParser().parseFromString('<body>' + String(html || '') + '</body>', 'text/html');
+  const clean = node => [...node.childNodes].forEach(n => {
+    if (n.nodeType === 3) return;
+    if (n.nodeType !== 1 || /^(SCRIPT|STYLE|IFRAME|OBJECT|EMBED|TEMPLATE|SVG|MATH|FORM|INPUT|BUTTON|TEXTAREA|SELECT)$/i.test(n.tagName)) { n.remove(); return; }
+    clean(n);
+    if (!RICH.has(n.tagName)) { n.replaceWith(...n.childNodes); return; }
+    [...n.attributes].forEach(a => {
+      const keep = (n.tagName === 'A' && a.name === 'href' && safeUrl(a.value)) || (n.tagName === 'IMG' && (a.name === 'alt' || (a.name === 'src' && safeUrl(a.value, true))));
+      if (!keep) n.removeAttribute(a.name);
+    });
+    if (n.tagName === 'A' && /^https?:/i.test(n.getAttribute('href') || '') && !n.href.startsWith(location.origin)) { n.target = '_blank'; n.rel = 'noopener'; }
+    if (n.tagName === 'IMG') n.loading = 'lazy';
+  });
+  clean(doc.body);
+  return doc.body.innerHTML;
+}
+
+/** Contacts, showrooms, delivery and payment from the site content, over config.js. */
+function applyContent(cms) {
+  C.cms = cms && typeof cms === 'object' ? cms : {};
+  const k = C.cms.contacts || {};
+  ['company', 'phone', 'email', 'hours'].forEach(f => { if (k[f]) C[f] = k[f]; });
+  if (k.phone) C.phoneHref = 'tel:' + (phoneE164(k.phone) || k.phone.replace(/[^\d+]/g, ''));
+  if (k.social) C.social = { ...C.social, ...k.social };
+  ['showrooms', 'delivery', 'payment'].forEach(f => { if (Array.isArray(C.cms[f]) && C.cms[f].length) C[f] = C.cms[f]; });
+}
 
 /* ---------- Mtavruli ----------
    Titles are styled text-transform: uppercase, but Chrome and Edge do not make Mtavruli from it, and
@@ -91,12 +151,23 @@ const UI = {
   edit: '<path d="M4.5 19.5h4l10-10-4-4-10 10z"/><path d="m13 7 4 4"/>',
   shield: '<path d="M12 3.5 5 6v5.5c0 4.3 3 7.6 7 9 4-1.4 7-4.7 7-9V6z"/><path d="m9 12 2.2 2.2L15.5 10"/>',
   moon: '<path d="M19.5 14.6A7.6 7.6 0 0 1 9.4 4.5a7.6 7.6 0 1 0 10.1 10.1Z"/>',
-  ext: '<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>'
+  ext: '<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+  eye: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/>',
+  link: '<path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/>',
+  cal: '<rect x="4" y="5.5" width="16" height="14.5" rx="1"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/>'
 };
 export const ui = (n, cls = '') => `<svg class="ui ${cls}" viewBox="0 0 24 24" aria-hidden="true">${UI[n]}</svg>`;
-export const bi = (n, cls = 'ic') => `<svg class="${cls}" aria-hidden="true"><use href="assets/brand/icons.svg#${n}"/></svg>`;
+export const bi = (n, cls = 'ic') => `<svg class="${cls}" aria-hidden="true"><use href="assets/brand/icons.svg?v=83ad093a#${n}"/></svg>`;
 export const arrow = () => bi('ui-arrow', 'arr');
-const YT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.6 7.2a2.5 2.5 0 0 0-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4a2.5 2.5 0 0 0-1.8 1.8C2 8.8 2 12 2 12s0 3.2.4 4.8a2.5 2.5 0 0 0 1.8 1.8C5.8 19 12 19 12 19s6.2 0 7.8-.4a2.5 2.5 0 0 0 1.8-1.8c.4-1.6.4-4.8.4-4.8s0-3.2-.4-4.8ZM10 15V9l5.2 3L10 15Z"/></svg>';
+const SOCIAL = {   // footer links, in this order, for the networks the admin panel has an address for
+  facebook: ['Facebook', '<path d="M13.5 22v-8h2.8l.4-3.3h-3.2V8.6c0-.9.3-1.6 1.6-1.6H17V4.1c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.3v2.4H7.5V14h2.8v8h3.2Z"/>'],
+  instagram: ['Instagram', '<path fill-rule="evenodd" d="M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9a5.5 5.5 0 0 1-5.5 5.5h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 5.5 0 0 1 7.5 2Zm0 2A3.5 3.5 0 0 0 4 7.5v9A3.5 3.5 0 0 0 7.5 20h9a3.5 3.5 0 0 0 3.5-3.5v-9A3.5 3.5 0 0 0 16.5 4h-9ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm5.3-3.6a1.3 1.3 0 1 1 0 2.6 1.3 1.3 0 0 1 0-2.6Z"/>'],
+  youtube: ['YouTube', '<path d="M21.6 7.2a2.5 2.5 0 0 0-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4a2.5 2.5 0 0 0-1.8 1.8C2 8.8 2 12 2 12s0 3.2.4 4.8a2.5 2.5 0 0 0 1.8 1.8C5.8 19 12 19 12 19s6.2 0 7.8-.4a2.5 2.5 0 0 0 1.8-1.8c.4-1.6.4-4.8.4-4.8s0-3.2-.4-4.8ZM10 15V9l5.2 3L10 15Z"/>'],
+  tiktok: ['TikTok', '<path d="M16.6 3c.4 2.2 1.8 3.6 4 3.8v3.3a7.6 7.6 0 0 1-4-1.2v6.4A6.3 6.3 0 1 1 10.3 9v3.4a2.9 2.9 0 1 0 2.9 2.9V3h3.4Z"/>'],
+  linkedin: ['LinkedIn', '<path d="M5 3.5a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4ZM3.1 9.5h3.8V21H3.1V9.5Zm6.2 0h3.6v1.6h.1c.5-.9 1.7-1.9 3.6-1.9 3.8 0 4.5 2.5 4.5 5.8V21h-3.8v-5.2c0-1.2 0-2.8-1.7-2.8s-2 1.3-2 2.7V21H9.3V9.5Z"/>']
+};
+const socials = () => Object.entries(SOCIAL).filter(([k]) => safeUrl(C.social && C.social[k]) && /^https?:/i.test(C.social[k]))
+  .map(([k, [name, path]]) => `<a href="${esc(C.social[k])}" target="_blank" rel="noopener" aria-label="${name}"><svg viewBox="0 0 24 24" aria-hidden="true">${path}</svg></a>`).join('');
 
 /* ---------- store: cart, favourites, compare, recently seen (this browser) ---------- */
 const KEYS = { cart: 'mc.cart', fav: 'mc.fav', cmp: 'mc.cmp', seen: 'mc.seen' };
@@ -289,6 +360,7 @@ function header(db, page) {
   </div>
   <div class="strip__r">
     <a href="about.html#services">მიწოდება და მონტაჟი</a>
+    <a href="media.html">მედია ცენტრი</a>
     <a href="about.html">ჩვენ შესახებ</a>
     <button class="strip__cb" data-callback>შეუკვეთეთ ზარი</button>
   </div>
@@ -313,11 +385,11 @@ function footer(db) {
 <footer class="ftr on-blue">
   <div class="wrap ftr__top">
     <div class="ftr__brand"><img src="assets/brand/logo/mc-logo-white.svg" alt="Max Comfort" width="170" height="87">
-      <p>გათბობის, კონდიცირების, ვენტილაციისა და წყალმომარაგების სისტემები 2006 წლიდან. ინჟინრული კომფორტი. გარანტირებული სერვისი.</p>
-      <div class="ftr__soc" style="margin-top:22px"><a href="${C.social.youtube}" target="_blank" rel="noopener" aria-label="YouTube">${YT}</a></div></div>
+      <p data-c="footer.about">${esc(t('footer.about', 'გათბობის, კონდიცირების, ვენტილაციისა და წყალმომარაგების სისტემები 2006 წლიდან. ინჟინრული კომფორტი. გარანტირებული სერვისი.'))}</p>
+      <div class="ftr__soc" style="margin-top:22px">${socials()}</div></div>
     <div><h4>კატალოგი</h4><ul>${db.categories.filter(inMenu).map(c => `<li><a href="catalog.html?c=${c.id}">${esc(c.name)}</a></li>`).join('')}</ul></div>
-    <div><h4>კომპანია</h4><ul><li><a href="about.html">ჩვენ შესახებ</a></li><li><a href="about.html#services">მომსახურება</a></li><li><a href="about.html#history">ისტორია</a></li><li><a href="index.html#brands">ბრენდები</a></li><li><a href="about.html#contact">კონტაქტი</a></li></ul></div>
-    <div><h4>დახმარება</h4><ul><li><a href="about.html#delivery">მიწოდება და გადახდა</a></li><li><a href="about.html#services">საგარანტიო სერვისი</a></li><li><a href="compare.html">შედარება</a></li><li><a href="account.html">ჩემი ანგარიში</a></li><li><button data-open="fav">რჩეულები</button></li><li><button data-callback>შეუკვეთეთ ზარი</button></li></ul></div>
+    <div><h4>კომპანია</h4><ul><li><a href="about.html">ჩვენ შესახებ</a></li><li><a href="about.html#services">მომსახურება</a></li><li><a href="about.html#history">ისტორია</a></li><li><a href="media.html">მედია ცენტრი</a></li><li><a href="index.html#brands">ბრენდები</a></li><li><a href="about.html#contact">კონტაქტი</a></li></ul></div>
+    <div><h4>დახმარება</h4><ul><li><a href="about.html#delivery">მიწოდება და გადახდა</a></li><li><a href="about.html#services">საგარანტიო სერვისი</a></li><li><a href="media.html?t=faq">კითხვა-პასუხი</a></li><li><a href="compare.html">შედარება</a></li><li><a href="account.html">ჩემი ანგარიში</a></li><li><button data-open="fav">რჩეულები</button></li><li><button data-callback>შეუკვეთეთ ზარი</button></li></ul></div>
     <div><h4>კონტაქტი</h4><ul class="ftr__contact">
       <li>${ui('phone')}<span><b><a href="${C.phoneHref}">${esc(C.phone)}</a></b>${esc(C.hours)}</span></li>
       <li>${ui('mail')}<span><b><a href="mailto:${C.email}">${esc(C.email)}</a></b></span></li>
@@ -335,7 +407,7 @@ function overlays(db) {
 <aside class="drawer" id="fav" aria-label="რჩეულები"><div class="drawer__head"><h2>რჩეულები <span data-count-text="fav"></span></h2><button class="iconbtn" data-close aria-label="დახურვა">${ui('close')}</button></div><div class="drawer__body" data-fav-body></div></aside>
 <aside class="drawer drawer--left" id="menu" aria-label="მენიუ"><div class="drawer__head"><img class="only-l" src="assets/brand/logo/mc-logo-primary.svg" alt="Max Comfort" width="96" height="49"><img class="only-d" src="assets/brand/logo/mc-logo-white.svg" alt="Max Comfort" width="96" height="49"><span class="drawer__acts">${THEME_BTN()}<button class="iconbtn" data-close aria-label="დახურვა">${ui('close')}</button></span></div>
   <div class="drawer__body">${db.categories.filter(inMenu).map(c => `<details class="fgroup"><summary class="fgroup__t" style="list-style:none;cursor:pointer">${esc(c.name)}${ui('down')}</summary><div class="fgroup__b"><a class="fopt" href="catalog.html?c=${c.id}"><b>ყველა</b></a>${c.subs.map(s => `<a class="fopt" href="catalog.html?c=${c.id}&s=${s.id}"><span>${esc(s.name)}</span><small>${s.count}</small></a>`).join('')}</div></details>`).join('')}
-    <div class="fgroup"><div class="fgroup__b" style="margin-top:0"><a class="fopt fopt--acc" href="account.html">${ui('user')}<span data-acc-text>${account.hint() ? 'ჩემი ანგარიში' : 'შესვლა / რეგისტრაცია'}</span></a><a class="fopt" href="about.html">ჩვენ შესახებ</a><a class="fopt" href="about.html#services">მომსახურება</a><a class="fopt" href="about.html#contact">კონტაქტი</a><a class="fopt" href="compare.html">შედარება</a></div></div>
+    <div class="fgroup"><div class="fgroup__b" style="margin-top:0"><a class="fopt fopt--acc" href="account.html">${ui('user')}<span data-acc-text>${account.hint() ? 'ჩემი ანგარიში' : 'შესვლა / რეგისტრაცია'}</span></a><a class="fopt" href="about.html">ჩვენ შესახებ</a><a class="fopt" href="about.html#services">მომსახურება</a><a class="fopt" href="media.html">მედია ცენტრი</a><a class="fopt" href="about.html#contact">კონტაქტი</a><a class="fopt" href="compare.html">შედარება</a></div></div>
     <div style="padding:22px 0"><a class="btn btn--red btn--block" href="${C.phoneHref}">${ui('phone')}${esc(C.phone)}</a></div></div></aside>
 <div class="so" role="dialog" aria-modal="true" aria-label="ძიება"><div class="so__panel"><div class="wrap">
   <form class="so__bar" action="catalog.html" role="search">${ui('search')}<input class="so__input" name="q" type="search" placeholder="რას ეძებთ? მაგ.: კონდიციონერი, Beretta, 2,5 kW" autocomplete="off" aria-label="ძიება"><button type="button" class="iconbtn" data-close aria-label="დახურვა">${ui('close')}</button></form>
@@ -628,8 +700,9 @@ export function crumbs(list) {
   return `<nav class="crumbs" aria-label="ნავიგაცია"><a href="index.html">მთავარი</a>${list.map(([t, h]) => `${ui('right')}${h ? `<a href="${h}">${esc(t)}</a>` : `<span aria-current="page">${esc(t)}</span>`}`).join('')}</nav>`;
 }
 
-// titles to Mtavruli from the first paint on; the observer handles everything drawn later
-if (document.body) watchCaps();
+// the pages' own texts first (the admin panel goes back to them), then titles to Mtavruli from the first
+// paint on; the observer handles everything drawn later
+if (document.body) { snapTexts(); watchCaps(); }
 
 /* ---------- back to top and the chat (chat.js loads on first use) ---------- */
 function setupFab(db) {
@@ -649,9 +722,48 @@ function setupFab(db) {
   } catch (e) { /* storage off */ }
 }
 
-/** Boot a page: load the catalog, draw the header, footer and overlays, wire everything. */
+/* ---------- the admin panel's preview ----------
+   ?edit (in the admin panel's frame): a click on an editable text picks it in the panel, links stay put,
+   and the panel's typing shows at once. ?draft (a tab opened from the panel): the draft, with a note.  */
+const EDIT = params().has('edit') && window.parent !== window;
+function setupPreview() {
+  if (EDIT) {
+    document.documentElement.classList.add('is-editing');
+    const texts = () => [...TEXTS].map(([key, v]) => ({ key, ...v, value: textOf(key) }));
+    document.addEventListener('click', e => {
+      const el = e.target.closest('[data-c]');
+      if (el) { e.preventDefault(); e.stopPropagation(); parent.postMessage({ mc: 'pick', key: el.dataset.c }, location.origin); return; }
+      // no leaving the page and no windows; the carousel arrows, tabs and swatches still work
+      if (e.target.closest('a[href],[data-callback],[data-open],[data-chat],[data-search]')) { e.preventDefault(); e.stopPropagation(); }
+    }, true);
+    addEventListener('message', e => {
+      if (e.origin !== location.origin || !e.data || !e.data.mc) return;
+      if (e.data.mc === 'text') {
+        C.cms.texts = { ...(C.cms.texts || {}), [e.data.key]: e.data.value };
+        applyTexts(e.data.key);
+      } else if (e.data.mc === 'show') {
+        const el = $(`[data-c="${CSS.escape(e.data.key)}"]`);
+        $$('.is-picked').forEach(x => x.classList.remove('is-picked'));
+        if (el) { el.classList.add('is-picked'); el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+      } else if (e.data.mc === 'scroll') {   // a part of the page: the slides, the brands ...
+        const el = $(String(e.data.sel || ''));
+        if (el) el.scrollIntoView({ block: 'start' });
+      }
+    });
+    parent.postMessage({ mc: 'ready', page: document.body.dataset.page || '', texts: texts() }, location.origin);
+  } else if (draftOn()) {
+    document.body.insertAdjacentHTML('beforeend', `<div class="draftbar" role="status">${ui('eye')}<span>გადახედვა: ცვლილებები ჯერ არ არის შენახული</span><a class="btn btn--white btn--sm" href="?draft=0">დახურვა</a></div>`);
+  }
+}
+
+/** Boot a page: load the catalog and the site content, draw the header, footer and overlays, wire everything. */
 export async function boot(page = {}) {
-  const db = await catalog();
+  const [db, cms] = await Promise.all([catalog(), content()]);
+  applyContent(cms);
+  applyTexts();
+  // contact details written into the pages
+  $$('[data-k]').forEach(el => { const v = { phone: C.phone, hours: C.hours, email: C.email, rooms: C.showrooms.length }[el.dataset.k]; if (v != null) el.textContent = v; });
+  $$('[data-tel]').forEach(a => { a.href = C.phoneHref; });
   $('#mc-header').innerHTML = header(db, page);
   $('#mc-footer').innerHTML = footer(db);
   document.body.insertAdjacentHTML('beforeend', overlays(db));
@@ -668,5 +780,7 @@ export async function boot(page = {}) {
   addEventListener('mc:cmp', () => { renderCounts(); renderCmpBar(db); syncToggles(); });
   all();
   reveal();
+  // the page draws its own parts after boot; the preview reports its texts once they are drawn
+  setTimeout(setupPreview, 0);
   return db;
 }

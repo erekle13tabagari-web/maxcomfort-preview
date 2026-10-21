@@ -19,6 +19,30 @@ export function catalog() {
   return loading;
 }
 
+/* ---------- site content: what the admin panel edits (admin.html) ----------
+   contacts, showrooms, delivery and payment, texts, timeline, spotlight slides, brands, posts, Q&A.
+   static: data/content.json, or what the admin panel saved in this browser (preview).
+   bitrix: api/content.php, i.e. what the admin panel saved on the server.
+   A tab opened from the admin panel (?draft / ?edit) shows its unsaved draft until ?draft=0. */
+let cmsLoading = null;
+export function draftOn() {
+  const q = new URLSearchParams(location.search);
+  if (q.has('edit')) return true;   // the admin panel's frame: this page only (it shares the tab's session storage)
+  if (q.get('draft') === '0') SS.set('mc.draft', null);
+  else if (q.has('draft')) SS.set('mc.draft', 1);
+  return !!SS.get('mc.draft', null);
+}
+export function content() {
+  if (!cmsLoading) {
+    const draft = draftOn() ? LS.get('mc.content.draft', null) : null;
+    const saved = C.mode === 'bitrix' ? getJSON(C.api + 'content.php').catch(() => getJSON(C.content))
+      : Promise.resolve(LS.get('mc.content', null)).then(v => v || getJSON(C.content));
+    cmsLoading = (draft ? Promise.resolve(draft) : saved)
+      .catch(err => { console.warn('Site content unavailable, using the built-in texts', err); return {}; });
+  }
+  return cmsLoading;
+}
+
 /** Order from the checkout. Bitrix: a deal with its product rows and the contact (api/order.php). */
 export function order(data) {
   return send('order.php', data);
@@ -263,7 +287,9 @@ function utm() {
 }
 
 async function getJSON(url) {
-  const res = await fetch(url, { credentials: 'same-origin' });
+  // the data files (data/catalog.json, data/content.json) are asked again every time (a short 304 when unchanged),
+  // so an updated catalog or content shows at once; the PHP endpoints send their own cache headers
+  const res = await fetch(url, { credentials: 'same-origin', cache: /\.json(\?|$)/.test(url) ? 'no-cache' : 'default' });
   if (!res.ok) throw new Error(url + ': HTTP ' + res.status);
   return res.json();
 }

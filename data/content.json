@@ -1,0 +1,528 @@
+{
+ "v": 1,
+ "contacts": {
+  "company": "შპს „მაქსკომფორტი“",
+  "phone": "0322 152 152",
+  "email": "info@maxcomfort.ge",
+  "hours": "ორშ-პარ 10:00-18:00",
+  "social": {
+   "youtube": "https://www.youtube.com/channel/UCRv76wLBC73jiP7LX4C3l8Q",
+   "facebook": "",
+   "instagram": "",
+   "tiktok": "",
+   "linkedin": ""
+  }
+ },
+ "showrooms": [
+  {
+   "id": "tsereteli",
+   "name": "წერეთლის შოურუმი",
+   "address": "ა. წერეთლის გამზ. 114",
+   "phone": "0322 477 555 (321)",
+   "email": "beretta@maxcomfort.ge",
+   "hq": false,
+   "map": ""
+  },
+  {
+   "id": "agladze",
+   "name": "ელიავას შოურუმი #1",
+   "address": "რ. აგლაძის 7ა",
+   "phone": "0322 477 555 (313)",
+   "email": "shop@maxcomfort.ge",
+   "hq": true,
+   "map": ""
+  },
+  {
+   "id": "kosmonavtebi",
+   "name": "ელიავას შოურუმი #2",
+   "address": "კოსმონავტების ქ. 21",
+   "phone": "0322 477 555 (312)",
+   "email": "beretta1@maxcomfort.ge",
+   "hq": false,
+   "map": ""
+  }
+ ],
+ "delivery": [
+  {
+   "id": "pickup",
+   "name": "გატანა შოურუმიდან",
+   "note": "მზად იქნება დადასტურებიდან 1 სამუშაო დღეში",
+   "price": 0
+  },
+  {
+   "id": "tbilisi",
+   "name": "მიწოდება თბილისში",
+   "note": "1-2 სამუშაო დღე",
+   "price": null
+  },
+  {
+   "id": "regions",
+   "name": "მიწოდება რეგიონებში",
+   "note": "2-4 სამუშაო დღე",
+   "price": null
+  }
+ ],
+ "payment": [
+  {
+   "id": "cash",
+   "name": "ადგილზე გადახდა",
+   "note": "ნაღდი ან ბარათით, მიღებისას"
+  },
+  {
+   "id": "invoice",
+   "name": "საბანკო გადარიცხვა",
+   "note": "ინვოისს მოგიგზავნით ელ. ფოსტაზე"
+  },
+  {
+   "id": "installment",
+   "name": "განვადება",
+   "note": "პირობებს მენეჯერი შეგითანხმებთ"
+  }
+ ],
+ "texts": {},
+ "timeline": [
+  {
+   "year": "2006",
+   "text": "დაარსდა კომპანია „მაქს კომფორტი“. ბაზარზე ერთი მაღაზიით ვიყავით წარმოდგენილი."
+  },
+  {
+   "year": "2008",
+   "text": "ფართოვდება პროდუქციის სახეობები და შოურუმების ქსელი."
+  },
+  {
+   "year": "2010",
+   "text": "იქმნება სერვისის სამსახური."
+  },
+  {
+   "year": "2012",
+   "text": "მხოლოდ საერთაშორისო ბრენდების პროდუქცია. იქმნება კორპორატიული გაყიდვების განყოფილება."
+  },
+  {
+   "year": "2013",
+   "text": "რეალიზაცია სრულიად საქართველოში, სადილერო ქსელი, სერვისისა და სამონტაჟო სამსახური."
+  },
+  {
+   "year": "2014",
+   "text": "პარტნიორობა Riello-სთან, Beretta-სთან და Emtaş-თან."
+  },
+  {
+   "year": "2016",
+   "text": "რვა ბრენდის ექსკლუზიური წარმომადგენელი, მათ შორის Tiemme და Warmhaus."
+  },
+  {
+   "year": "2019",
+   "text": "საპროექტო და საინჟინრო განყოფილება, 3 148 მ² ცენტრალური საწყობი, Mitsubishi Electric."
+  },
+  {
+   "year": "2020",
+   "text": "17 საერთაშორისო ბრენდის ოფიციალური წარმომადგენელი."
+  },
+  {
+   "year": "დღეს",
+   "text": "ათეულობით საერთაშორისო ბრენდი და 6 500-ზე მეტი პროდუქტი."
+  }
+ ],
+ "spots": [
+  {
+   "id": "ln",
+   "on": true,
+   "style": "glow",
+   "eyebrow": "Mitsubishi Electric",
+   "title": "Kirigamine Style",
+   "lead": "კონდიციონერი, რომელიც ავეჯივით გამოიყურება: ღრმა ფერი გამჭვირვალე ზედა ფენის ქვეშ, ორმაგი ზონის კლიმატის კონტროლი, ჰაერის პლაზმური წმენდა და ჩაშენებული Wi-Fi.",
+   "button": "ნახეთ ფერები და ფასები",
+   "looks": [
+    {
+     "name": "ლალისფერი წითელი",
+     "hex": "#A3142A",
+     "img": "assets/img/hero/cool-ln-red.webp",
+     "product": 2159,
+     "url": ""
+    },
+    {
+     "name": "შავი",
+     "hex": "#1F1E22",
+     "img": "assets/img/hero/cool-ln-black.webp",
+     "product": 2160,
+     "url": ""
+    },
+    {
+     "name": "თეთრი",
+     "hex": "#F4F4F1",
+     "img": "assets/img/hero/cool-ln-white.webp",
+     "product": 2161,
+     "url": ""
+    }
+   ],
+   "facts": [
+    {
+     "b": "A+++",
+     "t": "გაგრილება"
+    },
+    {
+     "b": "A+++",
+     "t": "გათბობა"
+    },
+    {
+     "auto": "kw"
+    },
+    {
+     "auto": "price"
+    }
+   ],
+   "products": []
+  },
+  {
+   "id": "s360",
+   "on": true,
+   "style": "round",
+   "eyebrow": "Samsung",
+   "title": "360 Cassette",
+   "lead": "მრგვალი კასეტური კონდიციონერი, რომელიც ჰაერს 360°-ზე, თანაბრად ანაწილებს: ოთახის ყველა კუთხე გრილდება, პირდაპირი ცივი ნაკადის გარეშე. თეთრი ან შავი პანელი ნებისმიერ ჭერს ერგება.",
+   "button": "ნახეთ სიმძლავრეები",
+   "looks": [
+    {
+     "name": "თეთრი პანელი",
+     "hex": "#F4F4F1",
+     "img": "assets/img/hero/s360-white.webp",
+     "product": 910153,
+     "url": ""
+    },
+    {
+     "name": "შავი პანელი",
+     "hex": "#1F1E22",
+     "img": "assets/img/hero/s360-black.webp",
+     "product": 910153,
+     "url": ""
+    }
+   ],
+   "facts": [
+    {
+     "b": "360°",
+     "t": "ჰაერის ნაკადი"
+    },
+    {
+     "auto": "kw"
+    },
+    {
+     "b": "2",
+     "t": "პანელის ფერი"
+    }
+   ],
+   "products": [
+    910153,
+    910154,
+    910155,
+    910146
+   ]
+  }
+ ],
+ "brands": [
+  {
+   "id": "MITSUBISHI",
+   "name": "Mitsubishi Electric",
+   "logo": "assets/brand/partners/mitsubishi-electric.svg",
+   "logoDark": "assets/brand/partners/mitsubishi-electric-dark.svg",
+   "strip": true,
+   "site": "",
+   "text": ""
+  },
+  {
+   "id": "BERETTA",
+   "name": "Beretta",
+   "logo": "assets/brand/partners/beretta.svg",
+   "logoDark": "assets/brand/partners/beretta-dark.svg",
+   "strip": true,
+   "site": "",
+   "text": ""
+  },
+  {
+   "id": "RIELLO",
+   "name": "Riello",
+   "logo": "assets/brand/partners/riello.svg",
+   "logoDark": "assets/brand/partners/riello-dark.svg",
+   "strip": true,
+   "site": "",
+   "text": ""
+  },
+  {
+   "id": "WARMHAUS",
+   "name": "Warmhaus",
+   "logo": "assets/brand/partners/warmhaus.svg",
+   "logoDark": "assets/brand/partners/warmhaus-dark.svg",
+   "strip": true,
+   "site": "",
+   "text": ""
+  },
+  {
+   "id": "VORTICE",
+   "name": "Vortice",
+   "logo": "assets/brand/partners/vortice.svg",
+   "logoDark": "assets/brand/partners/vortice-dark.svg",
+   "strip": true,
+   "site": "",
+   "text": ""
+  },
+  {
+   "id": "TIEMME",
+   "name": "Tiemme",
+   "logo": "assets/brand/partners/tiemme.svg",
+   "logoDark": "assets/brand/partners/tiemme-dark.svg",
+   "strip": true,
+   "site": "",
+   "text": ""
+  },
+  {
+   "id": "SAMSUNG",
+   "name": "Samsung",
+   "logo": "assets/brand/partners/samsung.svg",
+   "logoDark": "assets/brand/partners/samsung-dark.svg",
+   "strip": true,
+   "site": "",
+   "text": ""
+  },
+  {
+   "id": "EMTAS",
+   "name": "Emtas",
+   "logo": "assets/brand/partners/emtas.svg",
+   "logoDark": "assets/brand/partners/emtas-dark.svg",
+   "strip": true,
+   "site": "",
+   "text": ""
+  },
+  {
+   "id": "OMEGA",
+   "name": "Omega",
+   "logo": "assets/brand/partners/omega.svg",
+   "logoDark": "assets/brand/partners/omega-dark.svg",
+   "strip": true,
+   "site": "",
+   "text": ""
+  },
+  {
+   "id": "SIRA",
+   "name": "SIRA",
+   "logo": "assets/brand/partners/sira.svg",
+   "logoDark": "assets/brand/partners/sira-dark.svg",
+   "strip": true,
+   "site": "",
+   "text": ""
+  },
+  {
+   "id": "MACO",
+   "name": "Maco",
+   "logo": "assets/brand/partners/maco.svg",
+   "logoDark": "assets/brand/partners/maco-dark.svg",
+   "strip": true,
+   "site": "",
+   "text": ""
+  },
+  {
+   "id": "IZOCAM",
+   "name": "Izocam",
+   "logo": "assets/brand/partners/izocam.svg",
+   "logoDark": "assets/brand/partners/izocam-dark.svg",
+   "strip": true,
+   "site": "",
+   "text": ""
+  },
+  {
+   "id": "",
+   "name": "Hitte",
+   "logo": "assets/brand/partners/hitte.svg",
+   "logoDark": "assets/brand/partners/hitte-dark.svg",
+   "strip": true,
+   "site": "",
+   "text": ""
+  },
+  {
+   "id": "",
+   "name": "Soprema",
+   "logo": "assets/brand/partners/soprema.svg",
+   "logoDark": "assets/brand/partners/soprema-dark.svg",
+   "strip": true,
+   "site": "",
+   "text": ""
+  },
+  {
+   "id": "",
+   "name": "Rovall",
+   "logo": "assets/brand/partners/rovall.svg",
+   "logoDark": "assets/brand/partners/rovall-dark.svg",
+   "strip": true,
+   "site": "",
+   "text": ""
+  },
+  {
+   "id": "PIAZZA",
+   "name": "Piazza",
+   "logo": "assets/brand/partners/piazza.svg",
+   "logoDark": "assets/brand/partners/piazza-dark.svg",
+   "strip": true,
+   "site": "",
+   "text": ""
+  },
+  {
+   "id": "",
+   "name": "Untes",
+   "logo": "assets/brand/partners/untes.svg",
+   "logoDark": "assets/brand/partners/untes-dark.svg",
+   "strip": true,
+   "site": "",
+   "text": ""
+  },
+  {
+   "id": "",
+   "name": "Teknix",
+   "logo": "assets/brand/partners/teknix.svg",
+   "logoDark": "assets/brand/partners/teknix-dark.svg",
+   "strip": true,
+   "site": "",
+   "text": ""
+  },
+  {
+   "id": "",
+   "name": "Sakra",
+   "logo": "assets/brand/partners/sakra.svg",
+   "logoDark": "assets/brand/partners/sakra-dark.svg",
+   "strip": true,
+   "site": "",
+   "text": ""
+  },
+  {
+   "id": "",
+   "name": "FIR",
+   "logo": "assets/brand/partners/fir.svg",
+   "logoDark": "assets/brand/partners/fir-dark.svg",
+   "strip": true,
+   "site": "",
+   "text": ""
+  },
+  {
+   "id": "",
+   "name": "Facot",
+   "logo": "assets/brand/partners/facot.svg",
+   "logoDark": "assets/brand/partners/facot-dark.svg",
+   "strip": true,
+   "site": "",
+   "text": ""
+  },
+  {
+   "id": "HOFFMAN PLUS",
+   "name": "Hoffman Plus",
+   "logo": "assets/brand/partners/hoffman-plus.svg",
+   "logoDark": "assets/brand/partners/hoffman-plus-dark.svg",
+   "strip": true,
+   "site": "",
+   "text": ""
+  },
+  {
+   "id": "",
+   "name": "SK Technik",
+   "logo": "assets/brand/partners/sk-technik.svg",
+   "logoDark": "assets/brand/partners/sk-technik-dark.svg",
+   "strip": true,
+   "site": "",
+   "text": ""
+  }
+ ],
+ "posts": [],
+ "faq": [
+  {
+   "id": "q1",
+   "q": "არის თუ არა თერმოსტატი უსაფრთხო?",
+   "a": "რათქმაუნდა არის თუ კვალიფიცირებული ხელოსნისგან იქნება მონტაჟი შესრულებული, ჩვენი ყველა კონვექტორი დახურული 2 წვის კამერით არის.",
+   "on": true
+  },
+  {
+   "id": "q2",
+   "q": "რა არის თერმოსტატი?",
+   "a": "კონვექტორში ჩამონტაჟებული მოწყობილობა რომელიც ტემპერატურის ცვალებადობის დროს მართავს კონვექტორს.",
+   "on": true
+  },
+  {
+   "id": "q3",
+   "q": "რატომ უნდა გავიდეს გამწოვი მილი ღია სივრცეში და რატომ არ შეიძლება გადიოდეს გამწოვი მილი ნამწვის გამტარ ჭრილში?",
+   "a": "გაზზე მომუშავე მოწყობილობების გამწოვი მილი აუცილებლად უნდა გადიოდეს ღია სივრცეში. ხდება ნამწვავი აირების გატყორცნა და ავტომატურად უნდა ხდებოდეს ღია სივრციდან ჟანგბადის აღება.",
+   "on": true
+  },
+  {
+   "id": "q4",
+   "q": "რა პროდუქციას წარმოადგენს METSAN -ის ბრენდი?",
+   "a": "სუპერ წებო, ქიმიური ანკერი და მილის ჰერმეტიზატორი.",
+   "on": true
+  },
+  {
+   "id": "q5",
+   "q": "რა ბრენდების ქვაბები გაქვთ?",
+   "a": "ქვაბების 3 ბრენდი გვაქვს: იტალიური ბრენდი BERETTA, BALTUR და თურქული ბრენდი WARMHAUS.",
+   "on": true
+  },
+  {
+   "id": "q6",
+   "q": "რატომ არის საჭირო დამიწება?",
+   "a": "დენის წყაროში, სადაც არის ქვაბი შეერთებული, აუცილებელია, რომ იყოს დამიწება, რადგან ქვაბმა შეძლოს გამართულად მუშაობა და დენის ცვალებადობის გამო არ გადაეწვას ქვაბს დენზე მომუშავე ნაწილები, მაგ: საცირკულაციო ტუმბო და პლატა.",
+   "on": true
+  },
+  {
+   "id": "q7",
+   "q": "როგორ უნდა მოვიქცეთ, რომ ქვაბი არ გაიყინოს?",
+   "a": "თუ ქვაბი ღია სივრცეშია დამონტაჟებული უნდა იყოს შეფუთული ხარისხიანად და მარტვივად(ქვაბთან მისვლა და მუშაობა უნდა იყოს შესაძლებელი). შესაფუთ კარადაში უნდა ფიქსირდებოდეს დაახლოებით +5c ტემპერატურა. ასევე აუცილებელია ქვაბთან არსებული მილგაყვანილობის შეფუთვა.",
+   "on": true
+  },
+  {
+   "id": "q8",
+   "q": "რა შემთხვევაში უნდა დაიცალოს სისტემა?",
+   "a": "სისტემა იცლება იმ შემთხვევაში, თუ ზამთარში გარკვეული დროით გვიწევს გასათბობი ფართის დატოვება. სისტემა რომ არ გაიყინოს საჭიროა მისი დაცლა. უმჯობესია სეზონის გასვლის შემდგომ გამოირეცხოს გათბობის სისტემა.",
+   "on": true
+  },
+  {
+   "id": "q9",
+   "q": "რამდენად მიზანშეწონილია გათბობის ხშირი გათიშვა? რატომ არ უნდა გავთიშოთ?(ქვაბი,გაზზე მომუშავე ოთახის გამათბობელი)",
+   "a": "ნებისმიერ იზოლირებულ ფართში, მითითებული ტემპერატურის დადგომა შენარჩუნებას სჭირდება 24-48 სთ-მდე. თუ გვსურს, რომ შევინარჩუნოთ სითბო არ უნდა გავთიშოთ გამათბობელი. გათიშული გამათბობელი დაკარგავს სითბოს და ჩართვის შემდომ მუშაობს დიდი დატვირთვით, ეს ზრდის ხარჯს.",
+   "on": true
+  },
+  {
+   "id": "q10",
+   "q": "რას ნიშნავს ჩქაროსნული ბოილერი?",
+   "a": "ჩქაროსნული ბოილერის დახამრებით ხდება ცხელი წყლის სწრაფად მიღება უფრო მოკლე დროში.",
+   "on": true
+  },
+  {
+   "id": "q11",
+   "q": "რა განსხვავებაა CITY და CIAO მოდელების შორის?",
+   "a": "ქვაბის მოდელი City არი ჩქაროსნული ბოილერით და ქვაბის მოდელი Ciao არის ბითერმული ბოილერით.",
+   "on": true
+  },
+  {
+   "id": "q12",
+   "q": "დაახლოებით რა დრო და პროცედურებია საჭირო ცენტრალური გათბობის მონტაჟისთვის?",
+   "a": "გამოხატეთ თქვენი სურვილი «მაქს კომფორტის» ცხელ ხაზზე: 2 477 555, ჩვენ თქვენთვის მოსახერხებელ დროს გამოგიგზავნით საპროექტო ჯგუფს, რომელიც თქვენი ბინის აზომვისა და თბოდანაკარგის გამოთვლის შემდეგ დაითვლის თუ რა დაგიჯდებათ ცენტრალური გათბობის დაყენება. ამის შემდეგ დავიწყებთ მონტაჟს, რომელსაც დაახლოებით 2-5 დღე სჭირდება.",
+   "on": true
+  },
+  {
+   "id": "q13",
+   "q": "რა ფირმის და ფასის რადიატორები გაქვთ?",
+   "a": "გვაქვს ალუმინის სექციური და ფოლადის პანელური რადიატორები. Ragall-ის ბრენდის ალუმინის სექციური რადიატორები არის იტალიური და ფასი დამოკიდებულია თუ რომელ მოდელს და სიმაღლეს შეარჩევთ. Rovall-ის ბრენდის ალუმინის სექციური რადიატორები არის იტალიური და ფასი დამოკიდებულია თუ რომელ მოდელს და სიმაღლეს შეარჩევთ. Emtas-ის ბრენდის ფოლადის პანელური რადიატორები არის თურქული და ფასი დამოკიდებულია ზომაზე.",
+   "on": true
+  },
+  {
+   "id": "q14",
+   "q": "რამდენი ჯდება მონტაჟი?",
+   "a": "ცენტრალური გათბობის ქვაბის გაშვება,მონტაჟი - 100 ლარი. თითო წერტილი (რადიატორები და ა.შ. ) - 50 ლარი კონდიციონერი 9000 იანის და 12000იანი - 82.40 ლარი (სტანდარტული) + 25 ლარი გრძივ მეტრ სპილენძის მილზე კონდიციონერი 18000 იანის - 84 ლარი + 25 ლარი გრძივ მეტრ სპილენძის მილზე კონდიციონერი 24000 - 88 ლარი + 25 ლარი გრძივ მეტრ სპილენძის მილზე",
+   "on": true
+  },
+  {
+   "id": "q15",
+   "q": "გაქვთ თუ არა განვადება და რომელ ბანკებში ?",
+   "a": "დიახ, გვაქვს. გთავაზობთ განვადებას თი-ბი-სი ბანკში(0% განვადება), საქართველოს ბანკსა( 7-8% განვადება) და ლიბერთი ბანკში( 6 თვიანი 0% განვადება).",
+   "on": true
+  },
+  {
+   "id": "q16",
+   "q": "აგარაკისთვის კედლის ქვაბი ჯობია თუ დასადგამი?",
+   "a": "კედლის და დასადგამ ქვაბებს შორის არჩევანის გაკეთებისას, ძირითადი ყურადღება ენიჭება ისეთ ფაქტორებს, როგორიცაა კომპაქტურობა, სიმძლავრე, მასა, ეკონომომიურობა, ფასი. დასადგამი ქვაბის გამოყენება რეკომენდირებულია დიდ საცხოვრებელ ფართში, დიდი ზომის კოტეჯებში, აგრეთვე დიდი ფართის საოფისე და სამრეწველო დანიშნულების შენობებში. კედლის ქვაბის გამოყენება რეკომენდირებულია ქალაქური ტიპის, მცირე, საშუალო და დიდი საცხოვრებელი ფართების, ოფისების, სავაჭრო ობიექტებისა და სხვა შენობა ნაგებობებისათვის.",
+   "on": true
+  }
+ ]
+}

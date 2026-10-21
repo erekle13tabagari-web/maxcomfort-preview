@@ -8,7 +8,11 @@ window.MC_CONFIG = {
   mode: 'static',
   api: 'api/',
   catalog: 'data/catalog.json',
+  content: 'data/content.json',
 
+  /* Contacts, showrooms, delivery and payment are edited in the admin panel (admin.html), which saves
+     them in the site content (data/content.json, on the server api/content.php). The values below are
+     only used when that file cannot be read.                                                          */
   company: 'შპს „მაქსკომფორტი“',
   phone: '0322 152 152',
   phoneHref: 'tel:+995322152152',

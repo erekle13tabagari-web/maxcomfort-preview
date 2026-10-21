@@ -99,7 +99,9 @@ function empty() {
 }
 
 function done(res, data) {
-  const lines = data.items.map(i => `<li>${esc(i.name)} × ${i.qty}</li>`).join('');
+  // Bitrix had fewer pieces than ordered: the order stands, the manager confirms the date
+  const short = new Map((res.short || []).map(s => [s.id, s.left]));
+  const lines = data.items.map(i => `<li>${esc(i.name)} × ${i.qty}${short.has(i.id) ? ` <span class="tag">${short.get(i.id) > 0 ? 'მარაგშია ' + short.get(i.id) : 'შეკვეთით'}</span>` : ''}</li>`).join('');
   window.scrollTo({ top: 0 });
   $('[data-title]').hidden = true;
   $('[data-co]').outerHTML = `<div class="done">
@@ -108,6 +110,7 @@ function done(res, data) {
     <p>მენეჯერი დაგიკავშირდებათ ნომერზე <b>${esc(data.customer.phone)}</b> შეკვეთის დასადასტურებლად (${esc(C.hours)}).</p>
     <div class="done__no"><small>შეკვეთის ნომერი</small><b>${esc(res.id)}</b></div>
     <ul class="bullets" style="text-align:left;display:inline-block;margin-bottom:28px;color:var(--muted)">${lines}</ul>
+    ${short.size ? '<p style="font-size:15px;margin:-12px 0 28px">მონიშნული პროდუქტი მარაგში საკმარისი რაოდენობით არ არის: მიწოდების ვადას მენეჯერი დაგიზუსტებთ.</p>' : ''}
     <div><a class="btn btn--ghost" href="index.html">მთავარი</a> <a class="btn" href="catalog.html">კატალოგი ${arrow()}</a></div>
     ${res.preview ? '<p class="muted" style="font-size:13px;margin-top:28px">სატესტო რეჟიმი: შეკვეთა Bitrix-ში არ გაიგზავნა.</p>' : ''}
   </div>`;
