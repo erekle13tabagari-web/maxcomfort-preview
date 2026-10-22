@@ -861,6 +861,7 @@ mark{background:var(--red-20);color:inherit;border-radius:2px;padding:0 1px}
 .cmp__rm{font-size:12.5px;color:var(--steel);text-decoration:underline;margin-top:10px;text-underline-offset:3px}
 .cmpbar{position:fixed;z-index:55;left:50%;bottom:20px;transform:translate(-50%,140%);display:flex;align-items:center;gap:16px;padding:10px 10px 10px 18px;background:var(--night);color:#fff;border-radius:var(--r);box-shadow:var(--shadow-lg);transition:transform .35s var(--ease);font-size:14px}
 .cmpbar.is-on{transform:translate(-50%,0)}
+body:has(.buybar.is-on) .cmpbar.is-on{bottom:96px}   /* above the product page's buy bar (hidden, it stays below the screen) */
 .cmpbar__imgs{display:flex;gap:6px}
 .cmpbar__imgs span{width:40px;height:40px;border-radius:3px;background:var(--stage);display:grid;place-items:center}
 .cmpbar__imgs img{max-height:34px;mix-blend-mode:multiply}
@@ -1193,6 +1194,7 @@ body:has(.buybar.is-on){--fab-lift:82px}
   .fab{right:14px;bottom:calc(14px + var(--fab-lift,0px));gap:8px}
   .fab__chat{width:52px;height:52px}
   body:has(.cmpbar.is-on){--fab-lift:74px}
+  body:has(.buybar.is-on):has(.cmpbar.is-on){--fab-lift:156px}
   .chat{inset:0;width:auto;height:auto;border-radius:0;box-shadow:none}
   .chat-open .fab{display:none}
   html.chat-open{overflow:hidden}
@@ -1228,6 +1230,7 @@ body:has(.buybar.is-on){--fab-lift:82px}
   .pane{min-height:260px}
   .pane__top{max-width:100%}
   .pane__img{width:var(--wm,52%);opacity:.95}
+  .pane--water{--wm:28%}   /* the tall cylinder: at the others' width it would reach up into the title and text */
   .pane__links{max-width:60%}
   .steps{grid-template-columns:minmax(0,1fr)}
   .step,.step + .step{padding-left:0;border-left:0}
@@ -1243,8 +1246,22 @@ body:has(.buybar.is-on){--fab-lift:82px}
   .modal__box{padding:30px 20px 22px}
   .toolbar .select{min-width:0}
   .density{display:none}
-  .buy .btn{font-size:12px;padding:0 14px}
+  /* buy row: favourite and compare keep their size; with a quantity, the button gets a row of its own */
+  .buy .iconbtn{flex:none}
+  .buy:has(.qty){flex-wrap:wrap}
+  .buy:has(.qty) .btn{order:1;flex-basis:100%}
+  .buy:has(.qty) .btn + .iconbtn{margin-left:auto}
+  .buy:not(:has(.qty)) .btn{font-size:12px;padding:0 14px}
+  .consult{flex-wrap:wrap}
+  .consult p{flex-basis:calc(100% - 56px)}   /* the text beside the icon, the button under it */
+  .consult .btn{margin-left:56px}
+  .buybar .wrap{gap:12px}
+  .buybar .btn{padding:0 16px}   /* room for the name and the price */
   .hide-sm{display:none}
+}
+@media (max-width:360px){
+  .pane__img{width:var(--wm,42%)}   /* the smallest phones: the photos stay clear of the "N პროდუქტი" line */
+  .buybar__img{display:none}
 }
 
 

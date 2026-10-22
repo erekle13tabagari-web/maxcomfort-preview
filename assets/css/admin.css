@@ -213,6 +213,34 @@ dl.asum dd{margin:0;color:var(--text)}
 .alogin__err{color:var(--red);font-size:14px;font-weight:600}
 .alogin .link{align-self:center;font-size:12.5px}
 
+/* Bitrix check */
+.aform code{font-family:ui-monospace,Consolas,monospace;font-size:.9em;padding:1px 6px;border-radius:4px;background:var(--surface-2);color:var(--ink)}
+.apill--bad{background:var(--red-10);color:var(--red)}
+.abx__state{flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px 14px}
+.abx__state p{flex:1 1 300px;font-size:14.5px;color:var(--text)}
+.abx__state small{flex-basis:100%}
+.abx__msg{font-family:ui-monospace,Consolas,monospace;font-size:12.5px;color:var(--steel);word-break:break-word}
+.abx__warn{box-shadow:var(--shadow),inset 4px 0 0 var(--red)}
+.abx__warn ul{display:flex;flex-direction:column;gap:6px;padding-left:18px;list-style:disc;font-size:14px}
+.abx__fine{font-size:14px;font-weight:600;color:#16803c}
+.abx__keys{font-size:13px;margin-top:-8px}
+.abx__err{font-size:14px;color:var(--red)}
+.abx__find{max-width:420px}
+.abx__list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r)}
+.abx__list--tall{max-height:420px;overflow:auto}
+.abx__list--in{margin:2px 12px 12px 40px}
+.abx__r{display:flex;align-items:center;gap:12px;padding:8px 12px;font-size:14px}
+.abx__list > .abx__r + .abx__r,.abx__list > details + details{border-top:1px solid var(--line)}
+.abx__r > span:first-of-type{flex:1;min-width:0}
+.abx__r b{font-weight:600;color:var(--heading)}
+.abx__r small{display:block;font-size:12.5px;color:var(--steel)}
+.abx__r.is-cur{background:var(--blue-10)}
+.abx__id{flex:none;min-width:64px;height:30px;padding:0 10px;border-radius:6px;background:var(--surface-2);font-family:ui-monospace,Consolas,monospace;font-size:13px;color:var(--ink);text-align:left}
+.abx__id:hover{background:var(--accent);color:#fff}
+.abx__pipe summary{list-style:none;cursor:pointer}
+.abx__pipe summary::-webkit-details-marker{display:none}
+.abx__pipe summary:hover .abx__r{background:var(--surface-2)}
+
 @media (max-width:1180px){
   .asplit{grid-template-columns:minmax(0,1fr)}
   .asplit__r{display:none}
@@ -243,4 +271,6 @@ dl.asum dd{margin:0;color:var(--text)}
   .arow{flex-direction:column;align-items:stretch}
   .adm__acts .btn span{display:none}
   .adm__acts .btn{padding:0 14px}
+  .abx__r{flex-wrap:wrap}
+  .abx__list--in{margin-left:12px}
 }

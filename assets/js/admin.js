@@ -54,6 +54,7 @@ const remote = {
   users: async () => (await remote.call('users')).users,
   userSave: u => remote.call('user-save', u),
   userDelete: login => remote.call('user-delete', { login }),
+  bitrix: async () => (await remote.call('bitrix')).bitrix,
   async upload(blob, name) {
     let res, j = null;
     try {
@@ -96,6 +97,7 @@ const local = {
   async users() { return [{ ...S.user, on: true, made: '', seen: '' }]; },
   async userSave() { throw new Fail(PREVIEW_NOTE, 'preview'); },
   async userDelete() { throw new Fail(PREVIEW_NOTE, 'preview'); },
+  async bitrix() { throw new Fail(PREVIEW_NOTE, 'preview'); },
   async upload(blob, name) {
     const url = await new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = no; r.readAsDataURL(blob); });
     const f = { url, name, size: blob.size, at: new Date().toISOString(), type: (blob.type.split('/')[1] || '').replace('jpeg', 'jpg') };
@@ -124,7 +126,8 @@ const VIEWS = [
   { id: 'faq', t: 'კითხვა-პასუხი', ic: 'info', s: ['faq'] },
   { id: 'files', t: 'ფაილები', ic: 'download', s: [] },
   { id: 'history', t: 'ისტორია', ic: 'clock', s: [] },
-  { id: 'users', t: 'მომხმარებლები', ic: 'user', s: [], owner: true }
+  { id: 'users', t: 'მომხმარებლები', ic: 'user', s: [], owner: true },
+  { id: 'bitrix', t: 'Bitrix', ic: 'link', s: [], owner: true }
 ];
 const view = () => VIEWS.find(v => v.id === S.view) || VIEWS[0];
 const EMPTY = { contacts: {}, texts: {} };
@@ -681,6 +684,95 @@ A.users = async body => {
   });
 };
 
+/* Bitrix: does this server reach the portal with the webhook of api/config.php, and the numbers config.php
+   asks for (pipelines and stages, users, sources, warehouses, catalogs, price types). Owners only. */
+R.bitrix = () => `<div class="aform">
+  <div class="ainfo">${ui('link')}<div><b>Bitrix-თან კავშირი</b><p>აქ ჩანს, უკავშირდება თუ არა ეს სერვერი პორტალს <code>api/config.php</code>-ის webhook-ით, და ნომრები, რომლებიც config.php-ში იწერება. ნომერზე დაჭერა მას აკოპირებს.</p></div></div>
+  ${LIVE ? `<div><button class="btn btn--sm" data-bx-run>${ui('check')}<span>შემოწმება</span></button></div><div class="aform" data-bx><p class="muted">Bitrix-ს ვეკითხები…</p></div>`
+    : `<p class="muted">სატესტო რეჟიმში ეს არ მოწმდება: კავშირი სერვერზე ჩანს, როცა <code>assets/js/config.js</code>-ში <code>mode: 'bitrix'</code> დგას.</p>`}
+</div>`;
+A.bitrix = body => {
+  if (!LIVE) return;
+  const box = $('[data-bx]', body), run = $('[data-bx-run]', body);
+  const check = async () => {
+    run.disabled = true;
+    box.innerHTML = '<p class="muted">Bitrix-ს ვეკითხები…</p>';
+    try { box.innerHTML = bxView(await srv.bitrix()); } catch (e) { box.innerHTML = ''; failed(e); }
+    run.disabled = false;
+    $('span', run).textContent = 'ხელახლა შემოწმება';
+  };
+  run.addEventListener('click', check);
+  box.addEventListener('input', e => {   // the users' filter
+    if (!e.target.matches('[data-bx-find]')) return;
+    const q = norm(e.target.value);
+    $$('[data-bx-users] .abx__r', box).forEach(r => { r.hidden = !!q && !norm(r.textContent).includes(q); });
+  });
+  check();
+};
+const BX_STATE = {
+  empty: ['არ არის დაყენებული', 'api/config.php-ში webhook ცარიელია. პორტალზე: Developer resources → Other → Inbound webhook, უფლებები crm, user და catalog; მისამართი ჩასვით config.php-ის webhook-ში.'],
+  net: ['კავშირი ვერ დამყარდა', 'სერვერი პორტალს ვერ უკავშირდება. შეამოწმეთ მისამართი config.php-ში და რომ პორტალი ამ სერვერიდან ხელმისაწვდომია.'],
+  auth: ['webhook არ მიიღო', 'პორტალი პასუხობს, მაგრამ webhook-ს არ იღებს: ის წაშლილია ან არასწორად არის ჩასმული (ბოლო „/“-ის ჩათვლით).'],
+  other: ['შეცდომა', 'პორტალმა შეცდომა დააბრუნა.']
+};
+const BX_SCOPE = { crm: 'crm', user: 'user', catalog: 'catalog' };
+function bxView(b) {
+  const k = b.config;
+  const L = name => (b.lists || {})[name] || {};
+  const rows = name => L(name).rows || null;
+  const id = v => `<button type="button" class="abx__id" data-act="copy-id" data-v="${esc(v)}" title="კოპირება">${esc(v)}</button>`;
+  const here = on => (on ? '<span class="apill apill--on">config.php</span>' : '');
+  const row = (v, name, small, cur, extra = '') => `<div class="abx__r ${cur ? 'is-cur' : ''}">${id(v)}<span><b>${esc(name || '—')}</b>${small ? `<small>${esc(small)}</small>` : ''}</span>${extra}${here(cur)}</div>`;
+  const err = name => {
+    const l = L(name);
+    if (!l.error) return '';
+    return /insufficient_scope|access_denied|access denied/i.test(l.error)
+      ? `<p class="abx__err">webhook-ს „${BX_SCOPE[l.scope] || l.scope}“ უფლება არ აქვს: პორტალზე webhook-ს დაუმატეთ და ხელახლა შეამოწმეთ.</p>`
+      : `<p class="abx__err">ვერ წავიკითხე: ${esc(l.error)}</p>`;
+  };
+  const panel = (title, keys, inner) => `<section class="apanel"><h2 class="ah2">${title}</h2>${keys ? `<p class="muted abx__keys">config.php: ${keys.map(x => `<code>${x}</code>`).join(', ')}</p>` : ''}${inner}</section>`;
+
+  if (!b.ok) {
+    const [t, p] = BX_STATE[b.kind] || BX_STATE.other;
+    return `<section class="apanel abx__state"><span class="apill apill--bad">${t}</span><p>${p}</p>${b.host ? `<small class="muted">${esc(b.host)}</small>` : ''}${b.error ? `<small class="abx__msg">${esc(b.error)}</small>` : ''}</section>`;
+  }
+
+  // what config.php says that the portal does not have
+  const warn = [];
+  const pipes = rows('pipelines'), users = rows('users'), srcs = rows('sources'), stores = rows('stores'), cats = rows('catalogs'), prices = rows('prices');
+  if (pipes) {
+    const p = pipes.find(x => x.id === k.deal_category_id);
+    if (!p) warn.push(`deal_category_id ${k.deal_category_id}: ასეთი ვორონკა პორტალზე არ არის`);
+    else if (!p.stages.some(s => s.id === k.deal_stage_id)) warn.push(`deal_stage_id '${k.deal_stage_id}': „${p.name}“ ვორონკაში ასეთი ეტაპი არ არის`);
+    k.deal_categories.filter(c => !pipes.some(x => x.id === c)).forEach(c => warn.push(`account.deal_categories ${c}: ასეთი ვორონკა არ არის`));
+  }
+  if (users && !users.some(u => u.id === k.assigned_id)) warn.push(`assigned_id ${k.assigned_id}: ასეთი აქტიური მომხმარებელი არ არის`);
+  if (srcs && !srcs.some(s => s.id === k.source_id)) warn.push(`source_id '${k.source_id}': ასეთი წყარო არ არის`);
+  if (stores) {
+    if (!k.store_ids.length) warn.push('store_ids ცარიელია: მარაგში ყველა საწყობი ითვლება, ანდეს საწყობებიც');
+    k.store_ids.filter(s => !stores.some(x => x.id === s)).forEach(s => warn.push(`store_ids ${s}: ასეთი საწყობი არ არის`));
+  }
+  if (k.catalog && cats && !cats.some(c => c.id === k.iblock_id)) warn.push(`iblock_id ${k.iblock_id}: ასეთი კატალოგი არ არის`);
+  if (k.catalog && prices && !prices.some(p => p.id === k.price_type_id)) warn.push(`price_type_id ${k.price_type_id}: ასეთი ფასის ტიპი არ არის`);
+
+  const who = b.who && b.who.name ? `webhook: ${b.who.name} (ID ${b.who.id})${b.who.admin ? ', ადმინისტრატორი' : ''}` : '';
+  return `<section class="apanel abx__state"><span class="apill apill--on">დაკავშირებულია</span><p><b>${esc(b.host)}</b> · პასუხი ${b.ms} მწმ-ში</p>${who ? `<small class="muted">${esc(who)}</small>` : ''}</section>
+    ${warn.length ? `<section class="apanel abx__warn"><h2 class="ah2">config.php-ში შესასწორებელი</h2><ul>${warn.map(w => `<li>${esc(w)}</li>`).join('')}</ul></section>`
+      : '<p class="abx__fine">config.php-ის ნომრები პორტალს ემთხვევა.</p>'}
+    ${panel('ვორონკები და ეტაპები', ['deal_category_id', 'deal_stage_id', "account['deal_categories']"], err('pipelines') + (pipes ? '<div class="abx__list">' + pipes.map(p => {
+      const cur = p.id === k.deal_category_id;
+      return `<details class="abx__pipe" ${cur ? 'open' : ''}><summary>${row(p.id, p.name, `${p.stages.length} ეტაპი`, cur, k.deal_categories.includes(p.id) ? '<span class="apill apill--soon">ჩემი შეკვეთები</span>' : '')}</summary>
+        <div class="abx__list abx__list--in">${p.stages.map(s => row(s.id, s.name, '', cur && s.id === k.deal_stage_id, s.end ? `<span class="apill apill--off">${s.end === 'won' ? 'წარმატებული' : 'წარუმატებელი'}</span>` : '')).join('') || '<p class="muted">ეტაპები ვერ მოიძებნა</p>'}</div></details>`;
+    }).join('') + '</div>' : ''))}
+    ${panel('მომხმარებლები', ['assigned_id'], err('users') + (users ? `<input class="input abx__find" data-bx-find placeholder="ძებნა სახელით, თანამდებობით ან ნომრით" aria-label="მომხმარებლის ძებნა">
+      <div class="abx__list abx__list--tall" data-bx-users>${users.map(u => row(u.id, u.name, u.job, u.id === k.assigned_id)).join('')}</div>` : ''))}
+    ${panel('საწყობები', ["catalog['store_ids']"], err('stores') + (stores ? `<div class="abx__list">${stores.map(s => row(s.id, s.name, s.address, k.store_ids.includes(s.id), s.on ? '' : '<span class="apill apill--off">გამორთულია</span>')).join('') || '<p class="muted">საწყობები არ არის</p>'}</div>` : ''))}
+    ${panel('წყაროები', ['source_id'], err('sources') + (srcs ? `<div class="abx__list">${srcs.map(s => row(s.id, s.name, '', s.id === k.source_id)).join('')}</div>` : ''))}
+    ${panel('კატალოგი და ფასის ტიპები', ["catalog['iblock_id']", "catalog['price_type_id']"], `<p class="muted">საჭიროა მხოლოდ მაშინ, როცა პროდუქცია Bitrix-იდან მოვა (catalog.enabled).</p>` + err('catalogs') +
+      (cats ? `<div class="abx__list">${cats.map(c => row(c.id, c.name, 'კატალოგი', c.id === k.iblock_id)).join('')}</div>` : '') + err('prices') +
+      (prices ? `<div class="abx__list">${prices.map(p => row(p.id, p.name, p.base ? 'საბაზო ფასი' : 'ფასის ტიპი', p.id === k.price_type_id)).join('')}</div>` : ''))}`;
+}
+
 /* ---------- saving ---------- */
 let saving = false;
 async function save() {
@@ -846,6 +938,10 @@ async function onClick(e) {
       break;
     case 'copy':
       try { await navigator.clipboard.writeText(new URL(a.dataset.url, location.href).href); note('ბმული დაკოპირდა', 'ok'); } catch (err) { prompt('ბმული:', new URL(a.dataset.url, location.href).href); }
+      break;
+    case 'copy-id':
+      e.preventDefault();   // in a pipeline's summary: copy, don't fold
+      try { await navigator.clipboard.writeText(a.dataset.v); note('დაკოპირდა: ' + a.dataset.v, 'ok'); } catch (err) { prompt('ნომერი:', a.dataset.v); }
       break;
     case 'file-del': {
       if (!await ask(a.dataset.used ? 'ეს ფაილი საიტზე გამოიყენება. მაინც წავშალო?' : 'ფაილს წავშლი. დარწმუნებული ხართ?', 'წაშლა', true)) break;

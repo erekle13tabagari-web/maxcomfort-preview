@@ -186,7 +186,10 @@ let io;
 function watchBuy() {
   if (io) io.disconnect();
   const bar = $('.buybar'), btn = $('[data-buy]');
-  io = new IntersectionObserver(([en]) => bar.classList.toggle('is-on', !en.isIntersecting && en.boundingClientRect.top < 0), { threshold: 0 });
+  // two columns: the bar comes once the buy button is scrolled past. One column (phones, tablets): whenever the
+  // button is out of sight, so the price and the button are on the first screen too, under the photo
+  const one = matchMedia('(max-width:980px)');
+  io = new IntersectionObserver(([en]) => bar.classList.toggle('is-on', !en.isIntersecting && (one.matches || en.boundingClientRect.top < 0)), { threshold: 0 });
   io.observe(btn);
 }
 
