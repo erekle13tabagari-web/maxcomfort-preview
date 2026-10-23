@@ -14,7 +14,7 @@ const SLIDES = [
     id: 'heating', icon: 'sys-heating', tab: 'გათბობა', note: 'ქვაბები და სანთურები',
     eyebrow: 'Beretta · Riello · Warmhaus', title: 'სითბო მთელი ზამთარი',
     lead: 'კედლის და იატაკის ქვაბები, სანთურები, რადიატორები და იატაკის გათბობა. სიმძლავრეს თქვენს სახლზე გავთვლით.',
-    img: 'heat-lawa-black', dark: 'heat-lawa-white', w: 340, wall: true, link: 'catalog.html?c=heating&s=boilers', cat: 'heating',
+    img: 'heat-mynute', w: 340, wall: true, link: 'catalog.html?c=heating&s=boilers', cat: 'heating',   // Beretta Mynute S: white, for both themes
     chips: () => [['svc-certified', 'ოფიციალური', 'დისტრიბუტორი და გარანტია', 'left:4%;top:16%'], ['svc-install', 'მონტაჟი', 'საკუთარი საინჟინრო გუნდი', 'right:2%;bottom:18%']]
   },
   {
@@ -125,7 +125,7 @@ function windowHTML(db) {
   };
   const ducts = db.cats.get('ducts');
   $('[data-window]').innerHTML =
-    pane('heating', 'pane--heat', 'heat-lawa-white', '34%') +
+    pane('heating', 'pane--heat', 'heat-mynute', '34%') +
     pane('cooling', 'pane--cool', 'cool-ln-white', '52%') +
     pane('ventilation', 'pane--vent', 'vent-hrw', '46%', `<a href="catalog.html?c=ducts">${esc(ducts.name)}</a>`) +
     pane('water', 'pane--water', 'water-7200v', '20%');
