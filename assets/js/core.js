@@ -59,6 +59,14 @@ export function rich(html) {
   return doc.body.innerHTML;
 }
 
+/* Online selling can be paused in the admin panel (content "shop"): the server then takes no order, and the
+   pages offer a call-back request ("შეკვეთის მოთხოვნა") instead of the cart; products and prices stay. */
+export const SELL_NOTE = 'ონლაინ შეკვეთა დროებით შეჩერებულია. დატოვეთ ნომერი და დაგიკავშირდებით, ან დაგვირეკეთ.';
+/** Whether the product goes into the cart now: it has a price and selling is on. */
+export const buyable = p => p.price != null && C.sell !== false;
+/** The request button's words when it cannot go into the cart. */
+export const askLabel = p => (p.price != null ? 'შეკვეთის მოთხოვნა' : 'ფასის მოთხოვნა');
+
 /** Contacts, showrooms, delivery and payment from the site content, over config.js. */
 function applyContent(cms) {
   C.cms = cms && typeof cms === 'object' ? cms : {};
@@ -67,6 +75,9 @@ function applyContent(cms) {
   if (k.phone) C.phoneHref = 'tel:' + (phoneE164(k.phone) || k.phone.replace(/[^\d+]/g, ''));
   if (k.social) C.social = { ...C.social, ...k.social };
   ['showrooms', 'delivery', 'payment'].forEach(f => { if (Array.isArray(C.cms[f]) && C.cms[f].length) C[f] = C.cms[f]; });
+  const shop = C.cms.shop || {};
+  C.sell = shop.sell !== false;
+  C.sellNote = shop.note || SELL_NOTE;
 }
 
 /* ---------- Mtavruli ----------
@@ -291,9 +302,9 @@ export function card(db, p, { cls = '', eager = false } = {}) {
       <button class="cact ${fav ? 'is-on' : ''}" data-fav="${p.id}" aria-label="რჩეულებში" title="რჩეულებში">${ui('heart')}</button>
       <button class="cact ${cmp ? 'is-on' : ''}" data-cmp="${p.id}" aria-label="შედარება" title="შედარება">${ui('cmp')}</button>
     </div>
-    ${p.price != null
+    ${buyable(p)
       ? `<button class="card__add" data-add="${p.id}" aria-label="კალათაში">${ui('bag')}<span>კალათაში</span></button>`
-      : `<button class="card__add" data-ask="${p.id}" aria-label="ფასის მოთხოვნა">${ui('phone')}<span>ფასის მოთხოვნა</span></button>`}
+      : `<button class="card__add" data-ask="${p.id}" aria-label="${askLabel(p)}">${ui('phone')}<span>${askLabel(p)}</span></button>`}
   </div>
   <div class="card__body">
     <div class="card__brand"><span>${esc(p.brandName || p.subName)}</span>${p.line ? `<span>${esc(p.line)}</span>` : ''}</div>
@@ -430,7 +441,7 @@ function footer(db) {
 }
 
 function overlays(db) {
-  const topics = ['კონსულტაცია სისტემის შერჩევაზე', 'მონტაჟი', 'სერვისი და გარანტია', 'კითხვა პროდუქტზე', 'შეკვეთის სტატუსი'];
+  const topics = ['კონსულტაცია სისტემის შერჩევაზე', 'მონტაჟი', 'სერვისი და გარანტია', 'კითხვა პროდუქტზე', 'შეკვეთის სტატუსი', 'შეკვეთა ტელეფონით'];
   return `
 <div class="scrim" data-close></div>
 <aside class="drawer" id="cart" aria-label="კალათა"><div class="drawer__head"><h2>კალათა <span data-count-text="cart"></span></h2><button class="iconbtn" data-close aria-label="დახურვა">${ui('close')}</button></div><div class="drawer__body" data-cart-body></div><div class="drawer__foot" data-cart-foot></div></aside>
@@ -502,8 +513,11 @@ function renderCart(db) {
   foot.innerHTML = `<div class="sum"><span>პროდუქცია</span><span class="num">${money(store.total(db))}</span></div>
     <div class="sum"><span>მიწოდება</span><small>შეკვეთისას</small></div>
     <div class="sum sum--total"><span>სულ</span><span class="num">${money(store.total(db))}</span></div>
-    <a class="btn btn--red btn--block" href="checkout.html">შეკვეთის გაფორმება ${arrow()}</a>
-    <p class="drawer__note">მონტაჟს და მიწოდებას შეკვეთისას შეარჩევთ</p>`;
+    ${C.sell !== false ? `<a class="btn btn--red btn--block" href="checkout.html">შეკვეთის გაფორმება ${arrow()}</a>
+    <p class="drawer__note">მონტაჟს და მიწოდებას შეკვეთისას შეარჩევთ</p>`
+    : `<div class="note note--blue drawer__paused">${ui('info')}<span>${esc(C.sellNote)}</span></div>
+    <button class="btn btn--red btn--block" data-ask="">${ui('phone')}დამირეკეთ</button>
+    <a class="drawer__note" href="${C.phoneHref}">${esc(C.phone)}</a>`}`;
 }
 
 function renderFav(db) {
@@ -512,7 +526,7 @@ function renderFav(db) {
     <div class="line" data-line="${p.id}">
       <a class="line__img" href="${p.url}"><img src="${p.src[0]}" alt=""></a>
       <div><div class="line__brand">${esc(p.brandName)}</div><a class="line__name" href="${p.url}">${esc(p.title)}</a><div style="margin-top:6px">${priceHTML(p)}</div>
-        <div class="line__row">${p.price != null ? `<button class="btn btn--sm" data-add="${p.id}">${ui('bag', 'ui--sm')}კალათაში</button>` : `<button class="btn btn--sm btn--ghost" data-ask="${p.id}">ფასის მოთხოვნა</button>`}</div></div>
+        <div class="line__row">${buyable(p) ? `<button class="btn btn--sm" data-add="${p.id}">${ui('bag', 'ui--sm')}კალათაში</button>` : `<button class="btn btn--sm btn--ghost" data-ask="${p.id}">${askLabel(p)}</button>`}</div></div>
       <div><button class="line__rm" data-fav="${p.id}">წაშლა</button></div>
     </div>`).join('')
     : `<div class="drawer__empty">${bi('sys-home', 'ic ic--xl')}<p>რჩეულები ცარიელია.<br>მონიშნეთ პროდუქტი გულით და აქ შეინახება.</p></div>`;
@@ -590,8 +604,10 @@ export function callback(db, productId, topic) {
   $('[data-cb-done]', m).hidden = true;
   f.reset();
   f.product.value = p ? p.id : '';
-  $('[data-cb-lead]', m).textContent = p ? `„${p.title}“: დაგირეკავთ, გეტყვით ფასს და მიწოდების ვადას.` : 'დატოვეთ ნომერი და ინჟინერი სამუშაო საათებში დაგიკავშირდებათ.';
-  if (topic) f.topic.value = topic; else if (p) f.topic.value = 'კითხვა პროდუქტზე';
+  const order = C.sell === false && (!p || p.price != null);   // selling paused: the order is taken by phone
+  $('[data-cb-lead]', m).textContent = p ? (order ? `„${p.title}“: დაგირეკავთ და შეკვეთას ტელეფონით გავაფორმებთ.` : `„${p.title}“: დაგირეკავთ, გეტყვით ფასს და მიწოდების ვადას.`)
+    : order ? C.sellNote : 'დატოვეთ ნომერი და ინჟინერი სამუშაო საათებში დაგიკავშირდებათ.';
+  if (topic) f.topic.value = topic; else if (order) f.topic.value = 'შეკვეთა ტელეფონით'; else if (p) f.topic.value = 'კითხვა პროდუქტზე';
   openLayer(m);
 }
 export function validPhone(v) {
@@ -645,6 +661,7 @@ function setupEvents(db) {
     const t = e.target;
     let el;
     if ((el = t.closest('[data-add]'))) {
+      if (C.sell === false) return callback(db, el.dataset.add);
       const p = db.byId.get(+el.dataset.add);
       const q = +(el.dataset.qty || 1);
       store.add(p.id, q);

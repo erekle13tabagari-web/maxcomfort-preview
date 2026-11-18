@@ -1,4 +1,4 @@
-import { boot, $, $$, esc, bi, ui, arrow, card, num, money, crumbs, priceHTML, energyTag, energyTags, EKINDS, store, callback, openLayer, params } from './core.js';
+import { boot, $, $$, esc, bi, ui, arrow, card, num, money, crumbs, priceHTML, energyTag, energyTags, EKINDS, store, callback, openLayer, params, buyable, askLabel, C } from './core.js';
 import { sizeKind } from './api.js';
 
 let db, p;
@@ -95,10 +95,10 @@ function info() {
   const tags = energyTags(p);
   const energies = tags.length ? `<div class="energies">${tags.map(([k, c, top]) => `<button data-label>${energyTag(c, k, top)} ${EKINDS[k][0]}</button>`).join('')}</div>`
     : p.energy && p.energy.label ? `<div class="energies"><button class="elabel" data-label>${bi('spec-energy', 'ic ic--sm')}ენერგოეტიკეტი</button></div>` : '';
-  const buy = p.price != null
+  const buy = buyable(p)
     ? `<div class="qty qty--lg"><button data-q="-1" aria-label="ნაკლები">${ui('minus', 'ui--sm')}</button><input value="1" inputmode="numeric" aria-label="რაოდენობა" data-qin><button data-q="1" aria-label="მეტი">${ui('plus', 'ui--sm')}</button></div>
        <button class="btn btn--red" data-add="${p.id}" data-buy>${ui('bag')}კალათაში<span class="hide-sm">&nbsp;დამატება</span></button>`
-    : `<button class="btn btn--red" data-ask="${p.id}" data-buy>${ui('phone')}ფასის მოთხოვნა</button>`;
+    : `<button class="btn btn--red" data-ask="${p.id}" data-buy>${ui('phone')}${askLabel(p)}</button>`;
   return `<div class="pinfo">
     <div class="pinfo__brand">${brand ? `<a href="catalog.html?b=${brand.id}" aria-label="${esc(brand.name)}">${logo}</a>` : logo}${p.sku ? `<span>კოდი ${esc(p.sku)}</span>` : ''}</div>
     <div>${p.line ? `<div class="pinfo__line">${esc(p.line)}</div>` : ''}<h1>${esc(p.title)}</h1></div>
@@ -108,6 +108,7 @@ function info() {
     <div class="buy">${buy}
       <button class="iconbtn ${fav ? 'is-on' : ''}" data-fav="${p.id}" aria-label="რჩეულებში" title="რჩეულებში">${ui('heart')}</button>
       <button class="iconbtn ${cmp ? 'is-on' : ''}" data-cmp="${p.id}" aria-label="შედარება" title="შედარება">${ui('cmp')}</button></div>
+    ${C.sell === false && p.price != null ? `<div class="note note--blue pinfo__paused">${ui('info')}<span>${esc(C.sellNote)}</span></div>` : ''}
     <div class="consult sys--${SYS[p.cat] || 'blue'}">${bi('svc-consult')}<p><b>არ ხართ დარწმუნებული?</b>ინჟინერი დაგირეკავთ და სიმძლავრეს თქვენს ოთახზე გამოთვლის.</p><button class="btn btn--ghost btn--sm" data-ask="${p.id}">დამირეკეთ</button></div>
   </div>`;
 }
@@ -189,7 +190,7 @@ function render() {
   $('[data-seen]').hidden = seenList.length < 2;
   $('[data-seen] .grid').innerHTML = seenList.map(x => card(db, x, { cls: 'card--sm' })).join('');
   $('[data-bb]').innerHTML = `<span class="buybar__img"><img src="${p.src[0] || ''}" alt=""></span><span class="buybar__t"><b>${esc(p.title)}</b>${priceHTML(p)}</span>
-    ${p.price != null ? `<button class="btn btn--red" data-add="${p.id}">${ui('bag')}კალათაში</button>` : `<button class="btn btn--red" data-ask="${p.id}">ფასის მოთხოვნა</button>`}`;
+    ${buyable(p) ? `<button class="btn btn--red" data-add="${p.id}">${ui('bag')}კალათაში</button>` : `<button class="btn btn--red" data-ask="${p.id}">${askLabel(p)}</button>`}`;
   ld();
   store.seenAdd(p.id);
   watchBuy();

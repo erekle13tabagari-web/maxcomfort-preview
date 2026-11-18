@@ -94,6 +94,12 @@ function sync() {
   if (si) si.textContent = inst === 'yes' ? 'ღირებულება ადგილზე დათვალიერების შემდეგ' : 'არა';
 }
 
+/** Online selling paused in the admin panel: no form, a call-back request instead. */
+function paused() {
+  $('[data-co]').innerHTML = `<div class="empty" style="grid-column:1/-1">${bi('svc-consult', 'ic ic--xl')}<h3>ონლაინ შეკვეთა შეჩერებულია</h3><p>${esc(C.sellNote)}</p>
+    <div><button class="btn btn--red" data-ask="">${ui('phone')}დამირეკეთ</button> <a class="btn btn--ghost" href="${C.phoneHref}">${esc(C.phone)}</a></div></div>`;
+}
+
 function empty() {
   $('[data-co]').innerHTML = `<div class="empty" style="grid-column:1/-1">${bi('prd-boiler', 'ic ic--xl')}<h3>კალათა ცარიელია</h3><p>დაამატეთ პროდუქცია კატალოგიდან.</p><a class="btn btn--red" href="catalog.html">კატალოგი ${arrow()}</a></div>`;
 }
@@ -141,6 +147,7 @@ async function submit(e) {
     done(res, data);
   } catch (err) {
     console.error(err);
+    if (/paused/i.test(err.message)) { C.sell = false; return paused(); }   // switched off while the form was open
     toast('შეკვეთა ვერ გაიგზავნა. სცადეთ ხელახლა ან დაგვირეკეთ: ' + esc(C.phone));
     btn.classList.remove('is-busy');
   }
@@ -149,6 +156,7 @@ async function submit(e) {
 boot({}).then(d => {
   db = d;
   $('[data-crumbs]').innerHTML = crumbs([['კალათა', null], ['შეკვეთა', null]]);
+  if (C.sell === false) return paused();
   if (!store.lines(db).length) return empty();
   $('#co').innerHTML = form();
   summary();
@@ -176,5 +184,5 @@ boot({}).then(d => {
     if (e.target.closest('[data-rm]')) store.remove(id);
   });
   sum.addEventListener('change', e => { if (e.target.matches('[data-qty-in]')) store.setQty(+e.target.closest('[data-line]').dataset.line, parseInt(e.target.value, 10) || 0); });
-  addEventListener('mc:cart', () => { if (!$('#co')) return; store.lines(db).length ? summary() : empty(); });
+  addEventListener('mc:cart', () => { if (!$('#co') || C.sell === false) return; store.lines(db).length ? summary() : empty(); });
 }).catch(err => console.error(err));

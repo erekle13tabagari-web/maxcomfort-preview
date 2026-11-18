@@ -1958,3 +1958,8 @@ html[data-look="window"]{--xease:cubic-bezier(.65,0,.35,1);--xout:cubic-bezier(.
 .buybar{left:50%;right:auto;width:min(calc(100% - 24px),760px);transform:translate(-50%,calc(100% + 28px))}
 .buybar.is-on{transform:translate(-50%,0)}
 @media (max-width:760px){.buybar{width:calc(100% - 16px)}}
+
+/* ---------- ONLINE SELLING PAUSED (admin panel): the notice beside the request button ---------- */
+.pinfo__paused{margin-top:-4px}
+.drawer__paused{margin-bottom:12px;text-align:left}
+a.drawer__note{display:block;color:var(--muted);text-decoration:none}
