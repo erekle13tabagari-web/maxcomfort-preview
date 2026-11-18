@@ -142,27 +142,36 @@ function facets(sc) {
 }
 
 /* ---------- render ---------- */
+/* the top: only the kinds, as pills on the page (owner's choice, 2026-11-17: no pane over the shop); the title stays
+   for screen readers; the catalogue itself offers the systems the same way; a search or a brand shows its name
+   (and a brand its text from the admin panel). The system's colour marks the chosen pill (ducts belong to ventilation) */
+const SYS = { heating: 'heat', cooling: 'cool', ventilation: 'vent', ducts: 'vent', water: 'water' };
+let headKey = '';
 function head() {
   const cat = db.cats.get(st.c), sub = db.subs.get(st.s), brand = st.b.length === 1 ? db.brandsById.get(st.b[0]) : null;
   const title = st.q ? `ძიება: „${st.q}“` : sub ? sub.name : cat ? cat.name : brand ? brand.name : 'კატალოგი';
   document.title = title + ' · მაქს კომფორტი';
+  const key = [st.c, st.s, st.q, brand && brand.id].join('|');
+  if (key === headKey) return;   // filters change the grid, not the top
+  headKey = key;
   const trail = [['კატალოგი', (cat || st.q || brand) ? 'catalog.html' : null]];
   if (cat) trail.push([cat.name, sub ? 'catalog.html?c=' + cat.id : null]);
   if (sub) trail.push([sub.name, null]);
   if (st.q) trail.push(['ძიება', null]);
   $('[data-crumbs]').innerHTML = crumbs(trail);
-  $('[data-title]').textContent = title;
   // a brand's page: its text from the admin panel (brands)
   const about = brand && !cat && !st.q ? ((C.cms || {}).brands || []).find(b => b && b.id === brand.id) : null;
-  $('[data-lead]').textContent = cat && !sub ? cat.lead : about ? about.text || '' : '';
-
-  const pills = cat
-    ? `<a class="pill ${st.s ? '' : 'is-on'}" href="catalog.html?c=${cat.id}" data-nav>${bi(cat.icon)}ყველა <small>${cat.count}</small></a>` + cat.subs.filter(s => s.count).map(s => `<a class="pill ${st.s === s.id ? 'is-on' : ''}" href="catalog.html?c=${cat.id}&s=${s.id}" data-nav>${bi(s.icon)}${esc(s.name)} <small>${s.count}</small></a>`).join('')
-    : st.q ? '' : db.categories.map(c => `<a class="pill" href="catalog.html?c=${c.id}" data-nav>${bi(c.icon)}${esc(c.name)} <small>${c.count}</small></a>`).join('');
-  const bar = $('[data-pills]');
-  bar.innerHTML = pills;
-  bar.hidden = !pills;
-  const on = $('.pill.is-on', bar);   // phones: the chosen subcategory in the middle of the row (again once the fonts are in)
+  const lead = about ? about.text || '' : '';
+  $('#main').dataset.sys = cat ? SYS[cat.id] || 'blue' : 'blue';
+  const pill = (on, href, icon, name, count, cls) => `<a class="${[cls, on && 'is-on'].filter(Boolean).join(' ')}" href="${href}" data-nav>${bi(icon)}${esc(name)} <small>${count}</small></a>`;
+  const nav = cat
+    ? pill(!st.s, 'catalog.html?c=' + cat.id, cat.icon, 'ყველა', cat.count) + cat.subs.filter(s => s.count).map(s => pill(st.s === s.id, `catalog.html?c=${cat.id}&s=${s.id}`, s.icon, s.name, s.count)).join('')
+    : !st.q && !brand
+      ? pill(true, 'catalog.html', 'sys-home', 'ყველა', db.categories.reduce((n, c) => n + c.count, 0)) + db.categories.filter(c => c.count > 0).map(c => pill(false, 'catalog.html?c=' + c.id, c.icon, c.name, c.count, 'sys--' + (SYS[c.id] || 'blue'))).join('')
+      : '';
+  const h = $('[data-head]');
+  h.innerHTML = `<h1 class="${nav ? 'sr' : 'chead__t'}" id="cat-h">${esc(title)}</h1>${lead ? `<p class="chead__lead">${esc(lead)}</p>` : ''}${nav ? `<nav class="chead__subs" aria-label="${cat ? 'ქვეკატეგორიები' : 'სისტემები'}">${nav}</nav>` : ''}`;
+  const bar = $('.chead__subs', h), on = bar && $('.is-on', bar);   // phones: the chosen kind in the middle of the row (again once the fonts are in)
   const center = () => { if (on && bar.scrollWidth > bar.clientWidth) bar.scrollLeft = on.offsetLeft - bar.offsetLeft - (bar.clientWidth - on.offsetWidth) / 2; };
   center();
   if (document.fonts) document.fonts.ready.then(center);
@@ -193,7 +202,7 @@ function render(keepPage) {
   syncDual();
   $('[data-chips]').innerHTML = chips();
   // cards are lines; the models in them are counted too
-  $('[data-count]').textContent = results.length + ' პროდუქტი' + (all.length > results.length ? ' · ' + all.length + ' მოდელი' : '');
+  $('[data-total]').textContent = results.length + ' პროდუქტი' + (all.length > results.length ? ' · ' + all.length + ' მოდელი' : '');
   $('[data-apply]').textContent = 'ნახვა (' + results.length + ')';
   const grid = $('[data-grid]');
   if (!results.length) {

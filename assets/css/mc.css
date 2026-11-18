@@ -17,6 +17,8 @@
   --red:#E32226; --red-80:#E94E51; --red-60:#EE7A7D; --red-20:#F9D3D4; --red-10:#FCE9E9;
   --black:#211D1D; --black-80:#4D4A4A;
   --white:#FFFFFF;
+  /* the four systems' panes (p.8): heating MC Red, cooling MC Blue, ventilation green, water light blue */
+  --green:#00A551; --sky:#6EB3D6;
   /* neutrals from the product photos (p.19) */
   --cloud:#F3F3F5;   /* page and panel background */
   --wall:#E6E5E9;    /* product background, cards */
@@ -26,7 +28,7 @@
 
   --text:var(--graphite); --heading:var(--blue); --muted:#6B6C76; --line:#E3E3E9; --line-2:#D5D6E4;
   /* surfaces: page, alternate band, cards and drawers, panels; the stage behind product photos */
-  --page:#FFFFFF; --page-2:var(--cloud); --surface:#FFFFFF; --surface-2:var(--cloud); --stage:var(--cloud); --stage-2:var(--wall);
+  --page:#FFFFFF; --page-2:var(--cloud); --surface:#FFFFFF; --surface-2:var(--cloud); --stage:var(--cloud); --stage-2:var(--wall); --cstage:#FFFFFF;
   --ink:var(--blue);           /* text, icons and outlines in MC Blue */
   --icon:var(--blue);          /* brand icons: MC Blue, white in dark mode (brand book p.33, reverse set) */
   --accent:var(--blue); --accent-2:var(--blue-80);   /* filled controls: buttons, chosen pills, ticks */
@@ -40,7 +42,7 @@
   color-scheme:light;
   --ff:"MC Sans Georgian","Noto Sans Georgian","Segoe UI",system-ui,sans-serif;
   --wrap:1360px; --gut:clamp(16px,4vw,40px);
-  --r:4px;                 /* the book's one small radius (p.27) */
+  --r:14px;                /* controls (was the book's 4 px, p.27; owner's choice 2026-11-17: the window's soft corners) */
   --cut:28px;              /* cut corner (p.29 B): 28 px across, 35 px down = the roof's 51.5° */
   --hdr:72px;
   --ease:cubic-bezier(.2,.7,.2,1);
@@ -51,7 +53,7 @@
 /* ---------- dark mode: not in the brand book; built from MC Black surfaces, MC Blue panels and palette tints.
    It follows the system until the visitor picks one with the header button (data-theme on <html>). ---------- */
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --page:#161313; --page-2:#1D1919; --surface:#221E1E; --surface-2:#2A2525; --stage:#E3E2E7; --stage-2:#D8D7DD;
+  --page:#161313; --page-2:#1D1919; --surface:#221E1E; --surface-2:#2A2525; --stage:#E3E2E7; --stage-2:#D8D7DD; --cstage:#E3E2E7;
   --ink:#C9CBE0; --icon:#FFFFFF; --heading:#FFFFFF; --text:#D3D2D6; --muted:#A3A2AA; --strong:#F3F3F5;
   --line:rgba(255,255,255,.1); --line-2:rgba(255,255,255,.18);
   --blue-10:rgba(201,203,224,.1); --blue-20:rgba(201,203,224,.2); --blue-40:rgba(201,203,224,.38); --blue-60:#9EA1C4;
@@ -67,7 +69,7 @@
   color-scheme:dark;
 }}
 :root[data-theme="dark"]{
-  --page:#161313; --page-2:#1D1919; --surface:#221E1E; --surface-2:#2A2525; --stage:#E3E2E7; --stage-2:#D8D7DD;
+  --page:#161313; --page-2:#1D1919; --surface:#221E1E; --surface-2:#2A2525; --stage:#E3E2E7; --stage-2:#D8D7DD; --cstage:#E3E2E7;
   --ink:#C9CBE0; --icon:#FFFFFF; --heading:#FFFFFF; --text:#D3D2D6; --muted:#A3A2AA; --strong:#F3F3F5;
   --line:rgba(255,255,255,.1); --line-2:rgba(255,255,255,.18);
   --blue-10:rgba(201,203,224,.1); --blue-20:rgba(201,203,224,.2); --blue-40:rgba(201,203,224,.38); --blue-60:#9EA1C4;
@@ -107,10 +109,20 @@ html::-webkit-scrollbar-track{background:var(--page-2)}
   .filters,.scenes{scrollbar-width:thin}
   .scenes{scrollbar-color:var(--red) var(--line-2)}
 }
+/* the page's own scrollbar with a mouse (the shop's pages, not the admin panel): hidden; core.js floats a
+   thin thumb over the page instead, shown while scrolling or with the pointer near the right edge */
+@media (hover:hover) and (pointer:fine){
+  html:has(#mc-header){scrollbar-width:none}
+  html:has(#mc-header)::-webkit-scrollbar{display:none}
+}
+.sbar{position:fixed;z-index:75;top:0;right:0;bottom:0;width:14px;opacity:0;pointer-events:none;transition:opacity .4s;user-select:none;touch-action:none}
+.sbar.is-on{opacity:1;pointer-events:auto;transition-duration:.15s}
+.sbar__thumb{position:absolute;top:0;right:3px;width:6px;border-radius:6px;background:var(--red);transition:width .15s,background-color .15s}
+.sbar:hover .sbar__thumb,.sbar.is-drag .sbar__thumb{width:8px;background-color:#C91D21}
 
 /* ---------- base ---------- */
 *,*::before,*::after{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;scroll-padding-top:calc(var(--hdr) + 16px)}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;scroll-padding-top:calc(var(--hdr) + 28px)}
 body{margin:0;background:var(--page);color:var(--text);font:400 16px/1.6 var(--ff);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow-x:hidden}
 img,svg{display:block;max-width:100%}
 img{height:auto}
@@ -124,9 +136,8 @@ ul,ol{padding:0;list-style:none}
 .sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .wrap{width:100%;max-width:var(--wrap);margin-inline:auto;padding-inline:var(--gut)}
 [hidden]{display:none!important}
-#mc-header{position:sticky;top:-38px;z-index:50;min-height:110px}
-@media (max-width:980px){#mc-header{min-height:102px}}
-@media (max-width:760px){#mc-header{min-height:64px}}
+#mc-header{position:sticky;top:0;z-index:50;min-height:84px}   /* the header tile (72 px) and its 12 px margin */
+@media (max-width:980px){#mc-header{min-height:74px}}
 @view-transition{navigation:auto}
 ::view-transition-old(root),::view-transition-new(root){animation-duration:.28s}
 
@@ -147,7 +158,7 @@ ul,ol{padding:0;list-style:none}
 .on-blue .eyebrow::after,.on-dark .eyebrow::after{background:var(--red)}
 .muted{color:var(--muted)}
 /* titles in Mtavruli everywhere (owner's choice, 2026-10-20): headings, product names, menus, the top strip */
-.strip,.h3,.pinfo h1,.card__title,.mega__sub b,.mega__feat b,.line__name,.sres b,.buybar__t b,.pill,.pane__links a,
+.h3,.pinfo h1,.card__title,.mega__feat b,.line__name,.sres b,.buybar__t b,.pill,.pane__links a,
 .so__chips a,.tabs button,.choice b,.doc b,.assure b,.consult b,.empty h3,.drawer .fopt span{text-transform:uppercase;letter-spacing:.03em}
 .num{font-variant-numeric:tabular-nums}
 
@@ -161,7 +172,7 @@ ul,ol{padding:0;list-style:none}
 .on-blue .ic,.on-dark .ic{--ic:#fff}
 
 /* ---------- buttons (p.29: action = MC Red, white Mtavruli, the brand arrow) ---------- */
-.btn{--bg:var(--accent);--fg:#fff;display:inline-flex;align-items:center;justify-content:center;gap:12px;height:52px;padding:0 26px;border-radius:var(--r);background:var(--bg);color:var(--fg);font-size:13.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;transition:background .2s,color .2s,transform .2s var(--ease),box-shadow .2s;position:relative;isolation:isolate}
+.btn{--bg:var(--accent);--fg:#fff;display:inline-flex;align-items:center;justify-content:center;gap:12px;height:52px;padding:0 28px;border-radius:999px;background:var(--bg);color:var(--fg);font-size:13.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;transition:background .2s,color .2s,transform .2s var(--ease),box-shadow .2s;position:relative;isolation:isolate}
 .btn:hover{background:var(--accent-2)}
 .btn:active{transform:translateY(1px)}
 .btn--red{--bg:var(--red)}
@@ -182,7 +193,7 @@ ul,ol{padding:0;list-style:none}
 .link{color:var(--ink);font-weight:600;display:inline-flex;align-items:center;gap:8px;font-size:14px;letter-spacing:.06em;text-transform:uppercase}
 .link .arr{width:16px;height:16px;transition:transform .25s var(--ease)}
 .link:hover .arr{transform:translateX(4px)}
-.iconbtn{width:44px;height:44px;display:inline-grid;place-items:center;border-radius:var(--r);color:var(--ink);position:relative;transition:background .2s}
+.iconbtn{width:44px;height:44px;display:inline-grid;place-items:center;border-radius:50%;color:var(--ink);position:relative;transition:background .2s}
 .iconbtn:hover{background:var(--blue-10)}
 .badge{position:absolute;top:4px;right:2px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--red);color:#fff;font-size:11px;font-weight:600;line-height:18px;text-align:center;transform:scale(0);transition:transform .25s var(--ease)}
 .badge.on{transform:scale(1)}
@@ -200,45 +211,63 @@ ul,ol{padding:0;list-style:none}
   linear-gradient(var(--red),var(--red)) 0 0/4px 4px no-repeat,linear-gradient(var(--red),var(--red)) 5px 0/4px 4px no-repeat,
   linear-gradient(var(--red),var(--red)) 0 5px/4px 4px no-repeat,linear-gradient(var(--red),var(--red)) 5px 5px/4px 4px no-repeat}
 
-/* ---------- top strip + header ---------- */
-.strip{background:var(--blue);color:#fff;font-size:12px;font-weight:500}
-.strip .wrap{display:flex;align-items:center;justify-content:space-between;gap:24px;height:38px}
-.strip__l,.strip__r{display:flex;align-items:center;gap:22px;white-space:nowrap}
-.strip a{opacity:.86;transition:opacity .2s}
-.strip a:hover{opacity:1}
-.strip .ui{width:15px;height:15px}
-.strip__item{display:inline-flex;align-items:center;gap:8px}
-.strip__cb{font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:12px;display:inline-flex;align-items:center;gap:8px;opacity:1!important}
-.strip__cb::before{content:"";width:7px;height:7px;border-radius:50%;background:#4ade80;box-shadow:0 0 0 3px rgba(74,222,128,.25)}
-
-.hdr{position:relative;z-index:50;background:var(--hdr-bg);backdrop-filter:saturate(1.6) blur(14px);-webkit-backdrop-filter:saturate(1.6) blur(14px);border-bottom:1px solid transparent;transition:border-color .2s,box-shadow .2s}
-.hdr.is-stuck{border-bottom-color:var(--line);box-shadow:0 8px 24px -18px rgba(43,49,121,.35)}
-.hdr .wrap{display:flex;align-items:center;gap:28px;height:var(--hdr)}
-.hdr__logo{flex:none;display:block;width:104px}   /* stacked primary logo at 104 px: the owner's choice (v1 README) */
-.hdr__logo img{width:100%}
-.nav{display:flex;align-items:stretch;gap:2px;height:100%;margin-right:auto}
+/* ---------- header: one MC Blue tile floating over the page (white in light mode, MC Black in dark), with the
+   white logo, menu and icons and the call-back in MC Red; the mega menu opens under it as a tile
+   (owner's choice, 2026-11-17: the site follows the home page's window; no top strip) ---------- */
+.hdr{position:relative;z-index:50;padding:12px 12px 0}
+.hdr > .wrap{display:flex;align-items:center;gap:28px;height:var(--hdr);max-width:none;padding-inline:22px 10px;border-radius:20px;background:var(--blue);color:#fff;transition:box-shadow .3s}
+.hdr.is-stuck > .wrap{box-shadow:0 16px 36px -20px rgba(17,19,48,.6)}
+.hdr__logo{flex:none;display:block}
+.hdr__lockup{height:50px;width:auto}   /* the logo with the slogan (brand book p.6; the slogan 1.5x, owner's choice 2026-11-17), white on the tile */
+.hdr__mark{display:none;width:96px;height:auto}   /* the stacked logo, as big as in the lockup, where the menu needs the room */
+@media (max-width:1359px){.hdr__lockup{display:none}.hdr__mark{display:block}}
+/* language: a small pill; the menu drops under it as a tile */
+.lang{position:relative}
+.lang__btn{display:inline-flex;align-items:center;gap:4px;height:36px;margin:0 4px;padding:0 9px 0 12px;border-radius:999px;color:#fff;font-size:12.5px;font-weight:700;letter-spacing:.08em;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.3);transition:background .2s,box-shadow .2s}
+.lang__btn:hover,.lang.is-open .lang__btn{background:rgba(255,255,255,.12);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.6)}
+.lang__btn .ui{width:14px;height:14px;transition:transform .25s var(--ease)}
+.lang.is-open .lang__btn .ui{transform:rotate(180deg)}
+.lang__menu{position:absolute;z-index:60;right:0;top:calc(100% + 14px);min-width:200px;padding:6px;border-radius:18px;background:var(--surface);box-shadow:var(--shadow-lg);
+  opacity:0;visibility:hidden;transform:translateY(-6px);transition:opacity .2s,transform .25s var(--ease),visibility 0s .25s}
+.lang.is-open .lang__menu{opacity:1;visibility:visible;transform:none;transition:opacity .2s,transform .25s var(--ease)}
+.lang__menu a,.lang__menu span{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;font-size:14px;color:var(--text)}
+.lang__menu b{width:24px;font-size:12px;letter-spacing:.06em;color:var(--ink)}
+.lang__menu .is-on{background:var(--blue-10);color:var(--ink);font-weight:600}
+.lang__menu [aria-disabled]{cursor:default;opacity:.6}
+.lang__menu small{margin-left:auto;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--steel)}
+.mlang{display:flex;align-items:center;gap:6px;padding:16px 0 0;font-size:13px;font-weight:700;letter-spacing:.08em}
+.mlang b,.mlang span{display:grid;place-items:center;min-width:44px;height:36px;border-radius:999px}
+.mlang b{background:var(--accent);color:#fff}
+.mlang span{color:var(--steel);box-shadow:inset 0 0 0 1.5px var(--line-2)}
+.mlang small{margin-left:6px;color:var(--steel);font-weight:500;letter-spacing:0}
+.nav{display:flex;align-items:center;gap:2px;height:100%;margin-left:12px;margin-right:auto}
 .nav__item{position:static;display:flex}
-.nav__link{display:flex;align-items:center;gap:8px;padding:0 14px;font-size:13px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink);position:relative;white-space:nowrap}
-.nav__link::after{content:"";position:absolute;left:14px;right:14px;bottom:-1px;height:2px;background:var(--red);transform:scaleX(0);transform-origin:left;transition:transform .3s var(--ease)}
-.nav__item:hover .nav__link::after,.nav__item.is-open .nav__link::after,.nav__link[aria-current]::after{transform:scaleX(1)}
+.nav__link{display:flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:999px;font-size:13px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#fff;white-space:nowrap;transition:background .2s}
+.nav__item:hover .nav__link,.nav__item.is-open .nav__link{background:rgba(255,255,255,.12)}
+.nav__link[aria-current]{background:rgba(255,255,255,.16)}
 .hdr__tools{display:flex;align-items:center;gap:4px}
-.search-trigger{display:flex;align-items:center;gap:10px;height:44px;padding:0 14px 0 12px;border-radius:var(--r);background:var(--surface-2);color:var(--muted);font-size:14px;min-width:220px;transition:background .2s,box-shadow .2s}
-.search-trigger:hover{background:var(--blue-10)}
-.search-trigger kbd{margin-left:auto;font:600 11px var(--ff);color:var(--steel);border:1px solid var(--line-2);border-radius:3px;padding:1px 6px}
+.hdr .iconbtn{color:#fff;border-radius:50%}
+.hdr .iconbtn:hover{background:rgba(255,255,255,.12)}
+.search-trigger{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;color:#fff;transition:background .2s}
+.search-trigger:hover{background:rgba(255,255,255,.12)}
+.search-trigger span,.search-trigger kbd{display:none}
 .burger{display:none}
 
-/* mega menu */
-.mega{position:absolute;left:0;right:0;top:100%;background:var(--surface);border-top:1px solid var(--line);box-shadow:0 30px 60px -30px rgba(33,29,29,.35);opacity:0;visibility:hidden;transform:translateY(-6px);transition:opacity .2s,transform .25s var(--ease),visibility 0s .25s}
+/* mega menu: "products" opens the four systems side by side, each with its kinds, and the main product */
+.nav__link .ui{width:14px;height:14px;margin-left:-2px;transition:transform .25s var(--ease)}
+.nav__item.is-open .nav__link .ui{transform:rotate(180deg)}
+.hdr__cta{display:inline-flex;height:44px;margin-left:8px}
+.mega{position:absolute;left:12px;right:12px;top:calc(100% + 8px);background:var(--surface);border-radius:28px;box-shadow:var(--shadow-lg);opacity:0;visibility:hidden;transform:translateY(-6px);transition:opacity .2s,transform .25s var(--ease),visibility 0s .25s}
 .nav__item.is-open .mega{opacity:1;visibility:visible;transform:none;transition:opacity .2s,transform .25s var(--ease)}
-.mega .wrap{display:grid;grid-template-columns:1.1fr 1.6fr 1.1fr;gap:48px;padding-block:36px 40px;height:auto;align-items:start}
-.mega__intro p{margin-top:14px;color:var(--muted);font-size:15px;max-width:30ch}
-.mega__intro .link{margin-top:22px}
-.mega__subs{display:grid;grid-template-columns:1fr 1fr;gap:4px 24px}
-.mega__sub{display:flex;align-items:center;gap:14px;padding:12px 12px;border-radius:var(--r);transition:background .2s}
-.mega__sub:hover{background:var(--surface-2)}
-.mega__sub .ic{--ic:var(--icon)}
-.mega__sub b{display:block;font-weight:600;color:var(--ink);font-size:15px;line-height:1.3}
-.mega__sub small{color:var(--steel);font-size:12.5px}
+.mega .wrap{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) minmax(0,1.15fr);gap:32px;max-width:none;padding:28px 32px 32px;height:auto;align-items:start}
+.mega__head{display:flex;align-items:center;gap:12px;padding-bottom:14px;margin-bottom:10px;border-bottom:1px solid var(--line)}
+.mega__head .ic{width:32px;height:32px;--ic:var(--icon)}
+.mega__head b{display:block;font-size:14px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);line-height:1.25}
+.mega__head small{display:block;color:var(--steel);font-size:12.5px}
+.mega__head:hover b{color:var(--red)}
+.mega__list{display:flex;flex-direction:column}
+.mega__list a{display:block;padding:6px 0;font-size:14.5px;color:var(--text);transition:color .2s,transform .2s var(--ease)}
+.mega__list a:hover{color:var(--ink);transform:translateX(3px)}
 .mega__feat{display:block;background:var(--surface-2);border-radius:var(--r);padding:20px;position:relative}
 .mega__img{display:block;background:var(--stage);border-radius:var(--r);padding:10px}
 .mega__feat img{display:block;height:130px;width:100%;object-fit:contain;mix-blend-mode:multiply;transition:transform .4s var(--ease)}
@@ -246,6 +275,18 @@ ul,ol{padding:0;list-style:none}
 .mega__feat small{display:block;margin-top:12px;color:var(--steel);font-size:12px;letter-spacing:.1em;text-transform:uppercase;font-weight:600}
 .mega__feat b{display:block;color:var(--ink);font-weight:600;line-height:1.35;margin-top:4px}
 .mega__feat .price{margin-top:8px}
+/* the phone menu: the same five, products opening the four systems */
+.mnav > a.fgroup{padding:14px 0}
+.mnav > .fgroup:first-child{padding-top:14px}
+.mnav > details[open] > .fgroup__t .ui{transform:rotate(180deg)}
+.mnav__cats{gap:0}
+.mnav__cat summary{display:flex;align-items:center;gap:12px;padding:10px 0;list-style:none;cursor:pointer;font-size:14.5px;font-weight:600;color:var(--ink);text-transform:uppercase;letter-spacing:.03em}
+.mnav__cat summary::-webkit-details-marker{display:none}
+.mnav__cat summary span{flex:1}
+.mnav__cat summary .ic{width:24px;height:24px;--ic:var(--icon)}
+.mnav__cat summary .ui{width:16px;height:16px;transition:transform .25s}
+.mnav__cat[open] summary .ui{transform:rotate(180deg)}
+.mnav__subs{display:flex;flex-direction:column;gap:8px;padding:2px 0 12px 36px}
 
 /* ---------- search overlay ---------- */
 .so{position:fixed;inset:0;z-index:90;display:grid;grid-template-rows:auto 1fr;align-content:start;background:rgba(33,29,29,.4);opacity:0;visibility:hidden;transition:opacity .2s,visibility 0s .2s}
@@ -277,8 +318,8 @@ mark{background:var(--red-20);color:inherit;border-radius:2px;padding:0 1px}
 /* ---------- drawers, modal, toast ---------- */
 .scrim{position:fixed;inset:0;z-index:80;background:rgba(33,29,29,.45);opacity:0;visibility:hidden;transition:opacity .25s,visibility 0s .25s}
 .scrim.is-open{opacity:1;visibility:visible;transition:opacity .25s}
-.drawer{position:fixed;z-index:85;top:0;right:0;bottom:0;width:min(460px,100vw);background:var(--surface);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .35s var(--ease);box-shadow:var(--shadow-lg)}
-.drawer.is-open{transform:none}
+.drawer{position:fixed;z-index:85;top:0;right:0;bottom:0;width:min(460px,100vw);background:var(--surface);display:flex;flex-direction:column;transform:translateX(100%);visibility:hidden;transition:transform .35s var(--ease),visibility 0s .35s;box-shadow:var(--shadow-lg)}
+.drawer.is-open{transform:none;visibility:visible;transition:transform .35s var(--ease)}   /* closed: hidden, or its shadow shades the window edge */
 .drawer--left{left:0;right:auto;transform:translateX(-100%)}
 .drawer__head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px 18px 24px;border-bottom:1px solid var(--line)}
 .drawer__acts{display:flex;align-items:center;gap:2px}
@@ -349,7 +390,7 @@ mark{background:var(--red-20);color:inherit;border-radius:2px;padding:0 1px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .form-stack{display:flex;flex-direction:column;gap:16px}
 .check{display:flex;gap:12px;align-items:flex-start;font-size:14px;color:var(--text);cursor:pointer;line-height:1.45}
-.check input{appearance:none;width:20px;height:20px;flex:none;border:1.5px solid var(--blue-40);border-radius:3px;margin:1px 0 0;display:grid;place-items:center;transition:background .15s,border-color .15s;cursor:pointer}
+.check input{appearance:none;width:20px;height:20px;flex:none;border:1.5px solid var(--blue-40);border-radius:6px;margin:1px 0 0;display:grid;place-items:center;transition:background .15s,border-color .15s;cursor:pointer}
 .check input::after{content:"";width:10px;height:6px;border:2px solid #fff;border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px);opacity:0}
 .check input:checked{background:var(--accent);border-color:var(--ink)}
 .check input:checked::after{opacity:1}
@@ -445,58 +486,56 @@ mark{background:var(--red-20);color:inherit;border-radius:2px;padding:0 1px}
 .reveal.is-in{opacity:1;transform:none}
 @media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none}*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
-/* ---------- HERO: four systems, the product is the star ---------- */
-.hero{position:relative;background:var(--page-2);overflow:hidden;isolation:isolate}
-.hero__roof{position:absolute;z-index:-1;inset:0;pointer-events:none}
-.hero__roof img{position:absolute;right:-6%;bottom:-2%;width:min(1100px,82vw);height:auto;max-width:none}
-.hero .wrap{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:24px;align-items:center;min-height:min(70vh,620px);padding-block:36px 120px}
-.hero__copy{position:relative;z-index:2}
-.hero__slides{position:relative;display:grid}
-.hero__slide{grid-area:1/1;display:flex;flex-direction:column;align-items:flex-start;gap:22px;opacity:0;visibility:hidden;transform:translateY(16px);transition:opacity .6s var(--ease),transform .7s var(--ease),visibility 0s .7s}
-.hero__slide.is-on{opacity:1;visibility:visible;transform:none;transition:opacity .6s var(--ease) .1s,transform .7s var(--ease) .1s}
-.hero__slide .display{max-width:14ch;font-size:clamp(38px,4.6vw,66px)}
-.hero__cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:6px}
-.hero__from{display:flex;align-items:baseline;gap:10px;color:var(--muted);font-size:14px}
-.hero__from .price{font-size:22px}
-.hero__stage{position:relative;height:min(58vh,560px);min-height:340px}
-.hero__prod{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;transform:translateX(40px) scale(.97);transition:opacity .6s var(--ease),transform .9s var(--ease),visibility 0s .9s}
-.hero__prod.is-on{opacity:1;visibility:visible;transform:none;transition:opacity .7s var(--ease),transform 1s var(--ease)}
-.hero__prod img{max-width:min(100%,var(--w,640px));max-height:88%;width:auto;height:auto;object-fit:contain;filter:drop-shadow(0 40px 40px rgba(33,29,29,.18));transition:opacity .4s}
-.hero__prod::after{content:"";position:absolute;left:50%;bottom:2%;width:56%;height:22px;transform:translateX(-50%);background:radial-gradient(closest-side,rgba(33,29,29,.22),transparent);z-index:-1}
-.hero__prod--wall::after{display:none}
-.chip{position:absolute;display:flex;align-items:center;gap:10px;padding:10px 14px 10px 10px;background:var(--glass);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-radius:var(--r);box-shadow:var(--shadow);font-size:13px;color:var(--muted);line-height:1.25;opacity:0;transform:translateY(10px);transition:opacity .5s var(--ease),transform .6s var(--ease)}
-.chip b{display:block;color:var(--ink);font-size:15px;font-weight:700}
-.chip .ic{width:30px;height:30px;--ic:var(--icon);--ic-w:2.2}
-.hero__prod.is-on .chip{opacity:1;transform:none;transition-delay:.45s}
-.hero__prod.is-on .chip:nth-of-type(2){transition-delay:.6s}
-.hero__prod.is-on .chip:nth-of-type(3){transition-delay:.75s}
-.hero__colors{position:absolute;right:4%;bottom:6%;display:flex;align-items:center;gap:10px;background:var(--glass);backdrop-filter:blur(10px);padding:8px 12px 8px 14px;border-radius:30px;box-shadow:var(--shadow);font-size:12.5px;color:var(--muted)}
-.hero__tabs{position:absolute;z-index:3;left:0;right:0;bottom:0}
-.hero__tabs .wrap{display:block;min-height:0;padding-block:0}
-.tabs4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;background:var(--page-2)}
-.tab4{position:relative;display:flex;align-items:center;gap:14px;padding:20px 22px 22px;background:var(--surface);text-align:left;transition:background .25s;min-width:0}
-.tab4:hover{background:var(--blue-10)}
-.tab4 .ic{--ic:var(--icon);width:36px;height:36px}
-.tab4 b{display:block;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tab4 small{display:block;color:var(--steel);font-size:12.5px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tab4__bar{position:absolute;left:0;right:0;top:0;height:3px;background:transparent}
-.tab4__bar i{display:block;height:100%;width:0;background:var(--red)}
-.tab4.is-on{background:var(--surface)}
-.tab4.is-on .tab4__bar i{animation:bar var(--dur,7s) linear forwards}
-.tab4.is-on.is-paused .tab4__bar i{animation-play-state:paused}
-@keyframes bar{to{width:100%}}
+/* ---------- HOME HERO: the main product, a wall boiler, on a wall at dusk (photography p.38-41: warm light,
+   one product, nothing else). Always dark, as the photo is: the left side carries on the photo's own shadow. ---------- */
+.lhero{--dusk:#120A05;position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;min-height:clamp(560px,calc(100svh - 110px),860px);background:var(--dusk);color:#fff}
+.lhero__bg{position:absolute;z-index:-1;top:0;right:0;bottom:0;width:min(66%,1240px)}
+.lhero__bg img{width:100%;height:100%;object-fit:cover;object-position:50% 38%}
+.lhero__bg::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,var(--dusk) 0,rgba(18,10,5,.72) 14%,rgba(18,10,5,0) 42%),linear-gradient(0deg,rgba(18,10,5,.85) 0,rgba(18,10,5,0) 26%)}
+.lhero__in{flex:1;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:32px;align-items:center;padding-block:clamp(40px,6vw,96px) 32px}
+.lhero__copy{display:flex;flex-direction:column;align-items:flex-start;gap:24px;max-width:640px}
+.lhero .display{color:#fff;font-size:clamp(42px,4.4vw,68px);max-width:none}
+.lhero .lead{color:rgba(255,255,255,.78);max-width:44ch}
+.lhero__cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:6px}
+.lhero .btn--ghost{--fg:#fff;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.45)}
+.lhero .btn--ghost:hover{background:rgba(255,255,255,.1);box-shadow:inset 0 0 0 1.5px #fff}
+/* the photo's caption: what is on the wall, and the way to it */
+.lhero__credit{align-self:end;position:relative;display:flex;flex-direction:column;gap:2px;padding:12px 52px 12px 16px;border-left:2px solid var(--red);background:rgba(18,10,5,.5);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:#fff;font-size:13px;line-height:1.35;transition:background .25s}
+.lhero__credit:hover{background:rgba(18,10,5,.75)}
+.lhero__credit small{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.lhero__credit b{font-size:15px;font-weight:700;letter-spacing:.02em}
+.lhero__credit span{color:rgba(255,255,255,.72)}
+.lhero__credit .arr{position:absolute;right:16px;top:50%;width:18px;height:18px;margin-top:-9px;--ic:#fff;transition:transform .25s var(--ease)}
+.lhero__credit:hover .arr{transform:translateX(4px)}
+.lhero__facts{border-top:1px solid rgba(255,255,255,.12);background:rgba(18,10,5,.55);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.lhero__facts ul{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;padding-block:22px}
+.lhero__facts li{display:flex;align-items:center;gap:14px;min-width:0}
+.lhero__facts .ic{width:34px;height:34px;--ic:#fff;--ic-accent:var(--red)}
+.lhero__facts b{display:block;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.lhero__facts small{display:block;font-size:13.5px;color:rgba(255,255,255,.62);line-height:1.4}
 
-/* ---------- the window: four systems, each on MC Red with a white icon (p.8, frame C p.29) ---------- */
+/* ---------- home sections: more air than the shop's pages ---------- */
+.lsec{padding-block:clamp(56px,7vw,112px)}
+.lsec--flush{padding-top:0}
+
+/* ---------- the window: four systems, each pane in its own colour with a white icon and title (p.8, frame C
+   p.29). The small text and the links stay readable: white on red and blue, MC Black on green (white would be
+   3.2:1), MC Blue on light blue (2.3:1) ---------- */
 .window{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.pane{position:relative;display:flex;flex-direction:column;justify-content:space-between;min-height:380px;padding:clamp(24px,3vw,40px);border-radius:var(--r);overflow:hidden;isolation:isolate;transition:transform .5s var(--ease);background:var(--red);color:#fff}
+.pane{position:relative;display:flex;flex-direction:column;justify-content:space-between;min-height:380px;padding:clamp(24px,3vw,40px);border-radius:var(--r);overflow:hidden;isolation:isolate;transition:transform .5s var(--ease);background:var(--pane,var(--red));color:#fff}
+.pane--cool{--pane:var(--blue);--pane-link:#1F2463;--pane-link-2:#171B4D}
+.pane--vent{--pane:var(--green);--pane-ink:var(--black);--pane-link:#00843F;--pane-link-2:#006E34}
+.pane--water{--pane:var(--sky);--pane-ink:var(--blue);--pane-link:var(--blue);--pane-link-2:#1F2463}
+.pane--vent .pane__lead,.pane--water .pane__lead{color:var(--pane-ink);opacity:1}
+.pane__count{color:var(--pane-ink,inherit)}
 .pane__top{position:relative;z-index:2;display:flex;flex-direction:column;gap:12px;max-width:58%}
 .pane__top .ic{width:44px;height:44px}
 .pane .ic{--ic:#fff;--ic-accent:#fff}
 .pane h3{font-size:clamp(22px,2.1vw,30px);font-weight:700;letter-spacing:.02em;text-transform:uppercase;line-height:1.05;color:inherit}
 .pane__lead{font-size:15px;opacity:.85;max-width:34ch}
 .pane__links{position:relative;z-index:2;display:flex;flex-wrap:wrap;gap:6px;margin-top:22px;max-width:60%}
-.pane__links a{font-size:12px;font-weight:600;padding:6px 11px;border-radius:30px;background:#C91D21;transition:background .2s}   /* solid: readable over the white product photos too */
-.pane__links a:hover{background:#A9161A}
+.pane__links a{font-size:12px;font-weight:600;padding:6px 11px;border-radius:30px;background:var(--pane-link,#C91D21);transition:background .2s}   /* solid: readable over the white product photos too */
+.pane__links a:hover{background:var(--pane-link-2,#A9161A)}
 .pane__img{position:absolute;z-index:1;right:-2%;bottom:-2%;width:var(--w,58%);max-height:92%;object-fit:contain;object-position:right bottom;transition:transform .9s var(--ease);filter:drop-shadow(0 30px 30px rgba(33,29,29,.25))}
 .pane:hover .pane__img{transform:translate(-6px,-8px) scale(1.03)}
 .pane__go{position:absolute;z-index:3;inset:0}
@@ -506,55 +545,51 @@ mark{background:var(--red-20);color:inherit;border-radius:2px;padding:0 1px}
 .pane__links,.pane__count{pointer-events:auto}
 .pane__links a{position:relative;z-index:4}
 
-/* ---------- rail (horizontal products) ---------- */
-.tabs{display:flex;gap:6px;flex-wrap:wrap}
-.tabs button{height:40px;padding:0 16px;border-radius:30px;font-size:13.5px;font-weight:600;color:var(--ink);background:var(--surface-2);transition:background .2s,color .2s}
-.tabs button:hover{background:var(--blue-10)}
-.tabs button.is-on{background:var(--accent);color:#fff}
-.rail{position:relative}
-.rail__track{display:grid;grid-auto-flow:column;grid-auto-columns:calc((100% - 3 * 24px) / 4);gap:24px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding-bottom:6px}
-.rail__track::-webkit-scrollbar{display:none}
-.rail__track > *{scroll-snap-align:start}
-.rail__nav{display:flex;gap:8px}
-.rail__nav button{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;box-shadow:inset 0 0 0 1.5px var(--blue-20);color:var(--ink);transition:background .2s,box-shadow .2s,opacity .2s}
-.rail__nav button:hover{background:var(--accent);color:#fff;box-shadow:none}
-.rail__nav button[disabled]{opacity:.35;pointer-events:none}
+/* ---------- the boilers (home.js LINEUP): one tile per line, the boiler alone on the stage ---------- */
+.boils{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(12px,1.6vw,24px)}
+.boil{display:flex;flex-direction:column;gap:4px;min-width:0}
+.boil.reveal{transition-delay:var(--d,0s)}
+.boil__stage{position:relative;display:grid;grid-template:minmax(0,1fr) / minmax(0,1fr);place-items:center;aspect-ratio:4/5;   /* one fixed cell: the photo's 74 % is of the stage */margin-bottom:16px;background:linear-gradient(180deg,var(--stage),var(--stage-2));border-radius:var(--r);overflow:hidden}
+.boil__stage img{height:74%;width:auto;max-width:72%;object-fit:contain;filter:drop-shadow(0 26px 26px rgba(33,29,29,.18));transition:transform .7s var(--ease)}
+.boil:hover .boil__stage img{transform:translateY(-8px)}
+.boil__brand{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--red)}
+.boil__name{font-size:clamp(22px,2vw,28px);font-weight:700;line-height:1.1;letter-spacing:.02em;text-transform:uppercase;color:var(--heading)}
+.boil__head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.boil__kw{font-size:16px;font-weight:300;color:var(--ink);white-space:nowrap}
+.boil__meta{font-size:14px;color:var(--muted);min-height:1.6em}
+.boil__foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;padding-top:14px;border-top:1px solid var(--line)}
+.boil__foot .arr{width:20px;height:20px;flex:none;--ic:var(--icon);transition:transform .25s var(--ease)}
+.boil:hover .boil__foot .arr{transform:translateX(5px)}
 
-/* ---------- spotlight (dark editorial, colour picker) ---------- */
-.spot{position:relative;background:var(--black);color:#fff;overflow:hidden;isolation:isolate}
+/* ---------- featured line (the admin panel's slides): an editorial spread, the product large on its stage, the
+   facts in a ruled row. One slide shows alone; more get arrows and dots ---------- */
+.spot{position:relative;background:var(--page-2);overflow:hidden;isolation:isolate}
 .spot__track{display:flex;transition:transform .8s var(--ease);will-change:transform;touch-action:pan-y}
 .spot__slide{position:relative;flex:0 0 100%;min-width:0;isolation:isolate}
-.spot .spot__slide .wrap{padding-bottom:clamp(96px,8.4vw,124px)}
-.spot .wrap.spot__nav{display:flex;align-items:center;gap:16px;padding-block:0;position:absolute;left:0;right:0;bottom:clamp(28px,3vw,44px)}
+.spot__bg{display:none}
+.spot .wrap{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:clamp(32px,5vw,88px);align-items:center;padding-block:clamp(56px,7vw,112px)}
+.spot:not(.spot--single) .spot__slide .wrap{padding-bottom:clamp(104px,9vw,136px)}
+.spot .wrap.spot__nav{display:flex;align-items:center;gap:16px;padding-block:0;position:absolute;left:0;right:0;bottom:clamp(36px,4vw,56px)}
 .spot--single .spot__nav{display:none}
-.spot__arr{width:44px;height:44px;display:grid;place-items:center;border-radius:var(--r);color:#fff;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.3);transition:background .2s,box-shadow .2s}
-.spot__arr:hover{background:rgba(255,255,255,.1);box-shadow:inset 0 0 0 1.5px #fff}
+.spot__arr{width:44px;height:44px;display:grid;place-items:center;border-radius:var(--r);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--blue-20);transition:background .2s,color .2s,box-shadow .2s}
+.spot__arr:hover{background:var(--accent);color:#fff;box-shadow:none}
 .spot__dots{display:flex;gap:8px}
-.spot__dot{width:28px;height:4px;border-radius:2px;background:rgba(255,255,255,.25);transition:background .3s,width .3s var(--ease)}
+.spot__dot{width:28px;height:4px;border-radius:2px;background:var(--blue-20);transition:background .3s,width .3s var(--ease)}
 .spot__dot.is-on{width:44px;background:var(--red)}
-.spot--round .spot__bg::after{background:radial-gradient(closest-side,rgba(110,170,235,.2),transparent 70%)}
-.spot--round .spot__stage::before{content:"";position:absolute;width:min(100%,560px);aspect-ratio:1;border-radius:50%;background:repeating-radial-gradient(circle,transparent 0 46px,rgba(255,255,255,.05) 46px 47px);-webkit-mask-image:radial-gradient(closest-side,#000 55%,transparent);mask-image:radial-gradient(closest-side,#000 55%,transparent)}
-.spot--round .spot__stage img{max-width:min(74%,420px);border-radius:50%;filter:drop-shadow(0 40px 50px rgba(0,0,0,.65))}
-.spot__bg{position:absolute;inset:0;z-index:-1}
-.spot__bg img{position:absolute;right:0;top:0;width:62%;height:100%;object-fit:cover;opacity:.32;mix-blend-mode:screen;-webkit-mask-image:linear-gradient(90deg,transparent,#000 60%);mask-image:linear-gradient(90deg,transparent,#000 60%)}
-.spot__bg::after{content:"";position:absolute;right:8%;top:50%;width:min(760px,60vw);aspect-ratio:1;transform:translateY(-50%);background:radial-gradient(closest-side,rgba(227,34,38,.22),transparent 70%)}
-.spot .wrap{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:40px;align-items:center;padding-block:clamp(44px,5.4vw,80px)}
-.spot__copy{display:flex;flex-direction:column;gap:22px;align-items:flex-start}
-.spot .h1{color:#fff}
-.spot .lead{color:rgba(255,255,255,.75)}
-.spot__colors{display:flex;gap:16px;align-items:center}
-.spot__colors .sw{box-shadow:inset 0 0 0 1px rgba(255,255,255,.4)}
-.spot__colors .sw::after{border-color:transparent}
-.spot__colors .sw.is-on::after{border-color:#fff}
-.spot__cname{font-size:14px;color:rgba(255,255,255,.75);min-width:12ch}
-.spot__stage{position:relative;aspect-ratio:16/10;display:grid;place-items:center}
-.spot__stage img{position:absolute;max-width:96%;max-height:96%;object-fit:contain;filter:drop-shadow(0 50px 50px rgba(0,0,0,.6));opacity:0;transform:translateY(12px);transition:opacity .6s var(--ease),transform .8s var(--ease)}
+.spot__stage{order:-1;position:relative;aspect-ratio:5/4;display:grid;place-items:center;background:var(--surface);border-radius:var(--r);overflow:hidden}
+.spot--glow .spot__stage{background:radial-gradient(60% 55% at 50% 58%,var(--stage),var(--surface))}
+.spot--round .spot__stage::before{content:"";position:absolute;width:min(92%,560px);aspect-ratio:1;border-radius:50%;background:repeating-radial-gradient(circle,transparent 0 46px,var(--tint) 46px 47px);-webkit-mask-image:radial-gradient(closest-side,#000 55%,transparent);mask-image:radial-gradient(closest-side,#000 55%,transparent)}
+.spot--round .spot__stage img{max-width:min(70%,420px);border-radius:50%}
+.spot__stage img{position:absolute;max-width:86%;max-height:82%;object-fit:contain;filter:drop-shadow(0 40px 40px rgba(33,29,29,.2));opacity:0;transform:translateY(12px);transition:opacity .6s var(--ease),transform .8s var(--ease)}
 .spot__stage img.is-on{opacity:1;transform:none}
-.spot__facts{display:flex;gap:28px;flex-wrap:wrap;padding-top:6px;border-top:1px solid rgba(255,255,255,.14);width:100%}
-.spot__facts div{padding-top:16px}
-.spot__facts b{display:block;font-size:26px;font-weight:300;line-height:1}
-.spot__facts small{display:block;color:rgba(255,255,255,.6);font-size:12.5px;margin-top:6px}
-.spot .price{color:#fff}
+.spot__copy{display:flex;flex-direction:column;gap:22px;align-items:flex-start}
+.spot .lead{color:var(--text)}
+.spot__colors{display:flex;gap:16px;align-items:center}
+.spot__cname{font-size:14px;color:var(--muted);min-width:12ch}
+.spot__facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));border-top:1px solid var(--line);width:100%}
+.spot__facts div{padding:16px 16px 0 0}
+.spot__facts b{display:block;font-size:28px;font-weight:300;line-height:1;color:var(--ink)}
+.spot__facts small{display:block;color:var(--muted);font-size:12.5px;margin-top:6px}
 
 /* ---------- services (p.36 C) ---------- */
 .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid var(--line)}
@@ -567,7 +602,7 @@ mark{background:var(--red-20);color:inherit;border-radius:2px;padding:0 1px}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
 .stat b{display:block;font-size:clamp(40px,4.6vw,64px);font-weight:300;line-height:1;color:var(--ink);letter-spacing:-.02em}
 .stat b sup{font-size:.45em;font-weight:600;vertical-align:top;margin-left:4px;color:var(--red)}
-.stat span{display:block;margin-top:12px;color:var(--muted);font-size:14.5px;max-width:22ch}
+.stat > span{display:block;margin-top:12px;color:var(--muted);font-size:14.5px;max-width:22ch}
 
 /* ---------- brands marquee ---------- */
 .brands{overflow:hidden;mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
@@ -577,6 +612,29 @@ mark{background:var(--red-20);color:inherit;border-radius:2px;padding:0 1px}
 .brands__track a:hover{opacity:1;filter:none}
 .brands__track img{height:100%;width:auto;max-width:170px;object-fit:contain}
 @keyframes marquee{to{transform:translateX(-50%)}}
+
+/* ---------- home: why us (figures, four steps, the brands) and the consultation beside a finished installation ---------- */
+.lwhy__head{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(24px,5vw,80px);align-items:end;margin-bottom:clamp(36px,4.4vw,64px)}
+.lwhy__head > div{display:flex;flex-direction:column;gap:14px}
+.lwhy__stats{padding-block:clamp(28px,3vw,44px);border-block:1px solid var(--line)}
+.lsteps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(20px,2.4vw,40px);margin-top:clamp(40px,5vw,72px)}
+.lsteps li{display:flex;flex-direction:column;gap:10px;min-width:0}
+.lsteps__n{font-size:13px;font-weight:600;letter-spacing:.14em;color:var(--red)}
+.lsteps .ic{width:48px;height:48px;margin:4px 0 2px;--ic:var(--icon)}
+.lsteps h3{font-size:18px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink)}
+.lsteps p{color:var(--muted);font-size:15px}
+.lwhy__brands{margin-top:clamp(48px,6vw,88px);padding-top:clamp(28px,3vw,40px);border-top:1px solid var(--line)}
+.lconsult{background:var(--linen)}
+.lconsult__in{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:clamp(32px,6vw,104px);align-items:center;padding-block:clamp(56px,7vw,112px)}
+.lconsult__photo{margin:0;aspect-ratio:4/5;overflow:hidden;border-radius:var(--r)}
+.lconsult__photo img{width:100%;height:100%;object-fit:cover}
+.lconsult__body{display:flex;flex-direction:column;align-items:flex-start;gap:18px;min-width:0}
+.lconsult__phone{display:inline-flex;align-items:center;gap:14px;font-size:28px;font-weight:300;color:var(--ink)}
+.lconsult__phone .ic{width:40px;height:40px;--ic:var(--icon)}
+.lconsult__phone small{display:block;font-size:12.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.lconsult__form{width:100%;display:flex;flex-direction:column;gap:16px;margin-top:8px;padding:clamp(20px,2.4vw,32px);background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow)}
+.lconsult__form .h3{font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.lconsult__row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
 
 /* ---------- consult band (MC Blue + roofscape, p.30) ---------- */
 .band{position:relative;background:var(--blue);color:#fff;overflow:hidden;isolation:isolate}
@@ -592,7 +650,7 @@ mark{background:var(--red-20);color:inherit;border-radius:2px;padding:0 1px}
 .band form .h3{text-transform:uppercase;letter-spacing:.04em;font-weight:700}
 
 /* ---------- footer ---------- */
-.ftr{background:var(--blue);color:rgba(255,255,255,.75);font-size:14.5px;position:relative}
+.ftr{position:relative;margin:0 12px 12px;border-radius:28px;overflow:hidden;background:var(--blue);color:rgba(255,255,255,.75);font-size:14.5px}   /* the last tile */
 .ftr__top{display:grid;grid-template-columns:1.4fr repeat(3,1fr) 1.3fr;gap:40px;padding-block:48px 36px}
 .ftr__brand img{width:170px}
 .ftr__brand p{margin-top:16px;max-width:30ch;line-height:1.6}
@@ -604,7 +662,7 @@ mark{background:var(--red-20);color:inherit;border-radius:2px;padding:0 1px}
 .ftr__contact b{color:#fff;font-weight:500;display:block}
 .ftr__bot{border-top:1px solid rgba(255,255,255,.14)}
 .ftr__bot .wrap{display:flex;justify-content:space-between;gap:20px;padding-block:22px;font-size:13px;flex-wrap:wrap}
-.ftr__soc{display:flex;gap:8px}
+.ftr__soc{display:flex;gap:8px;margin-top:22px}
 .ftr__soc a{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.25);transition:background .2s}
 .ftr__soc a:hover{background:rgba(255,255,255,.12)}
 .ftr__soc svg{width:18px;height:18px;fill:#fff}
@@ -929,6 +987,43 @@ button.ccard:hover,a.ccard:hover{box-shadow:inset 0 0 0 1.5px var(--blue-40)}
 .map{border-radius:var(--r);overflow:hidden;background:var(--surface);position:relative;min-height:440px}
 .map iframe{position:absolute;inset:0;width:100%;height:100%;border:0;filter:grayscale(.3)}
 
+/* ---------- career (career.html): the team in figures, the directions, open positions (admin panel:
+   ვაკანსიები), the application beside the e-mail for the CV ---------- */
+.chero__cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
+.chero .btn--ghost{--fg:#fff;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.45)}
+.chero .btn--ghost:hover{background:rgba(255,255,255,.1);box-shadow:inset 0 0 0 1.5px #fff}
+/* the figures as the 2x2 window (p.9): four panes with a thin white frame */
+.cfacts{display:grid;grid-template-columns:1fr 1fr;gap:2px;justify-self:end;align-self:center;width:min(100%,540px);padding:2px;border-radius:var(--r);background:rgba(255,255,255,.16)}
+.cfacts > div{padding:clamp(20px,2.4vw,30px);background:var(--blue)}
+.cfacts > div:first-child{background:var(--red)}
+.cfacts b{display:block;font-size:clamp(34px,3.8vw,54px);font-weight:300;line-height:1;letter-spacing:-.02em;color:#fff}
+.cfacts span{display:block;margin-top:10px;font-size:14.5px;line-height:1.4;color:rgba(255,255,255,.76)}
+.cdirs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.jobs{display:flex;flex-direction:column;gap:10px}
+.job{border-radius:var(--r);background:var(--surface);transition:box-shadow .2s}
+.job:hover,.job[open]{box-shadow:inset 0 0 0 1.5px var(--blue-40)}
+.job summary{display:flex;align-items:center;gap:20px;padding:22px 26px;cursor:pointer;list-style:none}
+.job summary::-webkit-details-marker{display:none}
+.job__t{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
+.job__t b{font-size:clamp(18px,1.6vw,22px);font-weight:700;line-height:1.25;letter-spacing:.03em;text-transform:uppercase;color:var(--ink)}
+.job__meta{display:flex;flex-wrap:wrap;gap:6px}
+.job__meta span{padding:4px 11px;border-radius:30px;background:var(--blue-10);color:var(--ink);font-size:12.5px;font-weight:600}
+.job__chev{width:22px;height:22px;color:var(--ink);transition:transform .25s var(--ease)}
+.job[open] .job__chev{transform:rotate(180deg)}
+.job__b{display:flex;flex-direction:column;align-items:flex-start;gap:20px;padding:0 26px 26px}
+.job__text{max-width:75ch;color:var(--text)}
+.job__text p + p{margin-top:10px}
+.jobs__empty{display:flex;align-items:center;gap:24px;padding:clamp(24px,3vw,36px);border-radius:var(--r);background:var(--surface)}
+.jobs__empty .ic{width:56px;height:56px;flex:none;--ic:var(--icon)}
+.jobs__empty h3{font-size:18px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink)}
+.jobs__empty p{margin-top:6px;color:var(--muted);max-width:60ch}
+.jobs__empty .btn{margin-left:auto;flex:none}
+#apply .ccard{background:var(--surface-2)}   /* on the white section */
+#apply .cards3{align-content:start;flex:none}
+.capply{display:flex;flex-direction:column;gap:16px;padding:32px;border-radius:var(--r);background:var(--surface-2)}
+.capply .h3{font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.capply .btn{margin-top:auto}
+
 /* ---------- floating: back to top and the chat (bottom right) ---------- */
 body:has(.buybar.is-on){--fab-lift:82px}
 .fab{position:fixed;z-index:58;right:20px;bottom:calc(20px + var(--fab-lift,0px));display:flex;flex-direction:column;align-items:center;gap:10px;transition:bottom .35s var(--ease)}
@@ -1122,10 +1217,10 @@ body:has(.buybar.is-on){--fab-lift:82px}
 /* ---------- responsive ---------- */
 @media (max-width:1180px){
   .nav__link{padding:0 10px;font-size:12px}
-  .search-trigger{min-width:0;width:44px;padding:0;justify-content:center;background:none}
-  .search-trigger span,.search-trigger kbd{display:none}
+  .mega .wrap{grid-template-columns:repeat(4,minmax(0,1fr));gap:24px}
+  .mega__feat{display:none}
+  .hdr__cta{display:none}
   .grid{--cols:3}
-  .rail__track{grid-auto-columns:calc((100% - 2 * 24px) / 3)}
   .ftr__top{grid-template-columns:repeat(2,minmax(0,1fr)) 1fr;row-gap:44px}
   .ftr__brand{grid-column:1/-1}
 }
@@ -1141,19 +1236,25 @@ body:has(.buybar.is-on){--fab-lift:82px}
   .dash__nav a,.dash__nav button{flex:none;height:42px;background:var(--surface-2);border-radius:30px;padding:0 14px;font-size:14px}
   .dash__nav button{margin-top:0;border-top:0;padding-top:0;height:42px;border-radius:30px}
   .dash__nav small:empty{display:none}
-  .strip__l .strip__item:not(:first-child){display:none}
   .nav{display:none}
   .burger{display:inline-grid}
-  .hdr .wrap{gap:12px}
-  .hdr__logo{width:92px;margin-right:auto}
-  .hero .wrap{grid-template-columns:minmax(0,1fr);padding-block:36px 120px;min-height:0}
-  .hero__stage{height:min(48vh,420px);order:-1;min-height:280px}
-  .hero__slide .display{max-width:none}
-  .chip{display:none}
+  .hdr{padding:10px 10px 0}
+  .hdr > .wrap{gap:6px;padding-inline:6px;border-radius:18px}
+  .hdr__logo{width:84px;margin-right:auto}
   .window{grid-template-columns:minmax(0,1fr)}
   .pane{min-height:380px}
   .spot .wrap{grid-template-columns:minmax(0,1fr)}
-  .spot__stage{order:-1}
+  /* the home hero on tablets and phones: the photo above, the words on its dark floor below */
+  .lhero{min-height:0}
+  .lhero__bg{position:relative;z-index:0;inset:auto;width:100%;height:clamp(300px,52svh,520px)}
+  .lhero__bg::after{background:linear-gradient(0deg,var(--dusk) 0,rgba(18,10,5,0) 42%)}
+  .lhero__in{position:relative;z-index:1;grid-template-columns:minmax(0,1fr);margin-top:-48px;padding-block:0 36px}
+  .lhero__credit{display:none}
+  .boils{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:36px}
+  .lwhy__head{grid-template-columns:minmax(0,1fr);align-items:start}
+  .lsteps{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:36px}
+  .lconsult__in{grid-template-columns:minmax(0,1fr)}
+  .lconsult__photo{aspect-ratio:16/10}
   .steps{grid-template-columns:repeat(2,minmax(0,1fr))}
   .step:nth-child(3){padding-left:0;border-left:0}
   .step{border-top:1px solid var(--line)}
@@ -1161,6 +1262,7 @@ body:has(.buybar.is-on){--fab-lift:82px}
   .band .wrap{grid-template-columns:minmax(0,1fr)}
   .shop{grid-template-columns:minmax(0,1fr)}
   .filters{position:fixed;z-index:85;top:0;left:0;bottom:0;width:min(380px,92vw);max-height:none;background:var(--surface);padding:0 22px 100px;transform:translateX(-100%);transition:transform .35s var(--ease);box-shadow:var(--shadow-lg)}
+  .filters:not(.is-open){box-shadow:none}
   .filters.is-open{transform:none}
   .filters__head{display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:2;padding:16px 0;margin-bottom:8px;border-bottom:1px solid var(--line)}
   .filters__head h2{font-size:15px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink)}
@@ -1185,6 +1287,8 @@ body:has(.buybar.is-on){--fab-lift:82px}
   .ahero__cons{justify-self:start;width:100%;max-width:460px}
   .tri{grid-template-columns:minmax(0,1fr)}
   .values,.assure--4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cfacts{justify-self:start}
+  .cdirs{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media (max-width:760px){
   .pills{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:calc(var(--gut) * -1);padding:0 var(--gut) 4px;scroll-padding-inline:var(--gut)}
@@ -1204,10 +1308,8 @@ body:has(.buybar.is-on){--fab-lift:82px}
   .addrs{grid-template-columns:minmax(0,1fr)}
   .ostat{margin-left:0}
   .order__head{gap:10px 20px}
-  .strip .wrap{justify-content:center}
-  .strip__r{display:none}
+  .ftr{margin:0 8px 8px;border-radius:24px}
   .grid{--cols:2;gap:28px 14px}
-  .rail__track{grid-auto-columns:calc((100% - 14px) / 2.15);gap:14px}
   .card__add{display:none}
   .card__acts{opacity:1;transform:none;top:10px;right:8px}
   .card__acts .cact[data-cmp]{display:none}
@@ -1217,16 +1319,7 @@ body:has(.buybar.is-on){--fab-lift:82px}
   .card__specs{font-size:12px}
   .price{font-size:16px}
   .sec__head{flex-direction:column;align-items:flex-start}
-  .tabs4{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .tab4{gap:10px;padding:14px 12px 15px}
-  .tab4 > span:last-child{min-width:0}
-  .tab4 b{font-size:11.5px;letter-spacing:.04em}
-  .tab4 small{display:none}
-  .tab4 .ic{width:26px;height:26px}
   .card__brand span + span{display:none}
-  .hero .wrap{padding-bottom:28px}
-  .hero__tabs{position:relative}
-  .hero__colors{right:50%;transform:translateX(50%);bottom:0}
   .pane{min-height:260px}
   .pane__top{max-width:100%}
   .pane__img{width:var(--wm,52%);opacity:.95}
@@ -1234,6 +1327,24 @@ body:has(.buybar.is-on){--fab-lift:82px}
   .pane__links{max-width:60%}
   .steps{grid-template-columns:minmax(0,1fr)}
   .step,.step + .step{padding-left:0;border-left:0}
+  /* the home hero on a phone: the boiler above, the words over the photo's dark floor */
+  .lhero__bg{height:clamp(280px,50svh,420px)}
+  .lhero__bg img{object-position:50% 34%}
+  .lhero__in{margin-top:-36px;padding-bottom:28px}
+  .lhero__copy{gap:18px}
+  .lhero .display{font-size:clamp(36px,10.4vw,48px)}
+  .lhero__facts ul{grid-template-columns:minmax(0,1fr);gap:14px;padding-block:20px}
+  .lhero__facts .ic{width:28px;height:28px}
+  .boils{gap:28px 14px}
+  .boil__name{font-size:19px}
+  .boil__head{flex-direction:column;gap:2px}
+  .boil__kw{font-size:14px}
+  .boil__meta{font-size:13px;min-height:2.9em}
+  .boil__foot .price--req{font-size:12px}
+  .lsteps{grid-template-columns:minmax(0,1fr)}
+  .lconsult__row{grid-template-columns:minmax(0,1fr)}
+  .lconsult__phone{font-size:24px}
+  .spot__facts b{font-size:24px;white-space:nowrap}   /* a range like 7,1-13,4 stays on one line */
   .ftr__top{grid-template-columns:repeat(2,minmax(0,1fr))}
   .ftr__top > div:last-child{grid-column:1/-1}
   .grid2{grid-template-columns:minmax(0,1fr)}
@@ -1241,6 +1352,12 @@ body:has(.buybar.is-on){--fab-lift:82px}
   .so__chips{flex-direction:row;flex-wrap:wrap}
   .assure,.assure--4{grid-template-columns:minmax(0,1fr)}
   .values{grid-template-columns:minmax(0,1fr)}
+  .cdirs{grid-template-columns:minmax(0,1fr)}
+  .job summary{padding:18px;gap:12px}
+  .job__b{padding:0 18px 20px}
+  .jobs__empty{flex-direction:column;align-items:flex-start;gap:16px}
+  .jobs__empty .btn{margin-left:0}
+  .capply{padding:24px 18px}
   .cards3{grid-template-columns:minmax(0,1fr)}
   .done .btn + .btn{margin:10px 0 0}
   .modal__box{padding:30px 20px 22px}
@@ -1339,3 +1456,505 @@ body:has(.buybar.is-on){--fab-lift:82px}
   .faq__item summary{font-size:16px;padding:16px 0}
   .draftbar span{font-size:13px}
 }
+
+/* ==========================================================================
+   SHOP · CATALOGUE (catalog.html, catalog.js; owner's choice, 2026-11-17: the site follows the home page's window)
+   The top is only the kinds as pills on the page (owner's choice, 2026-11-17: no pane over the shop); the chosen
+   one in the category's system colour (heating MC Red, cooling MC Blue, ventilation and ducts green, water light
+   blue; the catalogue, a brand or a search in MC Blue). The system's colour also marks the ticks, the price
+   slider and the switch (--sys). Filters sit in a rounded tile; the cards are tiles too; the count is in the toolbar.
+   ========================================================================== */
+/* the systems' colours, for any element: the pane, its pills (solid, readable over photos), the small text */
+.sys--blue{--pane:var(--blue);--chip:rgba(255,255,255,.14);--chip-2:rgba(255,255,255,.24);--ink2:rgba(255,255,255,.82);--on:var(--blue)}
+.sys--heat{--pane:var(--red);--chip:#C91D21;--chip-2:#A9161A;--ink2:rgba(255,255,255,.88);--on:var(--red)}
+.sys--cool{--pane:var(--blue);--chip:#1F2463;--chip-2:#171B4D;--ink2:rgba(255,255,255,.86);--on:var(--blue)}
+.sys--vent{--pane:var(--green);--chip:#00843F;--chip-2:#006E34;--ink2:var(--black);--on:#00843F}
+.sys--water{--pane:var(--sky);--chip:var(--blue);--chip-2:#1F2463;--ink2:var(--blue);--on:var(--blue)}
+#main[data-sys="heat"]{--sys:var(--red)}
+#main[data-sys="cool"],#main[data-sys="blue"]{--sys:var(--blue)}
+#main[data-sys="vent"]{--sys:#00A551}
+#main[data-sys="water"]{--sys:#3E93BF}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #main:is([data-sys="cool"],[data-sys="blue"]){--sys:#6E74C8}}
+:root[data-theme="dark"] #main:is([data-sys="cool"],[data-sys="blue"]){--sys:#6E74C8}
+
+.chead{display:flex;flex-direction:column;align-items:flex-start;gap:10px;min-height:44px;margin:8px 0 22px;animation:chin .6s var(--ease) both}
+@keyframes chin{from{opacity:0;transform:translateY(8px)}}
+.chead__t{font-size:clamp(26px,2.6vw,38px);font-weight:700;line-height:1.1;letter-spacing:.01em;text-transform:uppercase;color:var(--heading);overflow-wrap:anywhere}
+.chead__lead{max-width:70ch;font-size:15px;line-height:1.6;color:var(--muted)}
+.chead__subs{align-self:stretch;display:flex;flex-wrap:wrap;gap:8px}
+.chead__subs a{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 16px 0 11px;border-radius:999px;background:var(--surface-2);color:var(--heading);font-size:12.5px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;white-space:nowrap;transition:background .2s,transform .2s,color .2s}
+.chead__subs a:hover{background:var(--blue-10);transform:translateY(-2px)}
+.chead__subs .ic{width:24px;height:24px;--ic:var(--sys,var(--blue));--ic-accent:var(--sys,var(--blue));--ic-w:2.6}
+.chead__subs small{font-size:11.5px;font-weight:500;color:var(--muted)}
+.chead__subs a.is-on{background:var(--sys,var(--blue));color:#fff}
+.chead__subs a.is-on .ic{--ic:#fff;--ic-accent:#fff}
+.chead__subs a.is-on small{color:inherit;opacity:.8}
+/* the catalogue itself: each system's icon in its colour */
+.chead__subs .sys--heat{--sys:var(--red)}
+.chead__subs .sys--cool{--sys:var(--blue)}
+.chead__subs .sys--vent{--sys:#00A551}
+.chead__subs .sys--water{--sys:#3E93BF}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .chead__subs .sys--cool{--sys:#6E74C8}}
+:root[data-theme="dark"] .chead__subs .sys--cool{--sys:#6E74C8}
+.toolbar__total{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+
+/* filters: a rounded tile; ticks, slider and switch in the system's colour */
+.shop .filters{padding:18px 18px 20px;border-radius:24px;background:var(--surface-2);top:calc(var(--hdr) + 32px)}
+.shop .filters::-webkit-scrollbar{width:10px}
+.shop .filters::-webkit-scrollbar-track{margin-block:22px}   /* the bar stops short of the rounded corners */
+.fopt input{width:20px;height:20px;border-radius:6px}
+.fopt input:checked,.check input:checked{background:var(--sys,var(--accent));border-color:var(--sys,var(--accent))}
+.switch input:checked{background:var(--sys,var(--accent))}
+.frange .input{height:44px;border-radius:12px}
+.dual__track,.dual__fill{height:4px;top:12px;border-radius:4px}
+.dual__fill{background:var(--sys,var(--accent))}
+.dual input::-webkit-slider-thumb{width:20px;height:20px;margin-top:-9px;border-color:var(--sys,var(--ink));box-shadow:0 2px 6px rgba(0,0,0,.18)}
+.dual input::-moz-range-thumb{border-color:var(--sys,var(--ink))}
+.fmore{color:var(--sys,var(--ink))}
+/* toolbar: the sort as a pill, the grid size as a segmented pill */
+.toolbar .select{height:44px;min-width:210px;border-radius:999px;padding:0 44px 0 18px;background-color:var(--surface-2);border-color:transparent;font-weight:500}
+.toolbar .select:hover{border-color:var(--line-2)}
+.density{gap:2px;padding:4px;border-radius:999px;background:var(--surface-2);box-shadow:none}
+.density button{width:36px;height:36px;border-radius:50%;transition:background .2s,color .2s}
+.density button.is-on{background:var(--surface);color:var(--ink);box-shadow:0 2px 8px -3px rgba(17,19,48,.3)}
+.achip{height:36px;border-radius:999px}
+.more__bar{width:220px;height:4px;border-radius:4px}
+.more__bar i{background:var(--sys,var(--accent));border-radius:4px}
+.empty{border-radius:24px}
+
+/* the product card: one rounded tile; the photo on its own white stage (the photos need white); the bag
+   button round in the stage's corner, opening to its label under the pointer */
+.grid--shop{gap:16px}
+.card{padding:10px 10px 16px;border-radius:24px;background:var(--surface-2);transition:transform .35s var(--ease),box-shadow .35s var(--ease)}
+.card:hover{transform:translateY(-4px);box-shadow:0 22px 40px -26px rgba(17,19,48,.45)}
+.card__stage{border-radius:18px;background:var(--cstage)}
+.card:hover .card__stage{background:var(--cstage)}
+.card__body{padding:12px 8px 0}
+.tag{border-radius:999px}
+.card__acts{top:12px;right:12px}
+.card__tags{left:14px;top:14px}
+.card__add{left:auto;right:12px;bottom:12px;width:auto;min-width:48px;height:48px;padding:0 15px;gap:0;border-radius:999px;justify-content:flex-start;box-shadow:0 10px 20px -10px rgba(17,19,48,.6);
+  transform:translateY(8px) scale(.9);transition:opacity .25s,transform .35s var(--ease),background .2s}
+.card__add .ui{width:18px;height:18px;flex:none}
+.card__add span{max-width:0;overflow:hidden;white-space:nowrap;transition:max-width .45s var(--ease),margin .45s var(--ease)}
+.card__add:hover span,.card__add:focus-visible span{max-width:170px;margin-left:8px}
+.card:hover .card__add,.card__add:focus-visible{transform:none}
+
+@media (max-width:980px){
+  .chead__subs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:calc(var(--gut) * -1);padding:3px var(--gut);scroll-padding-inline:var(--gut)}
+  .chead__subs::-webkit-scrollbar{display:none}
+  .shop .filters{border-radius:0 24px 24px 0;padding:0 22px 100px;background:var(--surface)}
+}
+@media (max-width:760px){
+  .chead{margin:4px 0 16px}
+  .chead__subs a{height:40px;padding:0 14px 0 9px}
+  .chead__subs .ic{width:22px;height:22px}
+  .grid--shop{gap:10px}
+  .card{padding:6px 6px 12px;border-radius:20px}
+  .card__stage{border-radius:15px}
+  .card__body{padding:10px 4px 0}
+}
+
+/* ==========================================================================
+   SHOP · PRODUCT PAGE (product.html, product.js; owner's choice, 2026-11-17: the site follows the home page's window)
+   The photos in a rounded tile on a white stage; the price in a soft tile; the "not sure?" box in the product's
+   system colour (--sys and the sys--* colours from the catalogue section); key specs and the service promises as
+   small tiles; the information as pills over a tile; the story as a dark tile; the buy bar floats as a tile.
+   ========================================================================== */
+.pdp{gap:16px clamp(28px,4vw,56px);padding:10px 0 44px}
+.gallery{gap:12px;padding:12px;border-radius:28px;background:var(--surface-2)}
+.gallery__main{border-radius:20px;background:var(--cstage)}
+.gallery__thumbs button{border-radius:14px;background:var(--cstage)}
+.gallery__thumbs button.is-on{box-shadow:inset 0 0 0 2px var(--sys,var(--blue))}
+.gallery__hint{right:18px;bottom:16px;padding:6px 10px;border-radius:999px;background:var(--surface-2)}
+.pdp__extra{padding-left:0}
+.pdp__assure{margin-left:0}
+.keyspecs{gap:10px;background:none;border-radius:0;overflow:visible}
+.keyspec{border-radius:18px;background:var(--surface-2)}
+.assure{gap:10px;background:none;border-radius:0;overflow:visible}
+.assure div{border-radius:18px}
+
+.pinfo{gap:20px}
+.pinfo h1{font-size:clamp(26px,2.5vw,36px);text-transform:uppercase;letter-spacing:.02em;line-height:1.12}
+.pinfo__price{padding:18px 20px;border:0;border-radius:22px;background:var(--surface-2)}
+.size{border-radius:16px}
+.size.is-on{box-shadow:inset 0 0 0 2px var(--sys,var(--ink));background:color-mix(in srgb,var(--sys,var(--blue)) 9%,transparent)}
+.sw.is-on::after,.sw:hover::after{border-color:var(--sys,var(--ink))}
+.qty{border-radius:999px;padding:0 4px}
+.qty button{border-radius:50%}
+.qty--lg button{width:44px;height:44px}
+.buy .iconbtn{border-radius:50%}
+/* the "not sure?" box: a pane in the product's system colour */
+.pinfo .consult{gap:18px;padding:20px 22px;border-radius:22px;background:var(--pane,var(--blue));color:#fff}
+.pinfo .consult .ic{--ic:#fff;--ic-accent:#fff;width:44px;height:44px}
+.pinfo .consult p{color:var(--ink2)}
+.pinfo .consult b{color:#fff}
+.pinfo .consult .btn--ghost{--fg:#fff;background:transparent;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.6)}
+.pinfo .consult .btn--ghost:hover{background:rgba(255,255,255,.14);box-shadow:inset 0 0 0 1.5px #fff}
+
+/* information: the tabs as pills, the open one in the system colour; its content in a tile */
+.info{border-top:0;padding-bottom:36px}
+.info__nav{border-bottom:0}
+.info__nav .wrap{gap:8px}
+.tab,.tab:first-child{height:46px;padding:0 20px;margin:0;border:0;border-radius:999px;background:var(--surface-2);color:var(--muted)}
+.tab:hover{color:var(--ink);background:var(--blue-10)}
+.tab.is-on{background:var(--sys,var(--accent));color:#fff}
+.tabpanel{margin-top:12px;padding:clamp(20px,2.6vw,36px);border-radius:24px;background:var(--surface-2)}
+.tabpanel .doc,.tabpanel .assure div{background:var(--surface)}
+.tabpanel .doc:hover{background:var(--blue-10)}
+.doc{border-radius:18px}
+
+/* up close: a dark tile */
+.story{margin:0 12px 12px;border-radius:28px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.srow img,.scenes img{border-radius:20px}
+
+/* the buy bar: a tile floating at the bottom */
+.buybar{left:12px;right:12px;bottom:12px;border-radius:22px;box-shadow:0 22px 50px -18px rgba(17,19,48,.5),inset 0 0 0 1px var(--line);transform:translateY(calc(100% + 28px))}
+.buybar .wrap{max-width:none;height:72px;padding-inline:12px}
+.buybar__img{border-radius:14px;background:var(--cstage)}
+body:has(.buybar.is-on){--fab-lift:96px}
+
+@media (max-width:980px){
+  .gallery{padding:10px;border-radius:24px}
+  .tabpanel{padding:22px 18px}
+}
+@media (max-width:760px){
+  .pinfo .consult{padding:18px}
+  .buybar{left:8px;right:8px;bottom:8px;border-radius:20px}
+  .buybar .wrap{height:66px;padding-inline:10px}
+  .story{margin:0 8px 8px;border-radius:24px}
+}
+
+/* ==========================================================================
+   HOME PAGE · WINDOW (index.html; landing.js)
+   The four systems' window (p.8) over the whole first screen, on the page (white, MC Black in dark mode). With a mouse the
+   pane under the pointer opens: the grid gives it the room, its icon grows, its kinds appear and its
+   products take turns on a deck of white cards (the photos need white). The others step back to icon,
+   title and count. On touch screens the panes stack, one screen each.
+   While a pane opens only the grid's tracks and transforms move: the sizes of the icon, the title, the text
+   column, the photo and the deck are set by the screen (vw, svh), not by the pane, so nothing re-measures
+   or re-wraps on the way, and the shade and the light do not repaint the panes. That keeps the end smooth.
+   ========================================================================== */
+html[data-look="window"]{--xease:cubic-bezier(.65,0,.35,1);--xout:cubic-bezier(.22,1,.36,1);--xt:1.4}   /* --xt: the pace of the opening; more = slower */
+
+.xwin{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:12px;height:calc(100svh - 84px);min-height:600px;padding:12px;
+  transition:grid-template-columns calc(.8s * var(--xt)) var(--xease),grid-template-rows calc(.8s * var(--xt)) var(--xease)}
+.xwin[data-on="heating"]{grid-template-columns:2.3fr 1fr;grid-template-rows:2fr 1fr}
+.xwin[data-on="cooling"]{grid-template-columns:1fr 2.3fr;grid-template-rows:2fr 1fr}
+.xwin[data-on="ventilation"]{grid-template-columns:2.3fr 1fr;grid-template-rows:1fr 2fr}
+.xwin[data-on="water"]{grid-template-columns:1fr 2.3fr;grid-template-rows:1fr 2fr}
+
+/* a pane: its colour (p.8), the small text in MC Black on green and MC Blue on light blue, as in the window */
+.xpane{--pane:var(--red);--chip:#C91D21;--chip-2:#A9161A;--ink2:rgba(255,255,255,.88);
+  position:relative;min-width:0;min-height:0;overflow:hidden;isolation:isolate;border-radius:28px;background:var(--pane);color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.xpane--cool{--pane:var(--blue);--chip:#1F2463;--chip-2:#171B4D}
+.xpane--vent{--pane:var(--green);--chip:#00843F;--chip-2:#006E34;--ink2:var(--black)}
+.xpane--water{--pane:var(--sky);--chip:var(--blue);--chip-2:#1F2463;--ink2:var(--blue)}
+/* the others step back under a shade (a filter would repaint the whole pane on every frame) */
+.xpane::after{content:"";position:absolute;inset:0;z-index:8;pointer-events:none;border-radius:inherit;background:rgba(14,16,48,.1);opacity:0;transition:opacity calc(.6s * var(--xt))}
+.xwin[data-on] .xpane:not(.is-on)::after{opacity:1}
+/* the light under the pointer: one soft disc, moved by landing.js */
+.xpane__glow{position:absolute;left:0;top:0;z-index:0;width:640px;height:640px;margin:-320px 0 0 -320px;border-radius:50%;pointer-events:none;will-change:transform;
+  background:radial-gradient(closest-side,rgba(255,255,255,.2),rgba(255,255,255,0));opacity:0;transition:opacity .5s}
+.xpane:hover .xpane__glow{opacity:1}
+.xpane__go{position:absolute;inset:0;z-index:5;border-radius:inherit}
+.xpane__go:focus-visible{outline:3px solid #fff;outline-offset:-6px}
+
+/* sizes from the screen: --pad, the icon, the text column, the deck (the open pane is 2/3 of the window high) */
+.xpane__in{--pad:clamp(20px,min(2.6vw,4.4svh),44px);--ics:clamp(56px,min(6.4vw,11svh),108px);--textw:min(36vw,560px);   /* short screens: smaller, so the words keep clear of the count */
+  --deckw:min(21vw,330px,calc(((100svh - 120px) * .667 - 2 * var(--pad)) * .75));
+  position:absolute;inset:0;z-index:6;pointer-events:none}
+.xpane__text{position:absolute;left:var(--pad);top:var(--pad);width:var(--textw)}
+.xpane__ic{display:block;width:var(--ics);height:var(--ics);--ic:#fff;--ic-accent:#fff;transform-origin:0 0;transition:transform calc(.8s * var(--xt)) var(--xease)}
+.xpane__t{transform-origin:0 0;margin-top:clamp(10px,1.3vw,18px);font-size:clamp(26px,min(3vw,5.4svh),50px);font-weight:700;line-height:1;letter-spacing:.01em;text-transform:uppercase;white-space:nowrap;color:inherit;
+  transition:transform calc(.8s * var(--xt)) var(--xease)}
+.xpane__body{margin-top:clamp(10px,1.2vw,16px);display:flex;flex-direction:column;align-items:flex-start;gap:14px;transition:transform calc(.8s * var(--xt)) var(--xease)}
+.xpane__lead{max-width:36ch;font-size:clamp(14px,1.15vw,17px);line-height:1.5;color:var(--ink2);transition:opacity calc(.4s * var(--xt)) calc(.55s * var(--xt))}   /* back only once the pane has its room again */
+.xpane__links{display:flex;flex-wrap:wrap;gap:6px;opacity:0;visibility:hidden;transform:translateY(10px);
+  transition:opacity calc(.45s * var(--xt)),transform calc(.6s * var(--xt)) var(--xout),visibility calc(.45s * var(--xt))}
+.xpane__links a{pointer-events:auto;position:relative;z-index:7;padding:7px 12px;border-radius:30px;background:var(--chip);color:#fff;font-size:12px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;transition:background .2s,transform .2s}
+.xpane__links a:hover{background:var(--chip-2);transform:translateY(-2px)}
+.xpane__count{position:absolute;z-index:2;left:var(--pad);bottom:var(--pad);display:inline-flex;align-items:center;gap:10px;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
+.xpane__count .arr{width:18px;height:18px;--ic:currentColor;transition:transform .3s var(--xout)}
+.xpane:hover .xpane__count .arr{transform:translateX(6px)}
+/* the photo at rest: the system's product, cut out, in the corner, its size set by the screen; it leaves when the pane opens */
+.xpane__img{position:absolute;right:-8px;bottom:-12px;width:calc(var(--wn,40) * (50vw - 18px) / 100);max-height:calc((100svh - 120px) * .43);object-fit:contain;object-position:right bottom;
+  transform-origin:100% 100%;filter:drop-shadow(0 30px 30px rgba(33,29,29,.28));will-change:transform;transition:transform calc(.9s * var(--xt)) var(--xease),opacity calc(.5s * var(--xt))}
+.xpane:hover .xpane__img{transform:translate(-6px,-8px) scale(1.03)}
+
+/* open: the icon grows and the words below make room for it; the kinds come in; the photo leaves for the deck */
+.xpane.is-on .xpane__ic{transform:rotate(-6deg) scale(1.3)}
+.xpane.is-on .xpane__t,.xpane.is-on .xpane__body{transform:translateY(calc(var(--ics) * .3))}
+.xpane.is-on .xpane__links{opacity:1;visibility:visible;transform:none;transition-delay:calc(.35s * var(--xt))}
+.xpane.is-on .xpane__img{opacity:0;transform:translateX(30%) scale(.92)}
+/* stepped back: icon, title and count */
+.xwin[data-on] .xpane:not(.is-on) .xpane__ic{transform:scale(.8)}
+.xwin[data-on] .xpane:not(.is-on) .xpane__t{transform:translateY(calc(var(--ics) * -.2)) scale(.78)}   /* the longest name keeps inside a small pane */
+.xwin[data-on] .xpane:not(.is-on) .xpane__lead{opacity:0;transition-delay:0s}
+.xwin[data-on] .xpane:not(.is-on) .xpane__img{transform:scale(.62)}
+/* short screens: the open pane's kinds need the room of its count (the pane itself still leads to the category) */
+@media (hover:hover) and (min-width:981px) and (max-height:840px){
+  .xpane__count{transition:opacity calc(.3s * var(--xt))}
+  .xpane.is-on .xpane__count{opacity:0;pointer-events:none}
+}
+
+/* the deck: white cards, the front one leaves to the left and the next comes forward */
+.xdeck{position:absolute;z-index:7;right:var(--pad);top:50%;width:var(--deckw);aspect-ratio:3 / 4;translate:0 -50%;opacity:.001;   /* drawn once at load, so the first opening has nothing new to paint */
+  transform:translateX(40px) scale(.94);will-change:transform;
+  transition:opacity calc(.5s * var(--xt)),transform calc(.9s * var(--xt)) var(--xout)}
+.xpane.is-on .xdeck{opacity:1;transform:none;transition-delay:calc(.3s * var(--xt))}
+.xcard{--ink:var(--blue);--text:var(--graphite);--muted:#6B6C76;--heading:var(--blue);--strong:var(--black);color-scheme:light;
+  position:absolute;inset:0;display:flex;flex-direction:column;gap:4px;padding:12px 14px 16px;border-radius:22px;background:#fff;color:var(--graphite);
+  box-shadow:0 34px 60px -24px rgba(17,19,48,.55),0 2px 0 rgba(0,0,0,.04);transform-origin:50% 90%;opacity:0;pointer-events:none;
+  transform:translate(24%,-13%) rotate(13deg) scale(.8);transition:transform calc(.95s * var(--xt)) var(--xout),opacity calc(.6s * var(--xt))}
+.xcard__img{flex:1;min-height:0;display:grid;grid-template:minmax(0,1fr) / minmax(0,1fr);place-items:center;margin-bottom:8px}
+.xcard__img img{max-width:92%;max-height:100%;object-fit:contain}
+.xcard small{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--red)}
+.xcard b{font-size:13.5px;font-weight:600;line-height:1.3;letter-spacing:.02em;text-transform:uppercase;color:var(--blue);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.xcard .price{font-size:15px;margin-top:2px}
+.xcard[data-k="0"]{opacity:1;transform:none;z-index:4}
+.xpane.is-on .xcard[data-k="0"]{pointer-events:auto}
+.xcard[data-k="1"]{opacity:.96;transform:translate(9%,-5%) rotate(5deg) scale(.93);z-index:3}
+.xcard[data-k="2"]{opacity:.7;transform:translate(17%,-9%) rotate(10deg) scale(.86);z-index:2}
+.xcard[data-k="out"]{opacity:0;transform:translate(-80%,6%) rotate(-16deg) scale(.9);z-index:5}
+
+/* opening: the four panes come in from the window's middle; the open pane's icon floats once it has grown */
+@media (prefers-reduced-motion:no-preference){
+  .xpane{animation:xin 1s var(--xout) both;animation-delay:calc(var(--i) * 90ms + 120ms)}
+  .xpane--heat{transform-origin:100% 100%}.xpane--cool{transform-origin:0 100%}.xpane--vent{transform-origin:100% 0}.xpane--water{transform-origin:0 0}
+  .xpane.is-on .xpane__ic{animation:xfloat 3.2s ease-in-out calc(.85s * var(--xt)) infinite}
+}
+@keyframes xin{from{opacity:0;transform:scale(.86)}}
+@keyframes xfloat{0%,100%{transform:rotate(-6deg) scale(1.3)}50%{transform:rotate(-6deg) scale(1.3) translateY(-5px)}}
+
+/* touch screens and narrow windows: one pane per screen, the words, then the deck; the pane in view plays */
+@media not all and (hover:hover) and (min-width:981px){
+  html[data-look="window"]{scroll-snap-type:y proximity}
+  .xwin{display:flex;flex-direction:column;height:auto;min-height:0;padding:10px}
+  .xpane{height:auto;scroll-snap-align:start;scroll-margin-top:86px;animation:none}
+  .xpane__in{--pad:20px;--ics:clamp(52px,14vw,72px);--deckw:min(50vw,240px,calc((100svh - 96px) * .36 * .75));
+    position:relative;inset:auto;display:flex;flex-direction:column;align-items:flex-start;gap:12px;min-height:calc(100svh - 96px);padding:var(--pad)}
+  .xpane__text{position:static;width:auto}
+  .xpane__t{white-space:normal;font-size:clamp(26px,8vw,36px)}
+  .xpane__body{gap:10px}
+  .xpane__links{opacity:1;visibility:visible;transform:none}
+  .xpane__links a{padding:6px 10px;font-size:11px}
+  .xpane__count{position:static}
+  .xpane__img{display:none}
+  .xpane.is-on .xpane__ic,.xpane.is-on .xpane__t,.xpane.is-on .xpane__body{transform:none;animation:none}
+  .xdeck{position:relative;inset:auto;align-self:center;margin-top:auto;translate:none;opacity:1;transform:none}
+  .xcard[data-k="out"]{transform:translate(-90%,4%) rotate(-14deg) scale(.9)}
+}
+@media (max-width:760px){.xpane{border-radius:24px}}
+
+/* ==========================================================================
+   INFO PAGES · ABOUT, CAREER, MEDIA (about.html, career.html, media.html; owner's choice, 2026-11-17: the site follows the home page's window)
+   The blue hero and the call band are rounded tiles 12 px in from the edges, like the header and the footer; the grey
+   bands are rounded tiles too, and everything in them sits on tiles. The four values are the window's four panes in
+   the systems' colours (p.8): heating MC Red, cooling MC Blue, ventilation green, water light blue. Tabs are pills.
+   ========================================================================== */
+.ahero{margin:12px 12px 0;border-radius:28px}
+.sec--cloud{margin-inline:12px;border-radius:28px}
+.band{margin:0 12px 12px;border-radius:28px}
+.band::after{display:none}   /* the red edge belongs to a square band */
+
+/* about: mission, vision and promise; the services; the history; the figures: tiles */
+.tri{gap:12px;background:none}
+.tri > div{border-radius:22px;background:var(--surface-2)}
+.steps{gap:12px;border-top:0}
+.step,.step + .step{padding:24px 24px 26px;border:0;border-radius:22px;background:var(--surface-2)}
+.tl{gap:10px;border-top:0}
+.tl > div{padding:20px 22px 22px;border:0;border-radius:20px;background:var(--surface-2)}
+.stats{gap:12px}
+.stat{padding:clamp(20px,2.2vw,30px);border-radius:22px;background:var(--surface-2)}
+.values{gap:12px}
+.value{border-radius:22px}
+.sec--cloud .value:not(:first-child){background:var(--surface)}
+/* the four values: the window's four panes */
+.values--window .value{min-height:clamp(240px,21vw,310px);padding:clamp(22px,2.2vw,32px);border-radius:28px;color:#fff;transition:transform .35s var(--ease)}
+.values--window .value:hover{transform:translateY(-4px)}
+.values--window .value .ic{width:clamp(52px,4.4vw,68px);height:clamp(52px,4.4vw,68px);--ic:#fff;--ic-accent:#fff}
+.values--window .value h3{margin-top:clamp(26px,3vw,48px);font-size:clamp(19px,1.6vw,24px);color:#fff}   /* icon, then the name, as in the window's panes */
+.values--window .value p{color:var(--ink2)}
+.values--window .value:nth-child(1){--ink2:rgba(255,255,255,.88);background:var(--red)}
+.values--window .value:nth-child(2){--ink2:rgba(255,255,255,.86);background:var(--blue)}
+.values--window .value:nth-child(3){--ink2:var(--black);background:var(--green)}
+.values--window .value:nth-child(4){--ink2:var(--blue);background:var(--sky)}
+/* the story in two columns; the brands we represent on an MC Blue tile (brand book p.3), each logo in its colours on a white chip
+   (white in dark mode too: the logos are drawn for white, and Rovall's grey oval vanishes on grey) */
+.astory{columns:2 320px;column-gap:clamp(28px,4vw,64px);font-size:16.5px;line-height:1.7;color:var(--text)}
+.astory p{break-inside:avoid;margin:0 0 16px}
+.abrands{margin:clamp(16px,2vw,28px) 0 12px;padding:clamp(22px,2.6vw,36px);border-radius:28px;background:var(--blue);color:#fff}
+.abrands__h{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.72)}
+.abrands__list{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:20px}
+.abrands__list a,.abrands__list span{display:grid;place-items:center;height:76px;padding:14px 18px;border-radius:18px;background:#fff;transition:transform .25s var(--ease),box-shadow .25s}
+.abrands__list a:hover{transform:translateY(-3px);box-shadow:0 14px 26px -16px rgba(0,0,0,.55)}
+.abrands__list img{width:auto;height:30px;max-width:100%;max-height:100%;object-fit:contain}   /* about.js evens the heights out by the logo's shape */
+.abrands__list img[src*="rovall"]{scale:1.15}   /* its wordmark is a thin line in a pale oval: a little bigger than the rest (owner's choice, 2026-11-18) */
+/* contact and showrooms */
+.ccard,.room{border-radius:20px}
+.sec:not(.sec--cloud) .ccard{background:var(--surface-2)}
+.map{border-radius:24px}
+
+/* career: the figures as small panes in the hero; the openings and the application as tiles */
+.cfacts{gap:10px;padding:0;border-radius:0;background:none}
+.cfacts > div{border-radius:20px;background:rgba(255,255,255,.1)}
+.cfacts > div:first-child{background:var(--red)}
+.job{border-radius:22px}
+.jobs__empty{border-radius:24px}
+.capply{border-radius:24px}
+
+/* media: the tabs as pills; the posts as tiles like the shop's cards; the questions as tiles */
+.pill{border-radius:999px}
+.posts--page{gap:16px}
+.post{padding:10px 10px 18px;border-radius:24px;background:var(--surface-2);transition:transform .35s var(--ease),box-shadow .35s var(--ease)}
+.post:hover{transform:translateY(-4px);box-shadow:0 22px 40px -26px rgba(17,19,48,.45)}
+.post > :not(.post__img){margin-inline:8px}
+.post__img{border-radius:18px}
+.faq__search .input{height:52px;border-radius:999px}
+.faq__list{display:flex;flex-direction:column;gap:8px}
+.faq__item{padding:0 22px;border:0;border-radius:20px;background:var(--surface-2)}
+.article__cover{border-radius:24px}
+
+@media (max-width:760px){
+  .ahero{margin:8px 8px 0;border-radius:24px}
+  .sec--cloud{margin-inline:8px;border-radius:24px}
+  .band{margin:0 8px 8px;border-radius:24px}
+  .values--window .value{min-height:0}
+  .abrands__list{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .abrands__list a,.abrands__list span{height:64px;padding:12px 14px;border-radius:16px}
+  .abrands__list img{scale:.85}
+  .abrands__list img[src*="rovall"]{scale:.98}
+  .faq__item{padding:0 18px}
+}
+
+/* ==========================================================================
+   CHECKOUT, ACCOUNT, COMPARE (checkout.html, account.html, compare.html; owner's choice, 2026-11-17: the site follows the home page's window)
+   Each checkout step is a rounded tile, its options white tiles in it (the chosen one ringed), the summary a
+   tile beside them; the sign-in is a blue pane beside a tile; the account's menu is pills and its figures,
+   orders and addresses tiles; the comparison sits in a tile with the products on top. Numbers sit in circles.
+   ========================================================================== */
+/* checkout */
+.co{gap:clamp(20px,2.6vw,36px)}
+.costep,.costep:first-child{padding:clamp(20px,2.4vw,32px);border:0;border-radius:28px;background:var(--surface-2)}
+.costep + .costep{margin-top:12px}
+.costep__n{border-radius:50%}
+.costep .note--blue{background:var(--surface)}
+.choice{flex-wrap:wrap;row-gap:6px;border:0;border-radius:20px;background:var(--surface);box-shadow:inset 0 0 0 1.5px transparent}
+.choice:hover{box-shadow:inset 0 0 0 1.5px var(--blue-40)}
+.choice:has(input:checked){background:var(--surface);box-shadow:inset 0 0 0 2px var(--ink)}
+.choice > span:not(.choice__price){flex:1;min-width:0}
+.choice__price{flex-basis:100%;margin-left:38px;font-size:13px}   /* under the name: beside it, it ran into a long name */
+.choice__price:empty{display:none}
+.cosum{padding:clamp(22px,2.4vw,30px);border-radius:28px}
+.line__img,.cosum .line__img{border-radius:16px;background:var(--cstage)}
+.done__mark i{border-radius:8px}
+.done__no{border-radius:20px}
+.note{border-radius:16px}
+
+/* account: the sign-in */
+.auth{gap:12px;border-radius:0;overflow:visible;box-shadow:none}
+.auth__side{border-radius:28px}
+.auth__card{border-radius:28px;background:var(--surface-2)}
+.sso__btn{border-radius:999px}
+.auth__note,.auth__demo{border-radius:16px}
+.otp__d{border-radius:16px}
+/* account: the dashboard */
+.dash__me{padding:16px 18px;border-radius:22px}
+.dash__nav{gap:4px}
+.dash__nav a,.dash__nav button{border-radius:999px}
+.dash__nav a[aria-current]{background:var(--accent);color:#fff}
+.dash__nav a[aria-current] .ui,.dash__nav a[aria-current] small{color:inherit}
+.dash__nav button{margin-top:10px;border-top:0;padding-top:0;height:46px;box-shadow:inset 0 0 0 1.5px var(--line)}
+.dstats{gap:12px}
+.dstat{padding:20px 22px;border-radius:22px}
+.order{border-radius:24px;box-shadow:none;background:var(--surface-2)}
+.order__head{background:none;border-bottom:1px solid var(--line)}
+.order__img{border-radius:12px;background:var(--cstage)}
+.addr,.addr--form{border-radius:22px}
+
+/* compare: a tile, the products on top, the columns even */
+.cmp{margin-bottom:clamp(40px,5vw,72px);padding:12px;border-radius:28px;background:var(--surface-2)}
+.cmp table{width:max(100%,760px);table-layout:fixed}
+.cmp th,.cmp td{min-width:0}
+.cmp th{width:200px;background:var(--surface-2)}
+.cmp__head td{vertical-align:top;padding-top:6px}
+.cmp__head td{height:1px}   /* lets the cards fill the row, so the remove links line up */
+.cmp__head .card{width:100%;height:calc(100% - 32px);background:var(--surface)}
+.cmp tr:last-child th,.cmp tr:last-child td{border-bottom:0}
+/* the compare bar: a pill */
+.cmpbar{padding:8px 8px 8px 10px;border-radius:999px}
+.cmpbar__imgs span{border-radius:50%;background:var(--cstage)}
+
+@media (max-width:980px){
+  .auth__card{border-radius:24px}
+}
+@media (max-width:760px){
+  .costep,.costep:first-child{padding:20px 16px;border-radius:24px}
+  .cosum{border-radius:24px}
+  .cmp{padding:8px;border-radius:24px}
+  .cmp table{width:max(100%,560px)}
+  .cmp th{width:124px;padding:12px 10px;font-size:13px;overflow-wrap:anywhere}   /* long names break rather than run into the next column */
+  .cmp td{padding:12px 10px;font-size:14px}
+  .cmpbar__imgs{display:none}   /* the bar fits a phone: the count, the button, the cross */
+  .cmpbar{gap:10px;padding-left:18px;white-space:nowrap}
+}
+
+/* ==========================================================================
+   FOOTER · COMPACT (owner's choice, 2026-11-18): a smaller logo, every text 8 pt, tighter lists, less padding
+   ========================================================================== */
+.ftr__top{gap:24px 36px;padding-block:34px 26px}
+.ftr__brand img{width:124px}
+.ftr{font-size:8pt}
+.ftr__brand p{margin-top:12px;max-width:34ch;font-size:8pt;line-height:1.55}
+/* the social links on the right of the contact heading (owner's choice, 2026-11-18); they take no height of their own */
+.ftr__chead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.ftr__chead h4{margin:0}
+.ftr__chead .ftr__soc{margin:-14px 0 -4px}   /* centred on the heading's capitals */
+.ftr__soc a{width:32px;height:32px}
+.ftr__soc svg{width:15px;height:15px}
+.ftr h4{margin-bottom:10px;font-size:8pt}
+.ftr ul{font-size:8pt;line-height:1.45}
+.ftr li + li{margin-top:5px}
+.ftr__contact li + li{margin-top:8px}
+.ftr__contact li{gap:9px}
+.ftr__contact .ui{width:15px;height:15px;margin-top:0}
+.ftr__bot .wrap{padding-block:13px;font-size:8pt}
+@media (max-width:980px){
+  .ftr__top{row-gap:26px}
+}
+@media (max-width:760px){
+  .ftr__top{gap:22px 20px;padding-block:24px 22px}
+  /* phones: the logo alone (no blurb); the help list across in two columns */
+  .ftr__brand img{width:104px}
+  .ftr__brand p{display:none}
+  .ftr__help{grid-column:1/-1}
+  .ftr__help ul{columns:2;column-gap:20px}
+  .ftr__help li,.ftr__help li + li{margin:0 0 5px;break-inside:avoid}
+}
+
+/* ==========================================================================
+   FEWER GAPS (owner's choice, 2026-11-18): on wide screens the pages use more of the width (the header tile
+   already does) and the product page's key specs fill its right column; the price sits close to its label,
+   and the key specs are as tall as their words and share the row evenly.
+   ========================================================================== */
+@media (min-width:1600px){
+  :root{--wrap:1720px}
+  /* the key specs are in the right column (product.js placeSpecs): no row under the photos */
+  .pdp{grid-template-areas:"media info" "assure assure";grid-template-rows:auto auto}
+  .pdp__extra{display:none}
+  /* the product page: 1246 px of content, and its first block (photo and buying column) drawn at 76 %, the same
+     layout only smaller, so it sits on the first screen (owner's choice, 2026-11-18) */
+  body[data-page="product"] main{--wrap:1326px}
+  body[data-page="product"] .pdp{zoom:.76}
+}
+.pinfo__price{padding:14px 20px 16px;align-items:center}
+.pinfo__price small{margin-bottom:2px;line-height:1.3}
+.pinfo__price .price--lg{line-height:1.05}
+.pdp__extra .keyspecs{flex:none}
+.keyspec{padding:14px 16px;gap:6px}
+@media (min-width:761px){.keyspec{flex:1 1 0;min-width:0}.keyspec b{white-space:normal;text-wrap:balance;overflow-wrap:anywhere}}   /* a long value takes two lines */
+/* the buy bar: a compact tile in the middle of the screen, not across it (owner's choice, 2026-11-18) */
+.buybar{left:50%;right:auto;width:min(calc(100% - 24px),760px);transform:translate(-50%,calc(100% + 28px))}
+.buybar.is-on{transform:translate(-50%,0)}
+@media (max-width:760px){.buybar{width:calc(100% - 16px)}}

@@ -157,7 +157,7 @@ const UI = {
   cal: '<rect x="4" y="5.5" width="16" height="14.5" rx="1"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/>'
 };
 export const ui = (n, cls = '') => `<svg class="ui ${cls}" viewBox="0 0 24 24" aria-hidden="true">${UI[n]}</svg>`;
-export const bi = (n, cls = 'ic') => `<svg class="${cls}" aria-hidden="true"><use href="assets/brand/icons.svg?v=83ad093a#${n}"/></svg>`;
+export const bi = (n, cls = 'ic') => `<svg class="${cls}" aria-hidden="true"><use href="assets/brand/icons.svg?v=158aaedd#${n}"/></svg>`;
 export const arrow = () => bi('ui-arrow', 'arr');
 const SOCIAL = {   // footer links, in this order, for the networks the admin panel has an address for
   facebook: ['Facebook', '<path d="M13.5 22v-8h2.8l.4-3.3h-3.2V8.6c0-.9.3-1.6 1.6-1.6H17V4.1c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.3v2.4H7.5V14h2.8v8h3.2Z"/>'],
@@ -282,7 +282,7 @@ export function card(db, p, { cls = '', eager = false } = {}) {
   const fav = store.has('fav', p.id), cmp = store.has('cmp', p.id);
   return `<article class="card ${cls}" data-id="${p.id}">
   <div class="card__media">
-    <a class="card__stage cut" href="${p.url}" tabindex="-1" aria-hidden="true">
+    <a class="card__stage" href="${p.url}" tabindex="-1" aria-hidden="true">
       <img class="card__img card__img--1 ${two ? 'has-2' : ''}" src="${p.src[0] || ''}" alt="" ${eager ? '' : 'loading="lazy"'} decoding="async">
       ${two ? `<img class="card__img card__img--2" src="${p.src[1]}" alt="" loading="lazy" decoding="async">` : ''}
     </a>
@@ -292,8 +292,8 @@ export function card(db, p, { cls = '', eager = false } = {}) {
       <button class="cact ${cmp ? 'is-on' : ''}" data-cmp="${p.id}" aria-label="შედარება" title="შედარება">${ui('cmp')}</button>
     </div>
     ${p.price != null
-      ? `<button class="card__add" data-add="${p.id}">${ui('bag')}კალათაში</button>`
-      : `<button class="card__add" data-ask="${p.id}">${ui('phone')}ფასის მოთხოვნა</button>`}
+      ? `<button class="card__add" data-add="${p.id}" aria-label="კალათაში">${ui('bag')}<span>კალათაში</span></button>`
+      : `<button class="card__add" data-ask="${p.id}" aria-label="ფასის მოთხოვნა">${ui('phone')}<span>ფასის მოთხოვნა</span></button>`}
   </div>
   <div class="card__body">
     <div class="card__brand"><span>${esc(p.brandName || p.subName)}</span>${p.line ? `<span>${esc(p.line)}</span>` : ''}</div>
@@ -332,7 +332,7 @@ export function closeLayers() {
 
 /* ---------- header + footer ---------- */
 const MENU_HIDE = new Set(['ducts']);   // categories left out of the menus (owner's choice); still in the catalog
-const inMenu = c => !MENU_HIDE.has(c.id);
+const inMenu = c => !MENU_HIDE.has(c.id) && c.count > 0;   // a system with no products (none in Bitrix yet) stays out of the menus
 const FEATURED = { heating: 1010, cooling: 2159, ventilation: 900003, ducts: 900006, water: 1794 };
 
 /* ---------- light / dark: follows the system until the visitor picks one (the pick is kept in mc.theme) ---------- */
@@ -349,6 +349,13 @@ function toggleTheme() {
   syncTheme();
 }
 
+/* ---------- language: Georgian now; English and Russian are named, marked "soon", until their texts exist ---------- */
+const LANGS = [['ka', 'KA', 'ქართული'], ['en', 'EN', 'English'], ['ru', 'RU', 'Русский']];
+const langMenu = () => LANGS.map(([id, code, name], i) => i === 0
+  ? `<a role="menuitemradio" aria-checked="true" class="is-on" href="#" data-lang-pick><b>${code}</b>${name}</a>`
+  : `<span role="menuitemradio" aria-checked="false" aria-disabled="true" lang="${id}"><b>${code}</b>${name}<small>მალე</small></span>`).join('');
+const LANG_BTN = (cls = '') => `<div class="lang ${cls}" data-lang><button class="lang__btn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="ენა: ქართული" data-lang-btn>KA${ui('down')}</button><div class="lang__menu" role="menu" aria-label="ენა">${langMenu()}</div></div>`;
+
 /* ---------- account link: the initials once signed in ---------- */
 function accLink() {
   const h = account.hint();
@@ -359,44 +366,47 @@ function renderAccount() {
   $$('[data-acc-text]').forEach(a => { a.textContent = account.hint() ? 'ჩემი ანგარიში' : 'შესვლა / რეგისტრაცია'; });
 }
 
+/* the main menu, in the owner's order (2026-11-17): about us, products, services, career, contact.
+   Products opens one mega menu with the four systems side by side and the main product, the wall boiler. */
+const NAV = [
+  { t: 'ჩვენ შესახებ', href: 'about.html', on: p => p === 'about' },
+  { t: 'პროდუქცია', href: 'catalog.html', on: p => p === 'catalog' || p === 'product', mega: true },
+  { t: 'სერვისები', href: 'about.html#services' },
+  { t: 'კარიერა', href: 'career.html', on: p => p === 'career' },
+  { t: 'კონტაქტი', href: 'about.html#contact' }
+];
+function megaProducts(db) {
+  const cats = db.categories.filter(inMenu);
+  const f = db.byId.get(FEATURED.heating) || db.products.find(p => p.cat === 'heating');
+  return `<div class="mega"><div class="wrap mega__in">
+    ${cats.map(c => `<div class="mega__cat">
+      <a class="mega__head" href="catalog.html?c=${c.id}">${bi(c.icon)}<span><b>${esc(c.name)}</b><small>${c.count} პროდუქტი</small></span></a>
+      <ul class="mega__list">${c.subs.filter(s => s.count).map(s => `<li><a href="catalog.html?c=${c.id}&s=${s.id}">${esc(s.name)}</a></li>`).join('')}</ul>
+    </div>`).join('')}
+    ${f ? `<a class="mega__feat cut" href="${f.url}"><span class="mega__img"><img src="${f.src[0]}" alt="" loading="lazy"></span><small>${esc(f.brandName)}</small><b>${esc(f.title)}</b><div>${priceHTML(f)}</div></a>` : ''}
+  </div></div>`;
+}
 function header(db, page) {
-  const nav = db.categories.filter(inMenu).map(c => {
-    const f = db.byId.get(FEATURED[c.id]) || db.products.find(p => p.cat === c.id);
-    return `<div class="nav__item" data-cat="${c.id}">
-      <a class="nav__link" href="catalog.html?c=${c.id}" ${page.cat === c.id ? 'aria-current="page"' : ''}>${esc(c.name)}</a>
-      <div class="mega"><div class="wrap">
-        <div class="mega__intro"><span class="eyebrow">${c.count} პროდუქტი</span><h2 class="h2" style="margin-top:14px">${esc(c.name)}</h2><p>${esc(c.lead)}</p>
-          <a class="link" href="catalog.html?c=${c.id}">ყველას ნახვა ${arrow()}</a></div>
-        <div class="mega__subs">${c.subs.map(s => `<a class="mega__sub" href="catalog.html?c=${c.id}&s=${s.id}">${bi(s.icon)}<span><b>${esc(s.name)}</b><small>${s.count} პროდუქტი</small></span></a>`).join('')}</div>
-        ${f ? `<a class="mega__feat cut" href="${f.url}"><span class="mega__img"><img src="${f.src[0]}" alt="" loading="lazy"></span><small>${esc(f.brandName)}</small><b>${esc(f.title)}</b><div>${priceHTML(f)}</div></a>` : '<span></span>'}
-      </div></div>
-    </div>`;
-  }).join('');
+  const here = document.body.dataset.page || '';
+  const nav = NAV.map(n => `<div class="nav__item${n.mega ? ' nav__item--mega' : ''}">
+      <a class="nav__link" href="${n.href}"${n.on && n.on(here) ? ' aria-current="page"' : ''}>${n.t}${n.mega ? ui('down') : ''}</a>
+      ${n.mega ? megaProducts(db) : ''}
+    </div>`).join('');
+  // one blue tile (mc.css: header); the phone, hours and showrooms are in the footer and the phone menu
   return `
-<div class="strip"><div class="wrap">
-  <div class="strip__l">
-    <a class="strip__item" href="${C.phoneHref}">${ui('phone')}${esc(C.phone)}</a>
-    <span class="strip__item">${ui('clock')}${esc(C.hours)}</span>
-    <a class="strip__item" href="about.html#contact">${ui('pin')}${C.showrooms.length} შოურუმი თბილისში</a>
-  </div>
-  <div class="strip__r">
-    <a href="about.html#services">მიწოდება და მონტაჟი</a>
-    <a href="media.html?t=faq">Q&amp;A/კითხვა პასუხი</a>
-    <a href="about.html">ჩვენ შესახებ</a>
-    <button class="strip__cb" data-callback>შეუკვეთეთ ზარი</button>
-  </div>
-</div></div>
 <header class="hdr"><div class="wrap">
   <button class="iconbtn burger" data-open="menu" aria-label="მენიუ">${ui('menu')}</button>
-  <a class="hdr__logo" href="index.html" aria-label="მაქს კომფორტი, მთავარი"><img class="only-l" src="assets/brand/logo/mc-logo-primary.svg" alt="Max Comfort" width="104" height="53"><img class="only-d" src="assets/brand/logo/mc-logo-white.svg" alt="Max Comfort" width="104" height="53"></a>
-  <nav class="nav" aria-label="კატეგორიები">${nav}</nav>
+  <a class="hdr__logo" href="index.html" aria-label="მაქს კომფორტი, მთავარი"><img class="hdr__lockup" src="assets/brand/logo/mc-logo-slogan-white.svg" alt="Max Comfort · შენი სახლის კლიმატი" width="533" height="120"><img class="hdr__mark" src="assets/brand/logo/mc-logo-white.svg" alt="Max Comfort" width="104" height="53"></a>
+  <nav class="nav" aria-label="მთავარი მენიუ">${nav}</nav>
   <div class="hdr__tools">
     <button class="search-trigger" data-search aria-label="ძიება">${ui('search')}<span>ძიება</span><kbd>/</kbd></button>
+    ${LANG_BTN('hide-sm')}
     ${THEME_BTN('hide-sm')}
     <a class="iconbtn hide-sm" href="compare.html" aria-label="შედარება" data-cmp-link>${ui('cmp')}<b class="badge" data-count="cmp"></b></a>
     <button class="iconbtn" data-open="fav" aria-label="რჩეულები">${ui('heart')}<b class="badge" data-count="fav"></b></button>
     ${accLink()}
     <button class="iconbtn" data-open="cart" aria-label="კალათა">${ui('bag')}<b class="badge" data-count="cart"></b></button>
+    <button class="btn btn--red btn--sm hdr__cta" type="button" data-callback>კონსულტაცია</button>
   </div>
 </div></header>`;
 }
@@ -406,12 +416,11 @@ function footer(db) {
 <footer class="ftr on-blue">
   <div class="wrap ftr__top">
     <div class="ftr__brand"><img src="assets/brand/logo/mc-logo-white.svg" alt="Max Comfort" width="170" height="87">
-      <p data-c="footer.about">${esc(t('footer.about', 'გათბობის, კონდიცირების, ვენტილაციისა და წყალმომარაგების სისტემები 2006 წლიდან. ინჟინრული კომფორტი. გარანტირებული სერვისი.'))}</p>
-      <div class="ftr__soc" style="margin-top:22px">${socials()}</div></div>
+      <p data-c="footer.about">${esc(t('footer.about', 'გათბობის, კონდიცირების, ვენტილაციისა და წყალმომარაგების სისტემები 2006 წლიდან. ინჟინრული კომფორტი. გარანტირებული სერვისი.'))}</p></div>
     <div><h4>კატალოგი</h4><ul>${db.categories.filter(inMenu).map(c => `<li><a href="catalog.html?c=${c.id}">${esc(c.name)}</a></li>`).join('')}</ul></div>
-    <div><h4>კომპანია</h4><ul><li><a href="about.html">ჩვენ შესახებ</a></li><li><a href="about.html#services">მომსახურება</a></li><li><a href="about.html#history">ისტორია</a></li><li><a href="media.html">მედია ცენტრი</a></li><li><a href="index.html#brands">ბრენდები</a></li><li><a href="about.html#contact">კონტაქტი</a></li></ul></div>
-    <div><h4>დახმარება</h4><ul><li><a href="about.html#delivery">მიწოდება და გადახდა</a></li><li><a href="about.html#services">საგარანტიო სერვისი</a></li><li><a href="media.html?t=faq">კითხვა-პასუხი</a></li><li><a href="compare.html">შედარება</a></li><li><a href="account.html">ჩემი ანგარიში</a></li><li><button data-open="fav">რჩეულები</button></li><li><button data-callback>შეუკვეთეთ ზარი</button></li></ul></div>
-    <div><h4>კონტაქტი</h4><ul class="ftr__contact">
+    <div><h4>კომპანია</h4><ul><li><a href="about.html">ჩვენ შესახებ</a></li><li><a href="about.html#services">მომსახურება</a></li><li><a href="about.html#history">ისტორია</a></li><li><a href="media.html">მედია ცენტრი</a></li><li><a href="about.html#brands">ბრენდები</a></li><li><a href="career.html">კარიერა</a></li><li><a href="about.html#contact">კონტაქტი</a></li></ul></div>
+    <div class="ftr__help"><h4>დახმარება</h4><ul><li><a href="about.html#delivery">მიწოდება და გადახდა</a></li><li><a href="about.html#services">საგარანტიო სერვისი</a></li><li><a href="media.html?t=faq">კითხვა-პასუხი</a></li><li><a href="compare.html">შედარება</a></li><li><a href="account.html">ჩემი ანგარიში</a></li><li><button data-open="fav">რჩეულები</button></li><li><button data-callback>შეუკვეთეთ ზარი</button></li></ul></div>
+    <div><div class="ftr__chead"><h4>კონტაქტი</h4><div class="ftr__soc">${socials()}</div></div><ul class="ftr__contact">
       <li>${ui('phone')}<span><b><a href="${C.phoneHref}">${esc(C.phone)}</a></b>${esc(C.hours)}</span></li>
       <li>${ui('mail')}<span><b><a href="mailto:${C.email}">${esc(C.email)}</a></b></span></li>
       <li>${ui('pin')}<span><b>${esc(C.showrooms[0].address)}</b>${C.showrooms.length} შოურუმი თბილისში</span></li></ul></div>
@@ -427,8 +436,11 @@ function overlays(db) {
 <aside class="drawer" id="cart" aria-label="კალათა"><div class="drawer__head"><h2>კალათა <span data-count-text="cart"></span></h2><button class="iconbtn" data-close aria-label="დახურვა">${ui('close')}</button></div><div class="drawer__body" data-cart-body></div><div class="drawer__foot" data-cart-foot></div></aside>
 <aside class="drawer" id="fav" aria-label="რჩეულები"><div class="drawer__head"><h2>რჩეულები <span data-count-text="fav"></span></h2><button class="iconbtn" data-close aria-label="დახურვა">${ui('close')}</button></div><div class="drawer__body" data-fav-body></div></aside>
 <aside class="drawer drawer--left" id="menu" aria-label="მენიუ"><div class="drawer__head"><img class="only-l" src="assets/brand/logo/mc-logo-primary.svg" alt="Max Comfort" width="96" height="49"><img class="only-d" src="assets/brand/logo/mc-logo-white.svg" alt="Max Comfort" width="96" height="49"><span class="drawer__acts">${THEME_BTN()}<button class="iconbtn" data-close aria-label="დახურვა">${ui('close')}</button></span></div>
-  <div class="drawer__body">${db.categories.filter(inMenu).map(c => `<details class="fgroup"><summary class="fgroup__t" style="list-style:none;cursor:pointer">${esc(c.name)}${ui('down')}</summary><div class="fgroup__b"><a class="fopt" href="catalog.html?c=${c.id}"><b>ყველა</b></a>${c.subs.map(s => `<a class="fopt" href="catalog.html?c=${c.id}&s=${s.id}"><span>${esc(s.name)}</span><small>${s.count}</small></a>`).join('')}</div></details>`).join('')}
-    <div class="fgroup"><div class="fgroup__b" style="margin-top:0"><a class="fopt fopt--acc" href="account.html">${ui('user')}<span data-acc-text>${account.hint() ? 'ჩემი ანგარიში' : 'შესვლა / რეგისტრაცია'}</span></a><a class="fopt" href="about.html">ჩვენ შესახებ</a><a class="fopt" href="about.html#services">მომსახურება</a><a class="fopt" href="media.html">მედია ცენტრი</a><a class="fopt" href="about.html#contact">კონტაქტი</a><a class="fopt" href="compare.html">შედარება</a></div></div>
+  <div class="drawer__body"><nav class="mnav" aria-label="მთავარი მენიუ">${NAV.map(n => n.mega
+      ? `<details class="fgroup"><summary class="fgroup__t" style="list-style:none;cursor:pointer">${n.t}${ui('down')}</summary><div class="fgroup__b mnav__cats">${db.categories.filter(inMenu).map(c => `<details class="mnav__cat"><summary>${bi(c.icon)}<span>${esc(c.name)}</span>${ui('down')}</summary><div class="mnav__subs"><a class="fopt" href="catalog.html?c=${c.id}"><b>ყველა</b><small>${c.count}</small></a>${c.subs.filter(s => s.count).map(s => `<a class="fopt" href="catalog.html?c=${c.id}&s=${s.id}"><span>${esc(s.name)}</span><small>${s.count}</small></a>`).join('')}</div></details>`).join('')}</div></details>`
+      : `<a class="fgroup fgroup__t" href="${n.href}">${n.t}</a>`).join('')}</nav>
+    <div class="fgroup"><div class="fgroup__b" style="margin-top:0"><a class="fopt fopt--acc" href="account.html">${ui('user')}<span data-acc-text>${account.hint() ? 'ჩემი ანგარიში' : 'შესვლა / რეგისტრაცია'}</span></a><a class="fopt" href="media.html">მედია ცენტრი</a><a class="fopt" href="compare.html">შედარება</a></div></div>
+    <div class="mlang" role="group" aria-label="ენა">${LANGS.map(([id, code], i) => i === 0 ? `<b aria-current="true">${code}</b>` : `<span title="მალე" lang="${id}">${code}</span>`).join('')}<small>EN, RU: მალე</small></div>
     <div style="padding:22px 0"><a class="btn btn--red btn--block" href="${C.phoneHref}">${ui('phone')}${esc(C.phone)}</a></div></div></aside>
 <div class="so" role="dialog" aria-modal="true" aria-label="ძიება"><div class="so__panel"><div class="wrap">
   <form class="so__bar" action="catalog.html" role="search">${ui('search')}<input class="so__input" name="q" type="search" placeholder="რას ეძებთ? მაგ.: კონდიციონერი, Beretta, 2,5 kW" autocomplete="off" aria-label="ძიება"><button type="button" class="iconbtn" data-close aria-label="დახურვა">${ui('close')}</button></form>
@@ -703,6 +715,15 @@ function setupNav() {
     item.addEventListener('focusin', () => item.classList.add('is-open'));
     item.addEventListener('focusout', e => { if (!item.contains(e.relatedTarget)) item.classList.remove('is-open'); });
   });
+  // the language switch: opens on click, closes outside it or with Escape
+  const closeLang = () => $$('[data-lang].is-open').forEach(l => { l.classList.remove('is-open'); $('[data-lang-btn]', l).setAttribute('aria-expanded', 'false'); });
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('[data-lang-btn]');
+    if (btn) { const l = btn.closest('[data-lang]'), open = !l.classList.contains('is-open'); closeLang(); l.classList.toggle('is-open', open); btn.setAttribute('aria-expanded', open); return; }
+    if (e.target.closest('[data-lang-pick]')) e.preventDefault();
+    if (!e.target.closest('[data-lang] .lang__menu') || e.target.closest('[data-lang-pick]')) closeLang();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLang(); });
   const hdr = $('.hdr');
   const onScroll = () => hdr.classList.toggle('is-stuck', scrollY > 40);
   addEventListener('scroll', onScroll, { passive: true });
@@ -742,6 +763,53 @@ function setupFab(db) {
     if (sessionStorage.getItem('mc.chat.open') === '1' && innerWidth > 760) toggle(true);
     if (!localStorage.getItem('mc.chat.seen')) $('[data-chat-dot]').hidden = false;
   } catch (e) { /* storage off */ }
+}
+
+/* ---------- the page's scrollbar with a mouse (mc.css hides the browser's own) ----------
+   A thin thumb over the page: it shows while the page scrolls and while the pointer is near the right
+   edge, and fades out when idle. It drags like the usual one; a click beside it moves a screen. */
+function setupScrollbar() {
+  if (!matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+  const de = document.documentElement;
+  document.body.insertAdjacentHTML('beforeend', '<div class="sbar" aria-hidden="true"><i class="sbar__thumb"></i></div>');
+  const bar = document.body.lastElementChild, thumb = bar.firstElementChild;
+  let timer = 0, near = false, drag = null, room = 0;
+  const place = () => {
+    const h = de.clientHeight, total = de.scrollHeight;
+    // nothing to scroll, or a drawer or window holds the page still
+    bar.hidden = total <= h + 1 || de.style.overflow === 'hidden' || de.classList.contains('chat-open');
+    const size = Math.max(40, h * h / total);
+    room = h - size;
+    thumb.style.height = size + 'px';
+    thumb.style.transform = `translateY(${Math.round(scrollY / Math.max(1, total - h) * room)}px)`;
+  };
+  const show = () => { clearTimeout(timer); place(); bar.classList.add('is-on'); };
+  const fade = () => { clearTimeout(timer); timer = setTimeout(() => { if (!near && !drag) bar.classList.remove('is-on'); }, 900); };
+  addEventListener('scroll', () => { show(); fade(); }, { passive: true });
+  addEventListener('resize', place);
+  new ResizeObserver(place).observe(document.body);
+  document.addEventListener('mousemove', e => {
+    const was = near;
+    near = e.clientX >= de.clientWidth - 28;
+    if (near && !was) show();
+    else if (!near && was) fade();
+  }, { passive: true });
+  document.addEventListener('mouseout', e => { if (!e.relatedTarget) { near = false; fade(); } });   // left the window
+  thumb.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    thumb.setPointerCapture(e.pointerId);
+    drag = { y: e.clientY, top: scrollY };
+    bar.classList.add('is-drag');
+  });
+  thumb.addEventListener('pointermove', e => {
+    if (drag) scrollTo({ top: drag.top + (e.clientY - drag.y) * (de.scrollHeight - de.clientHeight) / Math.max(1, room), behavior: 'instant' });
+  });
+  thumb.addEventListener('lostpointercapture', () => { drag = null; bar.classList.remove('is-drag'); fade(); });
+  bar.addEventListener('pointerdown', e => {
+    if (e.target !== bar) return;
+    scrollBy({ top: (e.clientY < thumb.getBoundingClientRect().top ? -1 : 1) * de.clientHeight * .9 });
+  });
+  place();
 }
 
 /* ---------- the admin panel's preview ----------
@@ -794,6 +862,7 @@ export async function boot(page = {}) {
   setupEvents(db);
   setupLeadForms(db);
   setupFab(db);
+  setupScrollbar();
   addEventListener('mc:account', renderAccount);
   addEventListener('storage', e => { if (e.key === 'mc.signed') renderAccount(); });
   const all = () => { renderCounts(); renderCart(db); renderFav(db); renderCmpBar(db); syncToggles(); };

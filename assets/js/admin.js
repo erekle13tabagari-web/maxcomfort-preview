@@ -1,9 +1,11 @@
 /* Admin panel (admin.html): the site content without a developer.
-   Contacts, showrooms, delivery and payment, page texts and the timeline, the spotlight slides, brands,
-   the media centre, Q&A and uploaded files; personal logins (owner, editors) and the history of saves.
+   Contacts, showrooms, delivery and payment, page texts and the timeline, the products from Bitrix (which appear
+   and how: name, text, photos, category; nothing is written back to Bitrix), brands (the about page's panel),
+   the media centre, Q&A, vacancies (career.html) and uploaded files; personal logins (owner, editors) and the history of saves.
    Products, prices, stock and orders are not here: they come from Bitrix.
    bitrix mode: api/admin.php saves on this server.  static (preview): everything stays in this browser,
-   any name signs in.  Each section is saved on its own; the preview frame shows unsaved changes.        */
+   any name signs in.  Each section is saved on its own; the preview frame shows unsaved changes.
+   The spotlight slides are hidden (owner's choice, 2026-11-18): the window home page has no carousel; their data stays. */
 import { $, $$, esc, ui, C, rich, safeUrl, money, norm } from './core.js';
 import { catalog } from './api.js';
 
@@ -31,11 +33,16 @@ class Fail extends Error {
 }
 const remote = {
   async call(action, data = {}) {
-    let res, j = null;
+    let res, j = null, text = '';
     try {
       res = await fetch(C.api + 'admin.php', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, ...data }) });
-      j = await res.json();
+      text = await res.text();
     } catch (e) { throw new Fail('სერვერთან კავშირი ვერ დამყარდა', 'network'); }
+    // an answer that is not JSON (a server error page, a cut-off answer): its status and first words, not a guess
+    try { j = JSON.parse(text); } catch (e) {
+      const said = text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160);
+      throw new Fail(`სერვერის პასუხი გაუგებარია (HTTP ${res.status})${said ? ': ' + said : ''}`, 'bad-answer', res.status);
+    }
     if (!res.ok || !j || !j.ok) throw new Fail((j && j.error) || 'HTTP ' + res.status, j && j.code, res.status, j);
     return j;
   },
@@ -55,6 +62,15 @@ const remote = {
   userSave: u => remote.call('user-save', u),
   userDelete: login => remote.call('user-delete', { login }),
   bitrix: async () => (await remote.call('bitrix')).bitrix,
+  bitrixSwitch: d => remote.call('bitrix-switch', d),
+  bitrixReconnect: () => remote.call('bitrix-reconnect'),
+  journal: month => remote.call('journal', month ? { month } : {}),
+  journalSend: id => remote.call('journal-send', id ? { id } : {}),
+  products: () => remote.call('products'),
+  productsRefresh: () => remote.call('products-refresh'),
+  productSave: (key, value, rev) => remote.call('product-save', { key, value, rev }),
+  productPics: async key => (await remote.call('product-pics', { key })).imgs,
+  productsState: (keys, state) => remote.call('products-state', { keys, state }),
   async upload(blob, name) {
     let res, j = null;
     try {
@@ -98,6 +114,31 @@ const local = {
   async userSave() { throw new Fail(PREVIEW_NOTE, 'preview'); },
   async userDelete() { throw new Fail(PREVIEW_NOTE, 'preview'); },
   async bitrix() { throw new Fail(PREVIEW_NOTE, 'preview'); },
+  async bitrixSwitch() { throw new Fail(PREVIEW_NOTE, 'preview'); },
+  async bitrixReconnect() { throw new Fail(PREVIEW_NOTE, 'preview'); },
+  async journal() { throw new Fail(PREVIEW_NOTE, 'preview'); },
+  async journalSend() { throw new Fail(PREVIEW_NOTE, 'preview'); },
+  products: () => pxLocalData(),
+  productsRefresh: () => pxLocalData(),
+  async productPics(key) { return (pxFake.items[key] || {}).imgs || []; },
+  async productSave(key, value, rev) {
+    const L = LS.get('mc.products', {}), old = L[key];
+    if (!old) throw new Fail('პროდუქტი ვერ მოიძებნა');
+    if ((old.rev || 0) !== rev) throw new Fail('ეს პროდუქტი სხვამ შეცვალა', 'conflict', 409, { entry: old });
+    const e = { ...clone(value), rev: rev + 1, at: new Date().toISOString(), by: S.user.name };
+    ['name', 'line', 'type', 'desc', 'cat', 'sub'].forEach(k => { if (!String(e[k] || '').trim()) delete e[k]; });
+    if (!e.page) { delete e.page; delete e.how; }
+    L[key] = e;
+    LS.set('mc.products', L);
+    return { entry: e, built: true };
+  },
+  async productsState(keys, state) {
+    const L = LS.get('mc.products', {});
+    let changed = 0;
+    keys.forEach(k => { if (L[k] && L[k].state !== state) { L[k] = { ...L[k], state, rev: (L[k].rev || 0) + 1 }; changed++; } });
+    LS.set('mc.products', L);
+    return { layer: L, changed, built: true };
+  },
   async upload(blob, name) {
     const url = await new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = no; r.readAsDataURL(blob); });
     const f = { url, name, size: blob.size, at: new Date().toISOString(), type: (blob.type.split('/')[1] || '').replace('jpeg', 'jpg') };
@@ -113,17 +154,20 @@ const S = {
   user: null, c: null, w: {}, dirty: new Set(), db: null, view: 'home', post: null, page: 'index',
   open: new Set(), defs: {}, frame: { texts: [], page: '' }
 };
-const SECTIONS = { contacts: 'კონტაქტები', showrooms: 'შოურუმები', delivery: 'მიწოდება', payment: 'გადახდა', texts: 'გვერდების ტექსტები', timeline: 'ისტორიის წლები', spots: 'სლაიდები', brands: 'ბრენდები', posts: 'მედია ცენტრი', faq: 'კითხვა-პასუხი' };
+const SECTIONS = { contacts: 'კონტაქტები', showrooms: 'შოურუმები', delivery: 'მიწოდება', payment: 'გადახდა', texts: 'გვერდების ტექსტები', timeline: 'ისტორიის წლები', spots: 'სლაიდები', brands: 'ბრენდები', posts: 'მედია ცენტრი', faq: 'კითხვა-პასუხი', jobs: 'ვაკანსიები', products: 'პროდუქცია' };
 const VIEWS = [
   { id: 'home', t: 'მიმოხილვა', ic: 'grid', s: [] },
+  { id: 'journal', t: 'შეკვეთები', ic: 'bag', s: [], owner: true },
   { id: 'contacts', t: 'კონტაქტები', ic: 'phone', s: ['contacts'] },
   { id: 'showrooms', t: 'შოურუმები', ic: 'pin', s: ['showrooms'] },
   { id: 'orders', t: 'მიწოდება და გადახდა', ic: 'box', s: ['delivery', 'payment'] },
+  { id: 'products', t: 'პროდუქცია', ic: 'fan', s: [] },
   { id: 'texts', t: 'გვერდების ტექსტები', ic: 'edit', s: ['texts', 'timeline'] },
-  { id: 'spots', t: 'სლაიდები', ic: 'eye', s: ['spots'] },
+  { id: 'spots', t: 'სლაიდები', ic: 'eye', s: ['spots'], hidden: true },   // no page shows them since the window home page
   { id: 'brands', t: 'ბრენდები', ic: 'shield', s: ['brands'] },
   { id: 'posts', t: 'მედია ცენტრი', ic: 'chat', s: ['posts'] },
   { id: 'faq', t: 'კითხვა-პასუხი', ic: 'info', s: ['faq'] },
+  { id: 'jobs', t: 'ვაკანსიები', ic: 'cal', s: ['jobs'] },
   { id: 'files', t: 'ფაილები', ic: 'download', s: [] },
   { id: 'history', t: 'ისტორია', ic: 'clock', s: [] },
   { id: 'users', t: 'მომხმარებლები', ic: 'user', s: [], owner: true },
@@ -222,7 +266,8 @@ const NEW = {
   'spots.*.looks': () => ({ name: '', hex: '#F4F4F1', img: '', product: null, url: '' }),
   'spots.*.facts': () => ({ b: '', t: '' }),
   brands: () => ({ id: '', name: 'ახალი ბრენდი', logo: '', logoDark: '', strip: true, site: '', text: '' }),
-  faq: () => ({ id: uid('q'), q: '', a: '', on: true })
+  faq: () => ({ id: uid('q'), q: '', a: '', on: true }),
+  jobs: () => ({ id: uid('j'), on: false, title: '', place: 'თბილისი', type: 'სრული განაკვეთი', text: '', to: '' })
 };
 
 /* ---------- product search (slides) ---------- */
@@ -333,7 +378,7 @@ function shell() {
   $('#adm').innerHTML = `
   <aside class="adm__nav" aria-label="განყოფილებები">
     <a class="adm__logo" href="index.html" target="_blank" rel="noopener" title="საიტის ნახვა"><img src="assets/brand/logo/mc-logo-white.svg" alt="Max Comfort" width="84" height="43"><span>მართვის<br>პანელი</span></a>
-    <nav class="adm__links">${VIEWS.filter(v => !v.owner || S.user.role === 'owner').map(v => `<a class="adm__link" href="#${v.id}" data-view="${v.id}">${ui(v.ic)}<span>${v.t}</span><i class="adm__dot" hidden></i></a>`).join('')}</nav>
+    <nav class="adm__links">${VIEWS.filter(v => !v.hidden && (!v.owner || S.user.role === 'owner')).map(v => `<a class="adm__link" href="#${v.id}" data-view="${v.id}">${ui(v.ic)}<span>${v.t}</span><i class="adm__dot" hidden></i></a>`).join('')}</nav>
     <div class="adm__me">
       <span class="av av--sm">${esc(initials(S.user.name))}</span><span class="adm__who"><b>${esc(S.user.name)}</b><small>${ROLE[S.user.role] || ''}</small></span>
       <button class="iconbtn" data-act="me" aria-label="ანგარიში">${ui('edit')}</button>
@@ -342,6 +387,7 @@ function shell() {
   </aside>
   <main class="adm__main">
     ${LIVE ? '' : `<div class="adm__test">${ui('info', 'ui--sm')}<span>სატესტო რეჟიმი: ცვლილებები ინახება მხოლოდ ამ ბრაუზერში და ჩანს ამ ბრაუზერში გახსნილ საიტზე.</span></div>`}
+    <div class="adm__alerts" data-alerts role="status" hidden></div>
     <header class="adm__bar"><div><h1 data-title></h1><small data-status></small></div><div class="adm__acts" data-acts></div></header>
     <div class="adm__body" data-body></div>
   </main>`;
@@ -350,10 +396,12 @@ function navDots() {
   $$('.adm__link').forEach(a => {
     const v = VIEWS.find(x => x.id === a.dataset.view);
     a.classList.toggle('is-on', v.id === S.view);
-    $('.adm__dot', a).hidden = !v.s.some(s => S.dirty.has(s));
+    const waits = v.id === 'journal' && !!(S.alerts && S.alerts.waiting);   // orders that did not reach Bitrix
+    $('.adm__dot', a).hidden = !waits && !v.s.some(s => S.dirty.has(s));
+    $('.adm__dot', a).classList.toggle('adm__dot--bad', waits);
   });
 }
-const PREVIEW = { contacts: 'about.html#contact', showrooms: 'about.html#contact', orders: 'about.html#delivery', texts: null, spots: 'index.html', brands: 'index.html#brands', posts: 'media.html', faq: 'media.html?t=faq' };
+const PREVIEW = { contacts: 'about.html#contact', showrooms: 'about.html#contact', orders: 'about.html#delivery', texts: null, spots: 'index.html', brands: 'about.html#brands', posts: 'media.html', faq: 'media.html?t=faq', jobs: 'career.html#jobs' };
 function bar() {
   const v = view();
   $('[data-title]').textContent = v.t;
@@ -366,7 +414,7 @@ function bar() {
     (v.s.length ? `<button class="btn btn--red btn--sm" data-act="save" ${dirty.length ? '' : 'disabled'}>${ui('check')}<span>შენახვა</span></button>` : '');
 }
 function go(id) {
-  if (!VIEWS.some(v => v.id === id && (!v.owner || S.user.role === 'owner'))) id = 'home';
+  if (!VIEWS.some(v => v.id === id && !v.hidden && (!v.owner || S.user.role === 'owner'))) id = 'home';
   S.view = id;
   if (id !== 'posts') S.post = null;
   render();
@@ -386,11 +434,11 @@ const R = {}, A = {};   // R: the view's HTML, A: what it does once drawn
 R.home = () => {
   const c = { ...S.c, ...S.w };
   const posts = (c.posts || []).filter(p => p.on).length;
-  const tiles = [['showrooms', 'შოურუმი', (c.showrooms || []).length], ['spots', 'სლაიდი ჩართულია', (c.spots || []).filter(s => s.on).length],
+  const tiles = [['showrooms', 'შოურუმი', (c.showrooms || []).length],
     ['brands', 'ბრენდი ზოლში', (c.brands || []).filter(b => b.strip).length], ['posts', 'გამოქვეყნებული ჩანაწერი', posts],
-    ['faq', 'კითხვა-პასუხი', (c.faq || []).filter(f => f.on).length], ['texts', 'შეცვლილი ტექსტი', Object.keys(Array.isArray(c.texts) ? {} : c.texts || {}).length]];
+    ['faq', 'კითხვა-პასუხი', (c.faq || []).filter(f => f.on).length], ['jobs', 'ღია ვაკანსია', (c.jobs || []).filter(j => j.on && (!j.to || j.to >= today())).length], ['texts', 'შეცვლილი ტექსტი', Object.keys(Array.isArray(c.texts) ? {} : c.texts || {}).length]];
   return `<div class="ahome">
-    <p class="ahome__hi">გამარჯობა, ${esc(S.user.name)}. აქ იცვლება საიტის ტექსტები, კონტაქტები, სლაიდები, ბრენდები და მედია ცენტრი.</p>
+    <p class="ahome__hi">გამარჯობა, ${esc(S.user.name)}. აქ იცვლება საიტის ტექსტები, კონტაქტები, ბრენდები, მედია ცენტრი და ვაკანსიები.</p>
     <div class="atiles">${tiles.map(([v, t, n]) => `<a class="atile" href="#${v}"><b>${n}</b><span>${t}</span></a>`).join('')}</div>
     <div class="ainfo">${ui('box')}<div><b>პროდუქცია, ფასები, მარაგი და შეკვეთები</b><p>ისინი Bitrix-იდან მოდის და იქ იცვლება. საიტი ახალ ფასს და მარაგს 15 წუთში აჩვენებს, შეკვეთები კი Bitrix-ში გარიგებებად ჩნდება.</p></div></div>
     <h2 class="ah2">ბოლო ცვლილებები</h2><div data-recent><p class="muted">იტვირთება…</p></div>
@@ -446,11 +494,12 @@ R.orders = () => {
 };
 
 /* page texts: the preview frame lists the page's editable texts; a click there opens the field here */
-const TPAGES = [['index', 'მთავარი', k => /^(home|footer)\./.test(k)], ['about', 'ჩვენ შესახებ', k => /^about\./.test(k)], ['media', 'მედია ცენტრი', k => /^media\./.test(k)]];
-const GROUPS = { 'home.hero': 'მთავარი სლაიდები', 'home.win': 'ოთხი სისტემა', 'home.rail': 'პოპულარული პროდუქცია', 'home.svc': 'სერვისი', 'home.stat': 'ციფრები', 'home.promo': 'აქციები', 'home.band': 'კონსულტაციის ზოლი', footer: 'ქვედა ზოლი (ყველა გვერდზე)',
-  'about.hero': 'თავი', 'about.story': 'კომპანია', 'about.tri': 'მისია, ხედვა, დაპირება', 'about.val': 'ღირებულებები', 'about.svc': 'სერვისი', 'about.del': 'მიწოდება და გადახდა', 'about.hist': 'ისტორია', 'about.stat': 'ციფრები', 'about.contact': 'კონტაქტი', 'about.privacy': 'კონფიდენციალურობა', media: 'მედია ცენტრი', 'media.band': 'ზარის ზოლი' };
-const PARTS = { eyebrow: 'წარწერა', title: 'სათაური', lead: 'ტექსტი', text: 'ტექსტი', note: 'ქვეწარწერა', n: 'რიცხვი', t: 'წარწერა', rich: 'ტექსტი', about: 'ტექსტი',
-  cooling: 'კონდიცირება', heating: 'გათბობა', ventilation: 'ვენტილაცია', water: 'წყალმომარაგება' };
+const TPAGES = [['index', 'ქვედა ზოლი', k => /^footer\./.test(k)], ['about', 'ჩვენ შესახებ', k => /^about\./.test(k)], ['media', 'მედია ცენტრი', k => /^media\./.test(k)], ['career', 'კარიერა', k => /^career\./.test(k)]];
+const GROUPS = { footer: 'ქვედა ზოლი (ყველა გვერდზე)',
+  'about.hero': 'თავი', 'about.story': 'კომპანია', 'about.brands': 'ბრენდები', 'about.tri': 'მისია, ხედვა, დაპირება', 'about.val': 'ღირებულებები', 'about.svc': 'სერვისი', 'about.del': 'მიწოდება და გადახდა', 'about.hist': 'ისტორია', 'about.stat': 'ციფრები', 'about.contact': 'კონტაქტი', 'about.privacy': 'კონფიდენციალურობა', media: 'მედია ცენტრი', 'media.band': 'ზარის ზოლი',
+  'career.hero': 'თავი', 'career.dir': 'მიმართულებები', 'career.jobs': 'ვაკანსიები', 'career.apply': 'განაცხადი' };
+const PARTS = { fact: 'ფაქტი', eyebrow: 'წარწერა', title: 'სათაური', lead: 'ტექსტი', text: 'ტექსტი', note: 'ქვეწარწერა', n: 'რიცხვი', t: 'წარწერა', rich: 'ტექსტი', about: 'ტექსტი',
+  stat: 'ციფრი', cooling: 'კონდიცირება', heating: 'გათბობა', ventilation: 'ვენტილაცია', water: 'წყალმომარაგება' };
 function textGroup(key) {
   const p = key.split('.');
   const g = p.length > 2 ? p[0] + '.' + p[1] : p[0];
@@ -557,16 +606,16 @@ R.brands = () => {
   const list = W('brands');
   const cat = [['', '— კატალოგში არ არის —'], ...(S.db ? S.db.brands.map(b => [b.id, b.name]) : [])];
   return `<div class="asplit"><div class="asplit__l">
-    <p class="muted">„ზოლში“ მონიშნული ბრენდები მთავარ გვერდზე მოძრავ ზოლში ჩანს, ამ რიგით. კატალოგის ბრენდის ტექსტი ჩანს ბრენდის გვერდზე.</p>
+    <p class="muted">„ზოლში“ მონიშნული ბრენდები „ჩვენ შესახებ“ გვერდზე ჩანს, ფერადი ლოგოებით, ამ რიგით. კატალოგის ბრენდის ტექსტი ჩანს ბრენდის გვერდზე.</p>
     ${list.map((b, i) => card('brands|' + i, `${b.logo ? `<img class="aitem__logo" src="${esc(b.logo)}" alt="">` : ''}${esc(b.name || 'ბრენდი')}`, `
       <div class="agrid">${field('სახელი', `brands|${i}.name`, b.name, { max: 80 })}${select('კატალოგის ბრენდი', `brands|${i}.id`, b.id, cat)}</div>
       <div class="agrid">${imgPick(`brands|${i}.logo`, b.logo, 'ლოგო (ნათელ ფონზე)')}${imgPick(`brands|${i}.logoDark`, b.logoDark, 'ლოგო მუქ რეჟიმში (არასავალდებულო)')}</div>
-      <div class="agrid">${toggle('მთავარი გვერდის ზოლში', `brands|${i}.strip`, b.strip)}${field('ვებგვერდი', `brands|${i}.site`, b.site, { type: 'url', ph: 'https://' })}</div>
+      <div class="agrid">${toggle('ზოლში „ჩვენ შესახებ“ გვერდზე', `brands|${i}.strip`, b.strip)}${field('ვებგვერდი', `brands|${i}.site`, b.site, { type: 'url', ph: 'https://' })}</div>
       ${field('ტექსტი ბრენდის გვერდზე', `brands|${i}.text`, b.text, { area: true, max: 1500 })}`, itemActs('brands|', i, list.length), b.strip ? 'ზოლში' : '')).join('')}
     ${addBtn('brands|', 'ბრენდის დამატება')}
-  </div><div class="asplit__r"><iframe class="aframe" title="მთავარი გვერდის გადახედვა" data-frame></iframe></div></div>`;
+  </div><div class="asplit__r"><iframe class="aframe" title="„ჩვენ შესახებ“ გვერდის გადახედვა" data-frame></iframe></div></div>`;
 };
-A.brands = body => frame(body, 'index.html', '#brands');
+A.brands = body => frame(body, 'about.html', '#brands');
 
 const PTYPES = { news: 'სიახლე', blog: 'ბლოგი', promo: 'აქცია' };
 function postState(p) {
@@ -619,6 +668,23 @@ R.faq = () => {
     ${addBtn('faq|', 'კითხვის დამატება')}</div>`;
 };
 
+/* vacancies (career.html): shown in this order; one past its last day leaves the page by itself */
+R.jobs = () => {
+  const list = W('jobs'), day = today();
+  return `<div class="aform"><p class="muted">ჩანს გვერდზე „კარიერა“, ამ რიგით. ცარიელი სიისას გვერდი რეზიუმეს გამოგზავნას სთავაზობს. განაცხადები Bitrix-ში ლიდად მოდის: „ვაკანსიის განაცხადი“.</p>
+    ${list.map((j, i) => card('jobs|' + i, esc(j.title || 'ახალი ვაკანსია'), `
+      ${field('პოზიცია', `jobs|${i}.title`, j.title, { max: 120, ph: 'მაგ. გაყიდვების კონსულტანტი' })}
+      <div class="agrid agrid--3">
+        ${field('ადგილი', `jobs|${i}.place`, j.place, { max: 80, ph: 'თბილისი' })}
+        ${field('სამუშაო გრაფიკი', `jobs|${i}.type`, j.type, { max: 60, ph: 'სრული განაკვეთი' })}
+        ${field('ბოლო ვადა', `jobs|${i}.to`, j.to, { type: 'date', hint: 'არასავალდებულო; ამ დღის შემდეგ ქრება' })}
+      </div>
+      ${field('აღწერა', `jobs|${i}.text`, j.text, { area: true, rows: 6, max: 4000, hint: 'მოვალეობები, მოთხოვნები, რას გთავაზობთ. ახალი ხაზი = ახალი აბზაცი' })}
+      ${toggle('ჩანს საიტზე', `jobs|${i}.on`, j.on)}`, itemActs('jobs|', i, list.length),
+      !j.on ? 'დამალულია' : j.to && j.to < day ? 'ვადა გავიდა' : [j.place, j.type].filter(Boolean).map(esc).join(' · '))).join('')}
+    ${addBtn('jobs|', 'ვაკანსიის დამატება')}</div>`;
+};
+
 R.files = () => `<div class="aform">
   <label class="adrop" data-drop>${ui('download')}<b>ჩააგდეთ ფაილები აქ ან აირჩიეთ</b><small>JPG, PNG, WebP, GIF და PDF, 12 MB-მდე. დიდი ფოტოები ავტომატურად პატარავდება.</small><input type="file" multiple accept="image/*,application/pdf" hidden data-files-up></label>
   <div class="alib alib--page" data-files><p class="muted">იტვირთება…</p></div></div>`;
@@ -659,6 +725,11 @@ A.history = async body => {
 };
 /** A saved version, readable: lists by their names, the rest as label: value. */
 function summary(sec, v) {
+  if (sec === 'products' && v) {   // one product, or a show/hide of several
+    if (v.keys) return `<p>${v.state === 'shown' ? 'გამოჩნდა საიტზე' : 'დაიმალა'}: ${v.keys.length} პროდუქტი</p><p class="muted">Bitrix ID: ${esc(v.keys.map(k => k.slice(1)).join(', ').slice(0, 600))}</p>`;
+    const e = v.entry || {};
+    return `<dl class="asum"><dt>Bitrix ID</dt><dd>${esc(String(v.key || '').slice(1))}</dd><dt>საიტზე</dt><dd>${esc((PXSTATE[e.state] || [e.state])[0])}</dd>${['name', 'line', 'type', 'cat', 'sub', 'page', 'desc'].filter(k => e[k]).map(k => `<dt>${k}</dt><dd>${esc(String(e[k]).slice(0, 300))}</dd>`).join('')}${e.imgs ? `<dt>ფოტოები</dt><dd>${e.imgs.length}</dd>` : ''}${e.specs ? `<dt>მახასიათებლები</dt><dd>${e.specs.length}</dd>` : ''}</dl>`;
+  }
   if (Array.isArray(v)) return `<ol class="asum">${v.map(x => `<li>${esc(x.name || x.title || x.q || [x.year, x.text].filter(Boolean).join(' · ') || JSON.stringify(x).slice(0, 80))}${x.on === false ? ' <small class="muted">(გამორთული)</small>' : ''}</li>`).join('')}</ol>`;
   if (v && typeof v === 'object') return `<dl class="asum">${Object.entries(v).map(([k, x]) => `<dt>${esc(k)}</dt><dd>${esc(typeof x === 'object' ? Object.entries(x || {}).filter(([, y]) => y).map(([a, y]) => a + ': ' + y).join(', ') : String(x).replace(/<[^>]+>/g, ' ').slice(0, 300))}</dd>`).join('')}</dl>`;
   return '<p class="muted">ცარიელია</p>';
@@ -689,7 +760,7 @@ A.users = async body => {
 R.bitrix = () => `<div class="aform">
   <div class="ainfo">${ui('link')}<div><b>Bitrix-თან კავშირი</b><p>აქ ჩანს, უკავშირდება თუ არა ეს სერვერი პორტალს <code>api/config.php</code>-ის webhook-ით, და ნომრები, რომლებიც config.php-ში იწერება. ნომერზე დაჭერა მას აკოპირებს.</p></div></div>
   ${LIVE ? `<div><button class="btn btn--sm" data-bx-run>${ui('check')}<span>შემოწმება</span></button></div><div class="aform" data-bx><p class="muted">Bitrix-ს ვეკითხები…</p></div>`
-    : `<p class="muted">სატესტო რეჟიმში ეს არ მოწმდება: კავშირი სერვერზე ჩანს, როცა <code>assets/js/config.js</code>-ში <code>mode: 'bitrix'</code> დგას.</p>`}
+    : `<p class="muted">სატესტო რეჟიმში ეს არ მოწმდება: კავშირი ჩანს სერვერზე, maxcomfort.ge-ზე და მის ქვედომენებზე (მაგ. new.maxcomfort.ge).</p>`}
 </div>`;
 A.bitrix = body => {
   if (!LIVE) return;
@@ -697,7 +768,7 @@ A.bitrix = body => {
   const check = async () => {
     run.disabled = true;
     box.innerHTML = '<p class="muted">Bitrix-ს ვეკითხები…</p>';
-    try { box.innerHTML = bxView(await srv.bitrix()); } catch (e) { box.innerHTML = ''; failed(e); }
+    try { box.innerHTML = bxView(await srv.bitrix()); } catch (e) { box.innerHTML = `<section class="apanel abx__state"><span class="apill apill--bad">შემოწმება ვერ დასრულდა</span><small class="abx__msg">${esc(e.message)}</small></section>`; failed(e); }
     run.disabled = false;
     $('span', run).textContent = 'ხელახლა შემოწმება';
   };
@@ -710,6 +781,7 @@ A.bitrix = body => {
   check();
 };
 const BX_STATE = {
+  off: ['გამორთულია', 'კავშირი გამორთულია: საიტი Bitrix-ს არ მიმართავს. შეკვეთები და მოთხოვნები ინახება „შეკვეთებში“ და Bitrix-ში წავა ჩართვისას.'],
   empty: ['არ არის დაყენებული', 'api/config.php-ში webhook ცარიელია. პორტალზე: Developer resources → Other → Inbound webhook, უფლებები crm, user და catalog; მისამართი ჩასვით config.php-ის webhook-ში.'],
   net: ['კავშირი ვერ დამყარდა', 'სერვერი პორტალს ვერ უკავშირდება. შეამოწმეთ მისამართი config.php-ში და რომ პორტალი ამ სერვერიდან ხელმისაწვდომია.'],
   auth: ['webhook არ მიიღო', 'პორტალი პასუხობს, მაგრამ webhook-ს არ იღებს: ის წაშლილია ან არასწორად არის ჩასმული (ბოლო „/“-ის ჩათვლით).'],
@@ -726,15 +798,18 @@ function bxView(b) {
   const err = name => {
     const l = L(name);
     if (!l.error) return '';
+    if (l.slow) return '<p class="abx__err">პორტალი ნელა პასუხობს: ეს სია დროში ვერ წავიკითხე. სცადეთ „ხელახლა შემოწმება“.</p>';
     return /insufficient_scope|access_denied|access denied/i.test(l.error)
       ? `<p class="abx__err">webhook-ს „${BX_SCOPE[l.scope] || l.scope}“ უფლება არ აქვს: პორტალზე webhook-ს დაუმატეთ და ხელახლა შეამოწმეთ.</p>`
       : `<p class="abx__err">ვერ წავიკითხე: ${esc(l.error)}</p>`;
   };
   const panel = (title, keys, inner) => `<section class="apanel"><h2 class="ah2">${title}</h2>${keys ? `<p class="muted abx__keys">config.php: ${keys.map(x => `<code>${x}</code>`).join(', ')}</p>` : ''}${inner}</section>`;
 
+  if (b.alerts) showAlerts(b.alerts);
+  const sw = bxSwitch(b.switch, b.alerts);
   if (!b.ok) {
     const [t, p] = BX_STATE[b.kind] || BX_STATE.other;
-    return `<section class="apanel abx__state"><span class="apill apill--bad">${t}</span><p>${p}</p>${b.host ? `<small class="muted">${esc(b.host)}</small>` : ''}${b.error ? `<small class="abx__msg">${esc(b.error)}</small>` : ''}</section>`;
+    return sw + (b.kind === 'off' ? '' : `<section class="apanel abx__state"><span class="apill apill--bad">${t}</span><p>${p}</p>${b.host ? `<small class="muted">${esc(b.host)}</small>` : ''}${b.error ? `<small class="abx__msg">${esc(b.error)}</small>` : ''}</section>`);
   }
 
   // what config.php says that the portal does not have
@@ -756,7 +831,7 @@ function bxView(b) {
   if (k.catalog && prices && !prices.some(p => p.id === k.price_type_id)) warn.push(`price_type_id ${k.price_type_id}: ასეთი ფასის ტიპი არ არის`);
 
   const who = b.who && b.who.name ? `webhook: ${b.who.name} (ID ${b.who.id})${b.who.admin ? ', ადმინისტრატორი' : ''}` : '';
-  return `<section class="apanel abx__state"><span class="apill apill--on">დაკავშირებულია</span><p><b>${esc(b.host)}</b> · პასუხი ${b.ms} მწმ-ში</p>${who ? `<small class="muted">${esc(who)}</small>` : ''}</section>
+  return sw + `<section class="apanel abx__state"><span class="apill apill--on">დაკავშირებულია</span><p><b>${esc(b.host)}</b> · პასუხი ${b.ms} მწმ-ში</p>${who ? `<small class="muted">${esc(who)}</small>` : ''}</section>
     ${warn.length ? `<section class="apanel abx__warn"><h2 class="ah2">config.php-ში შესასწორებელი</h2><ul>${warn.map(w => `<li>${esc(w)}</li>`).join('')}</ul></section>`
       : '<p class="abx__fine">config.php-ის ნომრები პორტალს ემთხვევა.</p>'}
     ${panel('ვორონკები და ეტაპები', ['deal_category_id', 'deal_stage_id', "account['deal_categories']"], err('pipelines') + (pipes ? '<div class="abx__list">' + pipes.map(p => {
@@ -771,6 +846,108 @@ function bxView(b) {
     ${panel('კატალოგი და ფასის ტიპები', ["catalog['iblock_id']", "catalog['price_type_id']"], `<p class="muted">საჭიროა მხოლოდ მაშინ, როცა პროდუქცია Bitrix-იდან მოვა (catalog.enabled).</p>` + err('catalogs') +
       (cats ? `<div class="abx__list">${cats.map(c => row(c.id, c.name, 'კატალოგი', c.id === k.iblock_id)).join('')}</div>` : '') + err('prices') +
       (prices ? `<div class="abx__list">${prices.map(p => row(p.id, p.name, p.base ? 'საბაზო ფასი' : 'ფასის ტიპი', p.id === k.price_type_id)).join('')}</div>` : ''))}`;
+}
+
+/* The switch on the Bitrix page: on or off (who, when), reconnect, and the address for the alert e-mails. */
+function bxSwitch(sw, al) {
+  if (!sw) return '';
+  const n = (al && al.waiting) || 0;
+  return `<section class="apanel abx__switch">
+    <div class="abx__line"><b>კავშირი Bitrix-თან</b><span class="apill ${sw.on ? 'apill--on' : 'apill--bad'}">${sw.on ? 'ჩართულია' : 'გამორთულია'}</span>
+      ${sw.by ? `<small class="muted">${sw.on ? 'ჩართო' : 'გამორთო'} ${esc(sw.by)}, ${esc(when(sw.at))}</small>` : ''}
+      <span class="abx__btns">${sw.on ? `<button class="btn btn--ghost btn--sm" data-act="bx-reconnect">ხელახლა დაკავშირება</button><button class="btn btn--ghost btn--sm" data-act="bx-off">გამორთვა</button>`
+        : `<button class="btn btn--sm" data-act="bx-on">${ui('check')}<span>ჩართვა</span></button>`}</span></div>
+    <p class="muted">${sw.on ? 'გამორთვისას საიტი Bitrix-ს აღარ მიმართავს: შეკვეთები და მოთხოვნები ინახება „შეკვეთებში“ და Bitrix-ში წავა ჩართვისას. „ხელახლა დაკავშირება“ აგზავნის, რაც ელოდება, და კავშირს თავიდან ამოწმებს.'
+      : 'ახალი შეკვეთები და მოთხოვნები ინახება „შეკვეთებში“. ჩართვისას, რაც ელოდება, Bitrix-ში წავა.'}</p>
+    ${n ? `<p class="abx__err">Bitrix-ს ელოდება ${n} შეკვეთა/მოთხოვნა. <a class="link" href="#journal">შეკვეთები</a></p>` : ''}
+    <div class="abx__alert"><label class="afield"><span>გაფრთხილება ელ. ფოსტაზე <small>როცა შეკვეთა ან მოთხოვნა Bitrix-ში ვერ მიდის: კლიენტი, რა უნდა და მიზეზი</small></span>
+      <input class="input" type="email" data-bx-alert value="${esc(sw.alert)}" placeholder="${esc(sw.notify || 'info@maxcomfort.ge')}"></label>
+      <button class="btn btn--ghost btn--sm" data-act="bx-alert">შენახვა</button></div>
+  </section>`;
+}
+
+/* ---------- Bitrix alerts on every page (owners): what did not reach Bitrix, since when and why; the switch off ---------- */
+let alertTimer = 0;
+async function refreshAlerts() {
+  if (!LIVE || !S.user || S.user.role !== 'owner') return;
+  try { const st = await srv.state(); if (st.alerts) showAlerts(st.alerts); } catch (e) { /* tried again later */ }
+}
+function showAlerts(a) {
+  S.alerts = a;
+  const box = $('[data-alerts]');
+  if (box) {
+    const n = a.waiting;
+    box.hidden = !a.off && !n;
+    box.innerHTML = a.off
+      ? `${ui('info', 'ui--sm')}<span><b>Bitrix-თან კავშირი გამორთულია.</b> ახალი შეკვეთები და მოთხოვნები ინახება „შეკვეთებში“${n ? ` (ელოდება ${n})` : ''} და Bitrix-ში წავა ჩართვისას.</span><a class="btn btn--ghost btn--sm" href="#bitrix">Bitrix</a>`
+      : n ? `${ui('info', 'ui--sm')}<span><b>${n} შეკვეთა/მოთხოვნა Bitrix-ში ვერ წავიდა.</b>${a.trouble ? ` კავშირი გაწყვეტილია ${esc(when(a.trouble.since))}-დან. ${esc(a.trouble.why)}.` : ''} საიტზე ინახება, არაფერი დაკარგულა.</span>
+        <a class="btn btn--ghost btn--sm" href="#journal">ნახვა</a><button class="btn btn--sm" data-act="journal-send">ხელახლა გაგზავნა</button>` : '';
+  }
+  navDots();
+}
+function sendNote(r) {
+  const s = r.sent.length, f = r.failed.length;
+  if (!s && !f) note(r.left ? 'ჯერ ვერაფერი გაიგზავნა' : 'გასაგზავნი არაფერია', r.left ? 'bad' : 'ok');
+  else note(`Bitrix-ში წავიდა: ${s}${f ? `, ვერ წავიდა: ${f} (${r.failed[0].why})` : ''}${r.left ? `, ელოდება: ${r.left}` : ''}`, f ? 'bad' : 'ok');
+  if (r.alerts) showAlerts(r.alerts);
+}
+
+/* ---------- the order log (owners): every order and request from the site, sent to Bitrix or waiting ---------- */
+R.journal = () => `<div class="aform">
+  <p class="muted">საიტიდან მოსული ყველა შეკვეთა და მოთხოვნა. ჯერ აქ იწერება, მერე Bitrix-ში მიდის; „ელოდება“ ნიშნავს, რომ Bitrix-ში ჯერ არ მისულა (კავშირი გამორთულია ან პორტალი მიუწვდომელი იყო) და ჩართვისას ან „ხელახლა გაგზავნით“ წავა.</p>
+  ${LIVE ? '<div data-jr><p class="muted">იტვირთება…</p></div>' : '<p class="muted">სატესტო რეჟიმში შეკვეთები არსად იგზავნება და აქ არ ჩანს: ჟურნალი სერვერზე მუშაობს.</p>'}</div>`;
+A.journal = body => {
+  if (!LIVE) return;
+  const box = $('[data-jr]', body);
+  const load = async month => {
+    try {
+      const r = await srv.journal(month);
+      S.jr = r;
+      showAlerts(r.alerts);
+      box.innerHTML = jrView(r);
+    } catch (e) { box.innerHTML = `<p class="abx__err">${esc(e.message)}</p>`; failed(e); }
+  };
+  box.addEventListener('change', e => { if (e.target.matches('[data-jr-month]')) load(e.target.value); });
+  body.journalReload = () => load(S.jr && S.jr.month);
+  load(S.jr && S.jr.month);
+};
+const monthName = m => { const [y, mm] = m.split('-'); return `${MON[+mm - 1]} ${y}`; };
+function jrView(r) {
+  const f = S.jrF || 'all', a = S.alerts || {};
+  const all = r.entries, waiting = all.filter(e => e.status === 'waiting'), sent = all.filter(e => e.status === 'sent');
+  const list = f === 'waiting' ? waiting : f === 'sent' ? sent : all;
+  const head = `<div class="ajr__bar">
+    <select class="select ajr__month" data-jr-month aria-label="თვე">${r.months.map(m => `<option value="${esc(m)}" ${m === r.month ? 'selected' : ''}>${esc(monthName(m))}</option>`).join('')}</select>
+    <div class="atabs">${[['all', 'ყველა', all.length], ['waiting', 'ელოდება', waiting.length], ['sent', 'Bitrix-შია', sent.length]]
+      .map(([k, t, c]) => `<button class="atab ${f === k ? 'is-on' : ''}" data-act="jr-filter" data-f="${k}">${t} <small>${c}</small></button>`).join('')}</div>
+    ${a.waiting && !a.off ? `<button class="btn btn--sm" data-act="journal-send">${ui('check')}<span>Bitrix-ში გაგზავნა (${a.waiting})</span></button>` : ''}</div>`;
+  const rows = list.map(e => {
+    const s = e.summary || {};
+    const what = e.kind === 'order' ? `${(s.items || []).length} პროდუქტი · ${money(s.total)}` : esc(s.kind || 'მოთხოვნა') + (s.product ? ' · ' + esc(s.product) : '');
+    return `<div class="ahist__r ajr__r"><span><b>${esc(e.id)}</b><small>${esc(when(e.at))}</small></span>
+      <span><b>${esc(e.who.name)}</b><small>${esc(e.who.phone)} · ${e.kind === 'order' ? 'შეკვეთა' : 'მოთხოვნა'}</small></span>
+      <small>${what}${e.status === 'waiting' && e.why ? `<br><span class="abx__err">${esc(e.why)}</span>` : ''}</small>
+      <span class="ahist__acts">${e.status === 'sent' ? `<span class="apill apill--on">${esc(e.ref)}</span>` : '<span class="apill apill--bad">ელოდება</span>'}
+        <button class="btn btn--ghost btn--sm" data-act="jr-open" data-id="${esc(e.id)}">ნახვა</button>
+        ${e.status === 'waiting' && !a.off ? `<button class="btn btn--ghost btn--sm" data-act="journal-send" data-id="${esc(e.id)}">გაგზავნა</button>` : ''}</span></div>`;
+  }).join('');
+  return head + (list.length ? `<div class="ahist">${rows}</div>` : '<p class="muted">ამ თვეში ჩანაწერი არ არის.</p>');
+}
+function jrDetail(e) {
+  const s = e.summary || {};
+  const row = (k, v) => (v ? `<dt>${k}</dt><dd>${v}</dd>` : '');
+  const text = v => esc(v || '').replace(/\n/g, '<br>');
+  const page = s.page && safeUrl(s.page);
+  return `<h2 class="h3">${e.kind === 'order' ? 'შეკვეთა' : esc(s.kind || 'მოთხოვნა')} ${esc(e.id)}</h2>
+    <p class="muted">${esc(when(e.at))} · ${e.status === 'sent' ? `Bitrix-შია: <b>${esc(e.ref)}</b>${e.sent ? ', ' + esc(when(e.sent)) : ''}` : 'ელოდება Bitrix-ს'}</p>
+    ${e.status === 'waiting' && e.why ? `<p class="abx__err">${esc(e.why)}${e.tries ? ` (ცდა: ${e.tries}, ბოლოს ${esc(when(e.tried))})` : ''}</p>` : ''}
+    <dl class="asum">${row('კლიენტი', esc(e.who.name))}${row('ტელეფონი', `<a href="tel:${esc(e.who.phone)}">${esc(e.who.phone)}</a>`)}${row('ელ. ფოსტა', esc(e.who.email))}
+      ${row('კომპანია', esc(s.company))}${row('მიწოდება', esc(s.delivery))}${row('მისამართი / შოურუმი', esc(s.place))}${row('სასურველი თარიღი', esc(s.date))}
+      ${e.kind === 'order' ? row('მონტაჟი', s.install ? 'სჭირდება' : 'არ სჭირდება') : ''}${row('გადახდა', esc(s.pay))}${row('თემა', esc(s.topic))}${row('პროდუქტი', esc(s.product))}
+      ${row('კომენტარი', text(s.comment))}${row('შეტყობინება', text(s.message))}${e.kind === 'order' ? row('სულ', money(s.total)) : ''}
+      ${row('გვერდი', page ? `<a href="${esc(page)}" target="_blank" rel="noopener">${esc(s.page.slice(0, 80))}</a>` : '')}</dl>
+    ${e.kind === 'order' ? `<ol class="asum">${(s.items || []).map(i => `<li>${esc(i.name)} <small class="muted">${esc(i.sku)}</small> × ${i.qty} · ${money(i.price)}</li>`).join('')}</ol>` : ''}
+    ${(s.short || []).length ? `<p class="abx__err">არასაკმარისი მარაგი: ${s.short.map(x => `${esc(x.name)} (შეკვეთილია ${x.qty}, მარაგშია ${x.left})`).join('; ')}</p>` : ''}`;
 }
 
 /* ---------- saving ---------- */
@@ -879,6 +1056,7 @@ async function onClick(e) {
     const list = getPath(W(sec), path);
     return { sec, path, list, i: +a.dataset.i };
   };
+  if (act && act.startsWith('px-')) { pxClick(a, e); return; }
   switch (act) {
     case 'save': save(); break;
     case 'preview': draftNow(); window.open(withDraft(a.dataset.page), '_blank'); break;
@@ -939,6 +1117,39 @@ async function onClick(e) {
     case 'copy':
       try { await navigator.clipboard.writeText(new URL(a.dataset.url, location.href).href); note('ბმული დაკოპირდა', 'ok'); } catch (err) { prompt('ბმული:', new URL(a.dataset.url, location.href).href); }
       break;
+    case 'bx-off':
+      if (!await ask('Bitrix-თან კავშირს გავთიშავ: ახალი შეკვეთები და მოთხოვნები შეინახება „შეკვეთებში“ და Bitrix-ში არ წავა, სანამ ისევ არ ჩართავთ.', 'გამორთვა', true)) break;
+      try { const r = await srv.bitrixSwitch({ on: false }); showAlerts(r.alerts); note('კავშირი გამორთულია', 'ok'); render(); } catch (err) { failed(err); }
+      break;
+    case 'bx-on':
+    case 'bx-reconnect':
+      a.classList.add('is-busy');
+      try {
+        if (act === 'bx-on') await srv.bitrixSwitch({ on: true });
+        sendNote(await srv.bitrixReconnect());   // what waited goes to Bitrix; the page then checks the connection again
+      } catch (err) { failed(err); }
+      render();
+      break;
+    case 'bx-alert': {
+      const v = ($('[data-bx-alert]') || {}).value || '';
+      try { await srv.bitrixSwitch({ alert: v.trim() }); note(v.trim() ? 'გაფრთხილებები მოვა: ' + v.trim() : 'გაფრთხილებები ელ. ფოსტაზე აღარ მოვა', 'ok'); } catch (err) { failed(err); }
+      break;
+    }
+    case 'journal-send':
+      a.classList.add('is-busy');
+      try { sendNote(await srv.journalSend(a.dataset.id || '')); } catch (err) { failed(err); }
+      a.classList.remove('is-busy');
+      if (S.view === 'journal' && $('[data-body]').journalReload) $('[data-body]').journalReload();
+      break;
+    case 'jr-filter':
+      S.jrF = a.dataset.f;
+      if (S.jr) $('[data-jr]').innerHTML = jrView(S.jr);
+      break;
+    case 'jr-open': {
+      const en = ((S.jr && S.jr.entries) || []).find(x => x.id === a.dataset.id);
+      if (en) modal(jrDetail(en), true);
+      break;
+    }
     case 'copy-id':
       e.preventDefault();   // in a pipeline's summary: copy, don't fold
       try { await navigator.clipboard.writeText(a.dataset.v); note('დაკოპირდა: ' + a.dataset.v, 'ok'); } catch (err) { prompt('ნომერი:', a.dataset.v); }
@@ -956,6 +1167,11 @@ async function onClick(e) {
       break;
     case 'restore': {
       const sec = a.dataset.sec;
+      if (sec === 'products') {   // one product as it was
+        if (!await ask('ამ პროდუქტს ამ ვერსიას დავუბრუნებ (როგორც ახალ შენახვას).', 'აღდგენა')) break;
+        try { await srv.restore(a.dataset.id); PX = null; note('აღდგა', 'ok'); } catch (err) { failed(err); }
+        break;
+      }
       if (S.dirty.has(sec) && !await ask(`„${SECTIONS[sec]}“-ში შეუნახავი ცვლილებებია: აღდგენა მათ წაშლის.`, 'აღდგენა', true)) break;
       if (!S.dirty.has(sec) && !await ask('ამ ვერსიას დავაბრუნებ (როგორც ახალ შენახვას).', 'აღდგენა')) break;
       try { S.c = await srv.restore(a.dataset.id); delete S.w[sec]; S.dirty.delete(sec); draftNow(); note('აღდგა', 'ok'); render(); } catch (err) { failed(err); }
@@ -1080,6 +1296,387 @@ async function start() {
   S.c.revs = S.c.revs && !Array.isArray(S.c.revs) ? S.c.revs : {};
   shell();
   go(location.hash.slice(1) || 'home');
+  refreshAlerts();
+  if (!alertTimer) alertTimer = setInterval(refreshAlerts, 120000);   // a new waiting order shows while the panel is open
+}
+
+/* ---------- products: Bitrix's products and the site's layer over them (api/admin.php products) ----------
+   Bitrix supplies the products, prices and stock; here the site decides which appear and how (owner's choice,
+   2026-11-18). A product is tied to its Bitrix product by the Bitrix ID, so names can change on either side.
+   Nothing done here is written to Bitrix. New Bitrix products wait as "new" until someone checks them. */
+const PXF = [['new', 'ახალი'], ['shown', 'საიტზე'], ['hidden', 'დამალული'], ['all', 'ყველა'], ['pages', 'გვერდები Bitrix-ის გარეშე']];
+const PXSTATE = { new: ['ახალი: შესამოწმებელი', 'soon'], shown: ['საიტზე ჩანს', 'on'], hidden: ['დამალულია', 'off'] };
+const PXN = 60;
+const PXHOW = { id: 'დაკავშირდა ID-ით', code: 'დაკავშირდა კოდით', name: 'დაკავშირდა სახელით', hand: 'დაკავშირებულია ხელით' };   // rows drawn at a time
+const pxImg = f => (!f ? '' : /^(https?:|\/|api\/|uploads\/|data:)/.test(f) ? f : 'assets/img/products/' + f);
+let PX = null;    // { data: {at, error, items, layer}, pages: Map, cats, f, q, n, sel: Set, open, draft, rev, dirty }
+
+const pxPage = e => (e && e.page ? PX.pages.get(+e.page) || null : null);
+const pxState = k => (PX.data.layer[k] || {}).state || 'new';
+/** What the site shows for a product: its own field, else the prepared page's, else Bitrix's. */
+function pxShown(k, e = PX.data.layer[k] || {}) {
+  const b = PX.data.items[k] || {}, pg = pxPage(e);
+  const src = pg || b;
+  return {
+    title: e.name || (pg ? pg.title : b.name) || k,
+    cat: e.cat || src.cat || '', sub: e.sub || src.sub || '',
+    img: (e.imgs && e.imgs[0]) || (src.imgs && src.imgs[0]) || ''
+  };
+}
+const pxPlaceName = (cat, sub) => { const c = PX.cats.find(x => x.id === cat), s = c && c.subs.find(x => x.id === sub); return c && s ? c.name + ' › ' + s.name : ''; };
+const pxMoney = v => (v == null ? '<span class="muted">ფასი არ აქვს</span>' : money(v));
+
+async function pxLoad(box) {
+  try {
+    if (!PX) {
+      const [data, cat] = await Promise.all([srv.products(), fetch('data/catalog.json').then(r => r.json())]);
+      PX = { data, pages: new Map(cat.products.map(p => [+p.id, p])), cats: cat.categories, f: 'new', q: '', sec: '', n: PXN, sel: new Set(), open: null, draft: null, rev: 0, dirty: false };
+      if (data.enabled !== false && !Object.values(data.layer || {}).some(e => (e.state || 'new') === 'new')) PX.f = 'shown';
+    }
+    pxDraw(box);
+  } catch (e) { box.innerHTML = `<p class="abx__err">${esc(e.message)}</p>`; failed(e); }
+}
+function pxDraw(box = $('[data-px]')) {
+  if (!box || !PX) return;
+  if (PX.data.enabled === false) {
+    box.innerHTML = `<div class="aempty"><p><b>Bitrix-ის კატალოგი ჩართული არ არის.</b></p><p class="muted">საიტი პროდუქციას ჯერ თავისი ფაილიდან აჩვენებს. ჩასართავად api/config.php-ში საჭიროა catalog.enabled და კატალოგის ID-ები (README: Switching it on, ნაბიჯი 4).</p></div>`;
+    return;
+  }
+  box.innerHTML = PX.open ? pxEditor(PX.open) : pxList();
+}
+
+/* the list */
+function pxList() {
+  const d = PX.data, keys = Object.keys(d.items || {});
+  const count = { new: 0, shown: 0, hidden: 0, all: keys.length };
+  keys.forEach(k => { count[pxState(k)]++; });
+  const linked = new Set(Object.values(d.layer || {}).map(e => +e.page).filter(Boolean));
+  count.pages = [...PX.pages.values()].filter(p => !linked.has(+p.id)).length;
+  const sel = PX.sel.size;
+  return `<div class="pxtop">
+      <p class="muted">${LIVE ? '' : '<b>სატესტო რეჟიმი:</b> Bitrix-ის მაგივრად საიტის ფაილის პროდუქცია; ცვლილებები ინახება ამ ბრაუზერში და საიტზე არ ჩანს. '}პროდუქცია, ფასი და მარაგი Bitrix-იდან მოდის; აქ წყდება, რა ჩანს საიტზე და როგორ. Bitrix-ში აქედან არაფერი იცვლება.
+        ${d.at ? `<br>Bitrix-იდან წაკითხულია: ${esc(when(d.at))}${d.pending ? ` · ${d.pending} ფოტო ჯერ ჩამოსატვირთია (ყოველ 15 წუთში ნაწილი; პროდუქტის გახსნისას მისი ფოტოები მაშინვე)` : ''}` : ''}</p>
+      <button class="btn btn--ghost btn--sm" data-act="px-refresh">${ui('download')}<span>Bitrix-იდან ახლავე</span></button>
+    </div>
+    ${d.error ? `<p class="abx__err">${esc(d.error)}</p>` : ''}
+    <div class="pxbar">
+      <div class="atabs">${PXF.map(([k, n]) => `<button class="atab ${PX.f === k ? 'is-on' : ''}" data-act="px-filter" data-f="${k}">${n} <small>${count[k]}</small></button>`).join('')}</div>
+      <span class="pxbar__r">${PX.f === 'pages' ? '' : `<select class="select pxsec" data-px-sec aria-label="Bitrix-ის განყოფილება"><option value="">ყველა განყოფილება</option>${pxSections().map(([v, n]) => `<option value="${esc(v)}" ${PX.sec === v ? 'selected' : ''}>${esc(v)} (${n})</option>`).join('')}</select>`}
+      <label class="pxfind">${ui('search')}<input class="input" type="search" placeholder="სახელი, კოდი ან ID" value="${esc(PX.q)}" data-px-search aria-label="ძიება"></label></span>
+    </div>
+    ${sel ? `<div class="pxsel"><b>${sel} მონიშნული</b><button class="btn btn--sm" data-act="px-bulk" data-state="shown">${ui('eye')}<span>გამოჩენა საიტზე</span></button><button class="btn btn--ghost btn--sm" data-act="px-bulk" data-state="hidden">დამალვა</button><button class="link-btn" data-act="px-unsel">მონიშვნის მოხსნა</button></div>` : ''}
+    <div data-px-rows>${pxRows()}</div>`;
+}
+function pxMatch(text) {
+  const q = norm(PX.q.trim());
+  return !q || norm(text).includes(q);
+}
+function pxRows() {
+  const d = PX.data;
+  if (PX.f === 'pages') {
+    const linked = new Set(Object.values(d.layer || {}).map(e => +e.page).filter(Boolean));
+    const rows = [...PX.pages.values()].filter(p => !linked.has(+p.id) && pxMatch([p.title, p.name, p.sku, p.brand].join(' ')));
+    return `<p class="muted pxnote">საიტის მომზადებული გვერდები (ფოტო, მახასიათებლები), რომლებსაც Bitrix-ის პროდუქტი ჯერ არ აქვს: საიტზე არ ჩანს. დასაკავშირებლად გახსენით Bitrix-ის პროდუქტი და აირჩიეთ გვერდი.</p>
+      ${rows.length ? `<div class="pxlist">${rows.slice(0, PX.n).map(p => `<div class="pxrow pxrow--page"><span></span><span class="pxrow__open">
+        <span class="pxrow__img">${p.imgs[0] ? `<img src="${esc(pxImg(p.imgs[0]))}" alt="" loading="lazy">` : ''}</span>
+        <span class="pxrow__t"><b>${esc(p.title)}</b><small>${esc([p.sku && 'კოდი ' + p.sku, pxPlaceName(p.cat, p.sub)].filter(Boolean).join(' · '))}</small></span></span></div>`).join('')}</div>${pxMore(rows.length)}`
+        : '<div class="aempty"><p>ასეთი გვერდი არ არის.</p></div>'}`;
+  }
+  const keys = pxKeys();
+  if (!keys.length) return `<div class="aempty"><p>${PX.q ? 'ვერაფერი მოიძებნა.' : PX.f === 'new' ? 'ახალი პროდუქტი არ არის: ყველა შემოწმებულია.' : 'აქ ჯერ არაფერია.'}</p></div>`;
+  const allOn = keys.every(k => PX.sel.has(k));
+  const twice = pxTwice();
+  return `<label class="pxall"><input type="checkbox" data-px-all ${allOn ? 'checked' : ''}> ${allOn ? 'მონიშვნის მოხსნა' : 'ყველას მონიშვნა'}: ${keys.length} ${PX.sec ? '„' + esc(PX.sec) + '“-ში' : 'ჩამოთვლილი'}</label>
+    <div class="pxlist">${keys.slice(0, PX.n).map(k => {
+    const b = d.items[k], e = d.layer[k] || {}, v = pxShown(k), [st, cls] = PXSTATE[pxState(k)];
+    const dup = pxDup(e);
+    const warn = (pxState(k) === 'shown' && !pxPlaceName(v.cat, v.sub) ? '<span class="apill apill--bad">კატეგორია არ აქვს</span>' : '')
+      + (dup ? `<span class="apill apill--bad" title="${esc('Bitrix-ში მეორედაა: ' + dup.title + (pxPriceGap(b.price, dup.price) ? ' · ფასი იქ ' + money(dup.price) : ''))}">მეორე ჩანაწერი</span>${pxPriceGap(b.price, dup.price) ? `<span class="apill apill--bad" title="${esc('ფასი იქ: ' + money(dup.price))}">სხვა ფასით</span>` : ''}`
+        : pxState(k) !== 'hidden' && twice.has(norm(v.title)) ? '<span class="apill apill--bad" title="სხვა პროდუქტსაც იგივე სახელი აქვს: შეცვალეთ ერთ-ერთის სახელი">სახელი მეორდება</span>' : '');
+    return `<div class="pxrow"><label class="pxrow__sel"><input type="checkbox" data-px-sel="${k}" ${PX.sel.has(k) ? 'checked' : ''} aria-label="მონიშვნა"></label>
+      <button class="pxrow__open" data-act="px-open" data-key="${k}">
+        <span class="pxrow__img">${v.img ? `<img src="${esc(pxImg(v.img))}" alt="" loading="lazy">` : ''}</span>
+        <span class="pxrow__t"><b>${esc(v.title)}</b><small>Bitrix: ${esc(b.name)} · ID ${esc(b.bx)}${b.sku ? ' · კოდი ' + esc(b.sku) : ''}${b.parent ? ' · ვარიანტი' : ''}${e.how ? ' · ' + PXHOW[e.how] : ''}</small></span>
+        <span class="pxrow__p">${pxMoney(b.price)}<small>${b.stock ? 'მარაგშია' : 'შეკვეთით'}</small></span>
+        <span class="pxrow__s"><span class="apill apill--${cls}">${st}</span>${warn}</span>
+      </button></div>`;
+  }).join('')}</div>${pxMore(keys.length)}`;
+}
+/** For a product Bitrix lists twice (tools/bitrix_pages.py: "dup"): the page that shows it and the Bitrix price
+ *  of that listing; else null. */
+function pxDup(e) {
+  const pg = pxPage(e);
+  if (!pg || !pg.dup) return null;
+  const o = PX.pages.get(+pg.dup), k = Object.keys(PX.data.layer).find(x => +(PX.data.layer[x] || {}).page === +pg.dup);
+  return { title: o ? o.title : 'ID ' + pg.dup, price: k && PX.data.items[k] ? PX.data.items[k].price : null };
+}
+const pxPriceGap = (a, b) => a != null && b != null && Math.abs(a - b) > 0.009;
+/** Names that two products shown or waiting would share in the shop. */
+function pxTwice() {
+  const seen = new Set(), twice = new Set();
+  Object.keys(PX.data.items || {}).forEach(k => {
+    if (pxState(k) === 'hidden') return;
+    const t = norm(pxShown(k).title);
+    if (seen.has(t)) twice.add(t); else seen.add(t);
+  });
+  return twice;
+}
+/** The products the list shows now: the tab, the Bitrix section and the search. */
+function pxKeys() {
+  const d = PX.data;
+  const keys = Object.keys(d.items || {}).filter(k => (PX.f === 'all' || pxState(k) === PX.f)
+    && (!PX.sec || (d.items[k].section || '').startsWith(PX.sec))
+    && pxMatch([pxShown(k).title, d.items[k].name, d.items[k].sku, d.items[k].bx, d.items[k].parentName].join(' ')));
+  return keys.sort((a, b) => pxShown(a).title.localeCompare(pxShown(b).title, 'ka'));
+}
+/** Bitrix's sections of the products in this tab, two levels deep, with their counts. */
+function pxSections() {
+  const n = new Map();
+  Object.keys(PX.data.items || {}).forEach(k => {
+    if (PX.f !== 'all' && pxState(k) !== PX.f) return;
+    const parts = (PX.data.items[k].section || '').split(' › ').filter(Boolean);
+    for (let i = 1; i <= Math.min(2, parts.length); i++) { const v = parts.slice(0, i).join(' › '); n.set(v, (n.get(v) || 0) + 1); }
+  });
+  return [...n.entries()].sort((a, b) => a[0].localeCompare(b[0], 'ka'));
+}
+const pxMore = n => (n > PX.n ? `<div class="pxmore"><button class="btn btn--ghost btn--sm" data-act="px-more">მეტის ჩვენება (${n - PX.n})</button></div>` : '');
+
+/* the editor: the site's fields on the left, Bitrix's on the right */
+function pxEditor(k) {
+  const b = PX.data.items[k] || {}, e = PX.draft, pg = pxPage(e), src = pg || b;
+  const st = e.state || 'new';
+  const placeOpts = [['', `— ${pxPlaceName(src.cat, src.sub) || 'არჩეული არ არის'} —`], ...PX.cats.flatMap(c => c.subs.map(s => [c.id + '/' + s.id, c.name + ' › ' + s.name]))];
+  const ph = (v, n = 90) => esc(String(v || '').replace(/\s+/g, ' ').slice(0, n));
+  const imgs = e.imgs || null, inhImgs = src.imgs || [];
+  const specs = e.specs || null, inhSpecs = src.specs || [];
+  return `<div class="pxhead">
+      <button class="btn btn--ghost btn--sm" data-act="px-back">${ui('left')}<span>ყველა პროდუქტი</span></button>
+      <span class="pxhead__r">${st === 'shown' && LIVE ? `<a class="btn btn--ghost btn--sm" href="product.html?id=${esc(b.bx)}" target="_blank" rel="noopener">${ui('eye')}<span>ნახვა საიტზე</span></a>` : ''}
+        <button class="btn btn--red btn--sm" data-act="px-save" ${PX.dirty ? '' : 'disabled'}>${ui('check')}<span>შენახვა</span></button></span>
+    </div>
+    <div class="pxed">
+      <div class="pxed__l">
+        <section class="apanel">
+          <div class="pxstate">${st === 'new' ? '<p class="pxstate__new"><b>ახალი პროდუქტი Bitrix-იდან.</b> შეამოწმეთ სახელი, ფოტო და კატეგორია, მერე აირჩიეთ: საიტზე ჩანს თუ არა.</p>' : ''}
+            ${(dup => dup ? `<p class="pxstate__new"><b>Bitrix-ში ეს პროდუქტი მეორედაა ჩაწერილი</b> (იგივე კოდი და სახელი, სხვა განყოფილებაში). საიტზე მას აჩვენებს: „${esc(dup.title)}“. ამიტომ ეს ჩანაწერი დამალულია, რომ მაღაზიაში ორჯერ არ გამოჩნდეს.${pxPriceGap(b.price, dup.price) ? ` <b>ფასები Bitrix-ში განსხვავდება:</b> აქ ${money(b.price)}, იქ ${money(dup.price)}. შეამოწმეთ Bitrix-ში, რომელია სწორი.` : ''}</p>` : '')(pxDup(e))}
+            <div class="pxseg" role="group" aria-label="საიტზე">
+              <button class="${st === 'shown' ? 'is-on' : ''}" data-act="px-state" data-v="shown">${ui('eye')}საიტზე ჩანს</button>
+              <button class="${st === 'hidden' ? 'is-on' : ''}" data-act="px-state" data-v="hidden">დამალულია</button>
+            </div></div>
+          <div class="afield"><span>საიტის გვერდი <small>მომზადებული ფოტოები, მახასიათებლები, ეტიკეტები და დოკუმენტები</small></span>
+            ${pg ? `<div class="pp__val"><img src="${esc(pxImg(pg.imgs[0]))}" alt=""><span><b>${esc(pg.title)}</b><small>${esc([pg.sku && 'კოდი ' + pg.sku, PXHOW[e.how] || ''].filter(Boolean).join(' · '))}</small></span><button type="button" class="iconbtn" data-act="px-page" data-id="0" aria-label="მოხსნა">${ui('close')}</button></div>`
+              : '<p class="muted pxnone">გვერდის გარეშე: საიტი Bitrix-ის მონაცემებს და ქვემოთ შევსებულს აჩვენებს.</p>'}
+            <div class="pp__find">${ui('search')}<input class="input" type="search" placeholder="${pg ? 'სხვა გვერდი: ' : 'გვერდის მოძებნა: '}სახელი ან კოდი" data-px-pq></div>
+            <div class="pp__menu pxpages" data-px-pm hidden></div></div>
+          ${pxField('სახელი საიტზე', 'name', e.name, ph(pg ? pg.title : b.name, 200), 'ცარიელი: ' + (pg ? 'გვერდის სახელი' : 'Bitrix-ის სახელი') + '. ჩაწერეთ შიდა კოდების გარეშე.')}
+          <div class="agrid">${pxField('სერია / ხაზი', 'line', e.line, ph(src.line))}${pxField('ტიპი', 'type', e.type, ph(src.type))}</div>
+          <label class="afield"><span>კატეგორია საიტზე</span><select class="select" data-px="place">${placeOpts.map(([v, n]) => `<option value="${v}" ${(e.cat && e.sub ? e.cat + '/' + e.sub : '') === v ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
+          <label class="afield"><span>აღწერა</span><textarea class="textarea" rows="5" data-px="desc" placeholder="${ph(src.desc, 300)}">${esc(e.desc || '')}</textarea></label>
+          <label class="afield"><span>უპირატესობები <small>თითო სტრიქონზე ერთი; ცარიელი: ${pg ? 'გვერდის' : 'Bitrix-ის'}</small></span><textarea class="textarea" rows="4" data-px="feats" placeholder="${esc((src.feats || []).slice(0, 4).join('\n'))}">${esc((e.feats || []).join('\n'))}</textarea></label>
+        </section>
+        <section class="apanel"><div class="apanel__head"><h2 class="ah2">ფოტოები</h2>${imgs ? '<button class="link-btn" data-act="px-img-inherit">დაბრუნება: ' + (pg ? 'გვერდის' : 'Bitrix-ის') + ' ფოტოები</button>' : ''}</div>
+          ${imgs ? `<div class="pximgs">${imgs.map((f, i) => `<figure class="pximg"><img src="${esc(pxImg(f))}" alt="">${i ? `<button type="button" class="iconbtn" data-act="px-img-first" data-i="${i}" title="პირველი" aria-label="პირველი">${ui('up')}</button>` : '<small>მთავარი</small>'}<button type="button" class="iconbtn" data-act="px-img-rm" data-i="${i}" aria-label="წაშლა">${ui('trash')}</button></figure>`).join('')}</div>
+            <div class="ip__acts"><label class="btn btn--ghost btn--sm">${ui('plus')}<span>ატვირთვა</span><input type="file" accept="image/*" hidden data-pxup></label><button type="button" class="btn btn--ghost btn--sm" data-act="px-img-lib">ბიბლიოთეკიდან</button></div>`
+            : `<div class="pximgs pximgs--inh">${inhImgs.slice(0, 8).map(f => `<figure class="pximg"><img src="${esc(pxImg(f))}" alt=""></figure>`).join('') || '<p class="muted">ფოტო არ არის.</p>'}</div>
+            <p class="muted">${pg ? 'გვერდის' : 'Bitrix-ის'} ფოტოები ჩანს. <button class="link-btn" data-act="px-img-own">საკუთარი ფოტოები საიტისთვის</button></p>`}
+        </section>
+        <section class="apanel"><div class="apanel__head"><h2 class="ah2">მახასიათებლები</h2>${specs ? '<button class="link-btn" data-act="px-spec-inherit">დაბრუნება: ' + (pg ? 'გვერდის' : 'Bitrix-ის') + '</button>' : ''}</div>
+          ${specs ? `<div class="pxspecs">${specs.map(([sk, sv], i) => `<div class="pxspec"><input class="input input--sm" value="${esc(sk)}" data-px-spec="${i}.0" aria-label="დასახელება"><input class="input input--sm" value="${esc(sv)}" data-px-spec="${i}.1" aria-label="მნიშვნელობა"><button type="button" class="iconbtn" data-act="px-spec-rm" data-i="${i}" aria-label="წაშლა">${ui('trash')}</button></div>`).join('')}</div>
+            <button type="button" class="btn btn--ghost btn--sm aadd" data-act="px-spec-add">${ui('plus')}<span>სტრიქონის დამატება</span></button>`
+            : `${inhSpecs.length ? `<dl class="pxdl">${inhSpecs.slice(0, 12).map(([sk, sv]) => `<dt>${esc(sk)}</dt><dd>${esc(sv)}</dd>`).join('')}</dl>${inhSpecs.length > 12 ? `<p class="muted">და კიდევ ${inhSpecs.length - 12}</p>` : ''}` : '<p class="muted">მახასიათებლები არ არის.</p>'}
+            <p class="muted"><button class="link-btn" data-act="px-spec-own">მახასიათებლების შეცვლა საიტისთვის</button></p>`}
+        </section>
+      </div>
+      <aside class="pxed__r"><section class="apanel pxbx">
+        <h2 class="ah2">Bitrix</h2>
+        <p class="muted">ასეა Bitrix-ში. ფასი და მარაგი საიტზე ყოველთვის აქედანაა; აქ გაკეთებული ცვლილება Bitrix-ს არ ეხება.</p>
+        ${b.imgs && b.imgs[0] ? `<img class="pxbx__img" src="${esc(pxImg(b.imgs[0]))}" alt="">` : b.npics ? '<p class="muted pxbx__wait">ფოტო Bitrix-იდან იტვირთება…</p>' : ''}
+        <dl class="pxdl">
+          <dt>სახელი</dt><dd>${esc(b.name || '')}</dd>
+          <dt>ID</dt><dd>${esc(b.bx)}</dd>
+          ${b.parent ? `<dt>ვარიანტი</dt><dd>${esc(b.parentName || '')} (ID ${esc(b.parent)})${b.size ? '<br>' + esc(b.size) : ''}</dd>` : ''}
+          ${b.sku ? `<dt>კოდი</dt><dd>${esc(b.sku)}</dd>` : ''}
+          ${b.section ? `<dt>განყოფილება</dt><dd>${esc(b.section)}</dd>` : ''}
+          ${b.brand ? `<dt>ბრენდი</dt><dd>${esc(b.brand)}</dd>` : ''}
+          <dt>ფასი</dt><dd>${pxMoney(b.price)}</dd>
+          <dt>მარაგი</dt><dd>${b.stock ? 'მარაგშია' : 'შეკვეთით'}</dd>
+        </dl>
+        ${b.desc ? `<p class="pxbx__desc">${esc(b.desc.slice(0, 400))}${b.desc.length > 400 ? '…' : ''}</p>` : ''}
+      </section></aside>
+    </div>`;
+}
+const pxField = (label, key, v, placeholder, hint = '') => `<label class="afield"><span>${label}${hint ? `<small>${esc(hint)}</small>` : ''}</span><input class="input" data-px="${key}" value="${esc(v || '')}" placeholder="${placeholder}"></label>`;
+
+function pxTouch() {
+  PX.dirty = true;
+  S.dirty.add('px');   // the page warns before closing with an unsaved product
+  const b = $('[data-act="px-save"]');
+  if (b) b.disabled = false;
+}
+function pxInput(e) {
+  const t = e.target;
+  if (t.matches('[data-px-search]')) { PX.q = t.value; PX.n = PXN; $('[data-px-rows]').innerHTML = pxRows(); return; }
+  if (t.matches('[data-px-sec]')) { PX.sec = t.value; PX.n = PXN; pxDraw(); return; }
+  if (t.matches('[data-px-all]')) { const keys = pxKeys(); if (t.checked) keys.forEach(k => PX.sel.add(k)); else keys.forEach(k => PX.sel.delete(k)); const y = $('[data-body]').scrollTop; pxDraw(); $('[data-body]').scrollTop = y; return; }
+  if (t.matches('[data-px-sel]')) { if (t.checked) PX.sel.add(t.dataset.pxSel); else PX.sel.delete(t.dataset.pxSel); const y = $('[data-body]').scrollTop; pxDraw(); $('[data-body]').scrollTop = y; return; }
+  if (t.matches('[data-px-pq]')) { pxPageSearch(t); return; }
+  if (!PX.draft) return;
+  if (t.matches('[data-px]')) {
+    const k = t.dataset.px;
+    if (k === 'place') { const [c, s] = t.value.split('/'); PX.draft.cat = c || ''; PX.draft.sub = s || ''; }
+    else if (k === 'feats') PX.draft.feats = t.value.split('\n').map(x => x.trim()).filter(Boolean);
+    else PX.draft[k] = t.value;
+    pxTouch();
+  } else if (t.matches('[data-px-spec]')) {
+    const [i, j] = t.dataset.pxSpec.split('.').map(Number);
+    PX.draft.specs[i][j] = t.value;
+    pxTouch();
+  }
+}
+function pxPageSearch(input) {
+  const menu = $('[data-px-pm]'), q = norm(input.value.trim());
+  if (q.length < 2) { menu.hidden = true; return; }
+  const linked = new Map(Object.entries(PX.data.layer).filter(([k, e]) => e.page && k !== PX.open).map(([k, e]) => [+e.page, k]));
+  const hits = [...PX.pages.values()].filter(p => norm([p.title, p.name, p.sku, p.brand].join(' ')).includes(q)).slice(0, 12);
+  menu.innerHTML = hits.length ? hits.map(p => `<button type="button" class="pp__opt" data-act="px-page" data-id="${p.id}"><img src="${esc(pxImg(p.imgs[0]))}" alt=""><span><b>${esc(p.title)}</b><small>${esc([p.sku && 'კოდი ' + p.sku, linked.has(+p.id) ? 'უკვე სხვა პროდუქტს უკავშირდება' : ''].filter(Boolean).join(' · '))}</small></span></button>`).join('')
+    : '<p class="muted">ვერ მოიძებნა</p>';
+  menu.hidden = false;
+}
+function pxOpen(k) {
+  const b = PX.data.items[k];
+  if (b && !(b.imgs || []).length && b.npics) {   // Bitrix's pictures not copied yet: now
+    srv.productPics(k).then(imgs => { b.imgs = imgs; if (PX.open === k && imgs.length) pxDraw(); }).catch(() => {});
+  }
+  PX.open = k;
+  PX.draft = clone(PX.data.layer[k] || { state: 'new' });
+  PX.rev = (PX.data.layer[k] || {}).rev || 0;
+  PX.dirty = false;
+  S.dirty.delete('px');
+}
+async function pxLeave() {
+  if (PX.dirty && !await ask('ამ პროდუქტში შეუნახავი ცვლილებებია. დავტოვო?', 'დატოვება', true)) return false;
+  PX.open = null; PX.draft = null; PX.dirty = false;
+  S.dirty.delete('px');
+  return true;
+}
+async function pxSave() {
+  if (!PX || !PX.open || !PX.dirty || PX.saving) return;
+  PX.saving = true;
+  try {
+    const r = await srv.productSave(PX.open, PX.draft, PX.rev);
+    PX.data.layer[PX.open] = r.entry;
+    PX.draft = clone(r.entry);
+    PX.rev = r.entry.rev;
+    PX.dirty = false;
+    S.dirty.delete('px');
+    note(r.built === false ? 'შენახულია; საიტის კატალოგი შემდეგ განახლებაზე გამოჩნდება' : LIVE ? 'შენახულია: საიტზე უკვე ჩანს' : 'შენახულია (სატესტო რეჟიმი)', r.built === false ? '' : 'ok');
+  } catch (err) {
+    if (err.code === 'conflict' && err.data && err.data.entry) {
+      PX.data.layer[PX.open] = err.data.entry;
+      PX.rev = err.data.entry.rev;
+      PX.saving = false;
+      if (await ask('ეს პროდუქტი სხვამ შეცვალა, სანამ თქვენ არედაქტირებდით. შევინახო თქვენი ვერსია?', 'ჩემი ვერსია', true)) return pxSave();
+      PX.draft = clone(err.data.entry); PX.dirty = false; S.dirty.delete('px');
+      note('ჩაიტვირთა მათი ვერსია');
+    } else failed(err);
+  }
+  PX.saving = false;
+  pxDraw();
+}
+async function pxClick(a, e) {
+  const act = a.dataset.act;
+  const y = $('[data-body]').scrollTop, keep = () => { pxDraw(); $('[data-body]').scrollTop = y; };
+  switch (act) {
+    case 'px-filter': PX.f = a.dataset.f; PX.sec = ''; PX.n = PXN; pxDraw(); break;
+    case 'px-more': PX.n += PXN; keep(); break;
+    case 'px-unsel': PX.sel.clear(); keep(); break;
+    case 'px-open': pxOpen(a.dataset.key); pxDraw(); $('[data-body]').scrollTop = 0; break;
+    case 'px-back': if (await pxLeave()) pxDraw(); break;
+    case 'px-save': pxSave(); break;
+    case 'px-state': PX.draft.state = a.dataset.v; pxTouch(); keep(); break;
+    case 'px-page': {
+      const id = +a.dataset.id;
+      PX.draft.page = id || 0;
+      PX.draft.how = '';
+      pxTouch(); keep(); break;
+    }
+    case 'px-img-own': { const pg = pxPage(PX.draft), src = pg || PX.data.items[PX.open] || {}; PX.draft.imgs = [...(src.imgs || [])]; pxTouch(); keep(); break; }
+    case 'px-img-inherit': delete PX.draft.imgs; pxTouch(); keep(); break;
+    case 'px-img-rm': PX.draft.imgs.splice(+a.dataset.i, 1); pxTouch(); keep(); break;
+    case 'px-img-first': { const [f] = PX.draft.imgs.splice(+a.dataset.i, 1); PX.draft.imgs.unshift(f); pxTouch(); keep(); break; }
+    case 'px-img-lib': library(url => { PX.draft.imgs.push(url); pxTouch(); keep(); }); break;
+    case 'px-spec-own': { const pg = pxPage(PX.draft), src = pg || PX.data.items[PX.open] || {}; PX.draft.specs = (src.specs || []).map(r => [...r]); pxTouch(); keep(); break; }
+    case 'px-spec-inherit': delete PX.draft.specs; pxTouch(); keep(); break;
+    case 'px-spec-add': PX.draft.specs.push(['', '']); pxTouch(); keep(); break;
+    case 'px-spec-rm': PX.draft.specs.splice(+a.dataset.i, 1); pxTouch(); keep(); break;
+    case 'px-bulk': {
+      const keys = [...PX.sel], state = a.dataset.state;
+      if (!await ask(`${keys.length} პროდუქტი: ${state === 'shown' ? 'გამოჩნდეს საიტზე' : 'დაიმალოს'}?`, state === 'shown' ? 'გამოჩენა' : 'დამალვა')) break;
+      try {
+        const r = await srv.productsState(keys, state);
+        PX.data.layer = r.layer;
+        PX.sel.clear();
+        note(`${r.changed} პროდუქტი ${state === 'shown' ? 'გამოჩნდა საიტზე' : 'დაიმალა'}`, 'ok');
+      } catch (err) { failed(err); }
+      keep();
+      break;
+    }
+    case 'px-refresh': {
+      a.classList.add('is-busy');
+      try { PX.data = await srv.productsRefresh(); note('Bitrix-იდან წაკითხულია', 'ok'); } catch (err) { failed(err); }
+      keep();
+      break;
+    }
+  }
+}
+async function pxUpload(input) {
+  if (!input.files[0] || !PX || !PX.draft) return;
+  input.closest('.ip__acts').classList.add('is-busy');
+  try {
+    const f = await upload(input.files[0]);
+    PX.draft.imgs.push(f.url);
+    pxTouch();
+  } catch (err) { failed(err); }
+  const y = $('[data-body]').scrollTop;
+  pxDraw();
+  $('[data-body]').scrollTop = y;
+}
+R.products = () => '<div class="pxwrap" data-px><p class="muted">იტვირთება…</p></div>';
+A.products = body => {
+  const box = $('[data-px]', body);
+  box.addEventListener('input', pxInput);
+  box.addEventListener('change', e => { if (e.target.matches('[data-pxup]')) pxUpload(e.target); });
+  pxLoad(box);
+};
+
+/* the preview: the site's own product file stands in for Bitrix; the layer lives in this browser */
+let pxFake = null;
+async function pxLocalData() {
+  if (!pxFake) {
+    const c = await fetch('data/catalog.json').then(r => r.json());
+    const name = new Map(c.categories.flatMap(x => x.subs.map(s => [x.id + '/' + s.id, x.name + ' › ' + s.name])));
+    const items = {};
+    let extra = 0;
+    c.products.forEach(p => {
+      if (p.price == null && !p.review && extra++ >= 14) return;   // the priced products, and a few without code or price: they wait as "new"
+      const bx = p.review ? p.id : 70000 + p.id;   // a page built from Bitrix's data has its Bitrix ID
+      items['b' + bx] = { bx, review: !!p.review, dup: p.dup || 0, sku: p.price == null ? '' : p.sku, name: p.name, brand: p.brand, section: 'Max Comfort › ' + (name.get(p.cat + '/' + p.sub) || ''),
+        cat: '', sub: '', type: p.type, price: p.price, stock: p.stock, imgs: p.imgs.slice(0, 2), specs: p.specs.slice(0, 6), feats: [], desc: '' };
+    });
+    const bySku = new Map();
+    c.products.forEach(p => { if (p.review) return; const k = String(p.sku || '').replace(/[\s.\-/_]+/g, '').toUpperCase().replace(/^0+/, ''); if (k) bySku.set(k, bySku.has(k) ? 0 : p.id); });
+    pxFake = { items, bySku };
+  }
+  const layer = LS.get('mc.products', {}), linked = new Set(Object.values(layer).map(e => +e.page).filter(Boolean));
+  Object.entries(pxFake.items).forEach(([k, b]) => {
+    if (layer[k]) return;
+    if (b.review) { layer[k] = { state: b.dup ? 'hidden' : 'new', page: b.bx, how: 'id', rev: 0 }; return; }   // built from Bitrix's data: waits for a check (a second listing: hidden)
+    const page = pxFake.bySku.get(String(b.sku || '').replace(/[\s.\-/_]+/g, '').toUpperCase().replace(/^0+/, '')) || 0;
+    layer[k] = page && !linked.has(page) ? { state: 'shown', page, how: 'code', rev: 0 } : { state: 'new', rev: 0 };
+    if (page) linked.add(page);
+  });
+  LS.set('mc.products', layer);
+  return { enabled: true, at: new Date().toISOString(), error: '', items: pxFake.items, layer };
 }
 
 /* ---------- boot ---------- */
@@ -1095,7 +1692,7 @@ root.addEventListener('toggle', e => { const d = e.target; if (d.matches && d.ma
 root.addEventListener('focusin', e => { const t = e.target.closest('[data-tx]'); if (t) post({ mc: 'show', key: t.dataset.tx }); });
 document.addEventListener('click', e => { if (!e.target.closest('.pp')) $$('.pp__menu').forEach(m => { m.hidden = true; }); });
 addEventListener('hashchange', () => { if (S.user && S.c) go(location.hash.slice(1)); });
-addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's' && S.user) { e.preventDefault(); save(); } });
+addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's' && S.user) { e.preventDefault(); if (S.view === 'products') pxSave(); else save(); } });
 addEventListener('beforeunload', e => { if (S.dirty.size) { e.preventDefault(); e.returnValue = ''; } });
 
 (async () => {

@@ -20,11 +20,8 @@
 
 <main id="main" class="wrap">
   <div data-crumbs></div>
-  <div class="phead">
-    <div><h1 class="h1" data-title>კატალოგი</h1><p data-lead></p></div>
-    <span class="phead__count" data-count></span>
-  </div>
-  <nav class="pills" data-pills aria-label="ქვეკატეგორიები"></nav>
+  <!-- the kinds as pills (catalog.js head) -->
+  <section class="chead" data-head aria-labelledby="cat-h"><h1 class="sr" id="cat-h">კატალოგი</h1></section>
 
   <div class="shop">
     <aside class="filters" aria-label="ფილტრები">
@@ -37,6 +34,7 @@
       <div class="toolbar">
         <div class="toolbar__l">
           <button class="btn btn--ghost btn--sm fbtn" data-open-filters><svg class="ui ui--sm" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/></svg>ფილტრები</button>
+          <span class="toolbar__total" data-total></span>
           <div data-chips style="display:contents"></div>
         </div>
         <div class="toolbar__r">

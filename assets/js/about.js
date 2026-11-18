@@ -1,9 +1,20 @@
-import { boot, $, $$, esc, bi, ui, money, C } from './core.js';
+import { boot, $, $$, esc, bi, ui, money, safeUrl, C } from './core.js';
 
 // the map shows the showroom's map address (admin panel: an address or coordinates), else its address in Tbilisi
 const mapSrc = s => 'https://www.google.com/maps?output=embed&q=' + encodeURIComponent(s.map || 'თბილისი, ' + s.address);
 
 boot({}).then(() => {
+  // the brands we represent (brand book p.3; the partners' colour logos, owner's file "ლოგოები ფერადი პარტნიორები"): the admin panel's
+  // brands marked for the strip, each in its colours on a white chip in the MC Blue tile; a brand with an ID opens its page;
+  // tall and wide logos are evened out by their shape
+  const brands = ((C.cms || {}).brands || []).filter(b => b && b.strip && b.logo && safeUrl(b.logo, true));
+  if (brands.length) {
+    $('[data-brands]').innerHTML = brands.map(b => { const img = `<img src="${esc(b.logo)}" alt="${esc(b.name)}" loading="lazy">`; return b.id ? `<a href="catalog.html?b=${encodeURIComponent(b.id)}" title="${esc(b.name)}">${img}</a>` : `<span title="${esc(b.name)}">${img}</span>`; }).join('');
+    $('[data-brands-box]').hidden = false;
+    const even = img => { const a = img.naturalWidth / img.naturalHeight; if (a > 0) img.style.height = Math.round(Math.max(18, Math.min(40, 60 / Math.sqrt(a)))) + 'px'; };
+    $$('[data-brands] img').forEach(img => (img.complete ? even(img) : img.addEventListener('load', () => even(img), { once: true })));
+  }
+
   const tl = (C.cms || {}).timeline;
   if (Array.isArray(tl) && tl.length) $('[data-timeline]').innerHTML = tl.filter(x => x && (x.year || x.text)).map(x => `<div><b>${esc(x.year)}</b><p>${esc(x.text)}</p></div>`).join('');
 

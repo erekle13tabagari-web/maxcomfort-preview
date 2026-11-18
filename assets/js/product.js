@@ -2,6 +2,8 @@ import { boot, $, $$, esc, bi, ui, arrow, card, num, money, crumbs, priceHTML, e
 import { sizeKind } from './api.js';
 
 let db, p;
+// the product's system (its category's colour, as on the home page's window); ducts belong to ventilation
+const SYS = { heating: 'heat', cooling: 'cool', ventilation: 'vent', ducts: 'vent', water: 'water' };
 const ASSURE = `<div class="assure pdp__assure">
   <div>${bi('svc-delivery')}<span><b>მიწოდება</b>თბილისში და რეგიონებში</span></div>
   <div>${bi('svc-install')}<span><b>მონტაჟი</b>საკუთარი საინჟინრო გუნდი</span></div>
@@ -35,6 +37,16 @@ const KEY = [   // [specification, icon, label, format, when]: the first four a 
   ['დამზადების ქვეყანა', 'ct-location', 'წარმოშობა', v => v]
 ];
 
+// 1600 px and wider: the right column has room, so the key specs fill it above the "not sure?" box
+// (owner's choice, 2026-11-18); narrower, they stay under the photos, where the columns come out even
+const WIDE = matchMedia('(min-width:1600px)');
+function placeSpecs() {
+  const ks = $('.pdp .keyspecs'), consult = $('.pinfo > .consult'), extra = $('.pdp__extra');
+  if (!ks || !consult || !extra) return;
+  if (WIDE.matches) consult.before(ks); else extra.append(ks);
+}
+WIDE.addEventListener('change', placeSpecs);
+
 function keySpecs() {
   const out = [];
   const cls = energyTags(p).map(x => x[1]);
@@ -48,7 +60,7 @@ function gallery() {
   const ek = energyTags(p)[0], e = ek ? energyTag(ek[1], ek[0], ek[2]) : '';
   return `<div class="gallery">
     <div class="gallery__thumbs" role="tablist" aria-label="ფოტოები">${imgs.length > 1 ? imgs.map((s, i) => `<button class="${i ? '' : 'is-on'}" data-g="${i}" aria-label="ფოტო ${i + 1}"><img src="${s}" alt=""></button>`).join('') : ''}</div>
-    <div class="gallery__main cut" data-zoom>
+    <div class="gallery__main" data-zoom>
       <img src="${imgs[0]}" alt="${esc(p.title)}" style="view-transition-name:pimg" fetchpriority="high">
       <div class="card__tags">${e}${p.line ? `<span class="tag tag--blue">${esc(p.line)}</span>` : ''}</div>
       <span class="gallery__hint">${ui('zoom')}გასადიდებლად დააჭირეთ</span>
@@ -96,7 +108,7 @@ function info() {
     <div class="buy">${buy}
       <button class="iconbtn ${fav ? 'is-on' : ''}" data-fav="${p.id}" aria-label="რჩეულებში" title="რჩეულებში">${ui('heart')}</button>
       <button class="iconbtn ${cmp ? 'is-on' : ''}" data-cmp="${p.id}" aria-label="შედარება" title="შედარება">${ui('cmp')}</button></div>
-    <div class="consult">${bi('svc-consult')}<p><b>არ ხართ დარწმუნებული?</b>ინჟინერი დაგირეკავთ და სიმძლავრეს თქვენს ოთახზე გამოთვლის.</p><button class="btn btn--ghost btn--sm" data-ask="${p.id}">დამირეკეთ</button></div>
+    <div class="consult sys--${SYS[p.cat] || 'blue'}">${bi('svc-consult')}<p><b>არ ხართ დარწმუნებული?</b>ინჟინერი დაგირეკავთ და სიმძლავრეს თქვენს ოთახზე გამოთვლის.</p><button class="btn btn--ghost btn--sm" data-ask="${p.id}">დამირეკეთ</button></div>
   </div>`;
 }
 
@@ -159,11 +171,13 @@ function ld() {
 
 function render() {
   document.title = p.title + ' · ' + (p.brandName || 'მაქს კომფორტი');
+  $('#main').dataset.sys = SYS[p.cat] || 'blue';
   $('meta[name=description]').content = `${p.title}${p.brandName ? ', ' + p.brandName : ''}: ${p.price != null ? money(p.price) + '. ' : ''}${p.subName}. მიწოდება, მონტაჟი და გარანტია მაქს კომფორტისგან.`;
   $('[data-crumbs]').innerHTML = crumbs([['კატალოგი', 'catalog.html'], [p.catName, 'catalog.html?c=' + p.cat], [p.subName, `catalog.html?c=${p.cat}&s=${p.sub}`], [p.title, null]]);
   // key specifications and the service promises sit under the photos on wide screens (CSS grid areas),
   // so the two columns end together; on phones they follow the price and buy button
   $('[data-pdp]').innerHTML = gallery() + info() + `<div class="pdp__extra">${keySpecs()}</div>` + ASSURE;
+  placeSpecs();
   story();
   const b = blocks();
   $('[data-info-nav]').innerHTML = b.nav;
@@ -182,15 +196,19 @@ function render() {
 }
 
 /* ---------- interactions ---------- */
-let io;
+let io, fio, past = false, foot = false;
 function watchBuy() {
   if (io) io.disconnect();
-  const bar = $('.buybar'), btn = $('[data-buy]');
+  if (fio) fio.disconnect();
+  const bar = $('.buybar'), btn = $('[data-buy]'), ftr = $('#mc-footer');
+  const set = () => bar.classList.toggle('is-on', past && !foot);
   // two columns: the bar comes once the buy button is scrolled past. One column (phones, tablets): whenever the
   // button is out of sight, so the price and the button are on the first screen too, under the photo
   const one = matchMedia('(max-width:980px)');
-  io = new IntersectionObserver(([en]) => bar.classList.toggle('is-on', !en.isIntersecting && (one.matches || en.boundingClientRect.top < 0)), { threshold: 0 });
+  io = new IntersectionObserver(([en]) => { past = !en.isIntersecting && (one.matches || en.boundingClientRect.top < 0); set(); }, { threshold: 0 });
   io.observe(btn);
+  // it steps aside while the footer is on screen, so it never covers it (owner's choice, 2026-11-18)
+  if (ftr) { fio = new IntersectionObserver(([en]) => { foot = en.isIntersecting; set(); }, { threshold: 0 }); fio.observe(ftr); }
 }
 
 function wire() {
@@ -225,7 +243,7 @@ function wire() {
     }
     if (e.target.closest('[data-label]')) {
       const m = $('#label');
-      $('img', m).src = ENERGY + p.energy.label;
+      $('img', m).src = /[\/:]/.test(p.energy.label) ? p.energy.label : ENERGY + p.energy.label;   // a label from Bitrix is a path already
       openLayer(m);
       return;
     }

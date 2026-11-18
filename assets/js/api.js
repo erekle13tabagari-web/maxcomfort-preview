@@ -297,7 +297,20 @@ async function getJSON(url) {
 const norm = s => String(s || '').toLowerCase().replace(/[-_/.,()"„“]+/g, ' ').replace(/\s+/g, ' ').trim();
 export { norm };
 
+/* Pages built from Bitrix's own data (tools/bitrix_pages.py) wait for a check in the admin panel; the server never
+   sends them before. The preview (data/catalog.json) shows them only when asked: ?review=1 (kept for the tab), ?review=0;
+   never the copies of a product Bitrix lists twice ("dup"). */
+function reviewOn() {
+  try {
+    const q = new URLSearchParams(location.search).get('review');
+    if (q !== null) sessionStorage.setItem('mc.review', q === '1' ? '1' : '');
+    return sessionStorage.getItem('mc.review') === '1';
+  } catch (e) { return /[?&]review=1/.test(location.search); }
+}
+
 function index(data) {
+  const review = reviewOn();
+  data.products = data.products.filter(p => !p.dup && (review || !p.review));
   const cats = new Map(), subs = new Map(), brandsById = new Map(), byId = new Map(), groups = new Map(), series = new Map();
   data.categories.forEach(c => {
     cats.set(c.id, c);
@@ -306,7 +319,7 @@ function index(data) {
   data.brands.forEach(b => brandsById.set(b.id, b));
   data.products.forEach(p => {
     p.url = 'product.html?id=' + p.id;
-    p.src = p.imgs.map(f => /^(https?:|\/)/.test(f) ? f : IMG + f);
+    p.src = p.imgs.map(f => /^(https?:|\/|api\/|uploads\/|data:)/.test(f) ? f : IMG + f);   // Bitrix's copies (api/cache/img) and the panel's uploads as they are
     p.brandName = (brandsById.get(p.brand) || {}).name || '';
     const sub = subs.get(p.sub), cat = cats.get(p.cat);
     p.subName = sub ? sub.name : '';

@@ -112,7 +112,7 @@ function renderAuth() {
     $('[data-code-form]', box).addEventListener('submit', e => { e.preventDefault(); verify(); });
   } else {
     const pend2 = user || {};
-    box.innerHTML = `<h1 class="h1 auth__h">მოგესალმებით!</h1>
+    box.innerHTML = `<h1 class="h1 auth__h">მოგესალმებით</h1>
       <p class="auth__sub">ნომერი <b>${esc(phoneNice(user.phone))}</b> დადასტურდა. დაასრულეთ ანგარიში.</p>
       <form class="form-stack" data-new-form novalidate>
         <label class="field"><span>სახელი და გვარი <em>*</em></span><input class="input" name="name" autocomplete="name" required value="${esc(pend2.name || '')}"><small class="field__err">შეიყვანეთ სახელი</small></label>

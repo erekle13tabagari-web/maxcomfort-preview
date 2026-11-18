@@ -3,9 +3,11 @@
    mode
      'static'  reads data/catalog.json; orders and requests are not sent anywhere (preview).
      'bitrix'  reads the catalog from api/catalog.php and sends orders and requests to Bitrix
-               through api/order.php and api/lead.php (set the webhook in api/config.php).      */
+               through api/order.php and api/lead.php (set the webhook in api/config.php).
+   It follows the address: maxcomfort.ge and its subdomains (new.maxcomfort.ge for testing) are 'bitrix',
+   this computer and the GitHub preview 'static', so the same files go to every place.              */
 window.MC_CONFIG = {
-  mode: 'static',
+  mode: /(^|\.)maxcomfort\.ge$/i.test(location.hostname) ? 'bitrix' : 'static',
   api: 'api/',
   catalog: 'data/catalog.json',
   content: 'data/content.json',

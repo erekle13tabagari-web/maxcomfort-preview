@@ -1,4 +1,4 @@
-/* Admin panel (admin.html): built on mc.css (tokens, buttons, fields, dark mode). */
+/* Admin panel (admin.html): built on mc.css (tokens, buttons, fields, dark mode); "PANEL · TILES" gives it the site's window look. */
 body[data-page="admin"]{background:var(--page-2);overflow:hidden}
 .adm{display:grid;grid-template-columns:248px minmax(0,1fr);height:100vh;height:100dvh}
 .adm__boot{padding:40px;color:var(--muted)}
@@ -27,6 +27,13 @@ body[data-page="admin"]{background:var(--page-2);overflow:hidden}
 .adm__main{display:flex;flex-direction:column;min-width:0;min-height:0}
 .adm__test{display:flex;align-items:center;gap:10px;padding:9px 28px;background:var(--red-10);color:var(--text);font-size:13.5px}
 .adm__test .ui{color:var(--red)}
+/* Bitrix alerts: orders that did not reach Bitrix, or the connection switched off */
+.adm__alerts{display:flex;align-items:center;flex-wrap:wrap;gap:10px 14px;padding:11px 28px;background:var(--red);color:#fff;font-size:14px}
+.adm__alerts > span{flex:1 1 360px}
+.adm__alerts .ui{color:#fff;flex:none}
+.adm__alerts .btn{background:#fff;color:var(--red)}
+.adm__alerts .btn--ghost{background:transparent;color:#fff;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.7)}
+.adm__dot--bad{width:10px;height:10px;box-shadow:0 0 0 4px rgba(227,34,38,.35)}
 .adm__bar{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px 28px;background:var(--surface);border-bottom:1px solid var(--line)}
 .adm__bar h1{font-size:22px;font-weight:700;color:var(--heading);text-transform:uppercase;letter-spacing:.02em;line-height:1.2}
 .adm__bar small{font-size:13px;color:var(--steel)}
@@ -240,6 +247,136 @@ dl.asum dd{margin:0;color:var(--text)}
 .abx__pipe summary{list-style:none;cursor:pointer}
 .abx__pipe summary::-webkit-details-marker{display:none}
 .abx__pipe summary:hover .abx__r{background:var(--surface-2)}
+.abx__line{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px}
+.abx__line > b{font-size:15px;color:var(--heading)}
+.abx__btns{display:flex;gap:8px;margin-left:auto}
+.abx__alert{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}
+.abx__alert .afield{flex:1 1 320px}
+
+/* order log */
+.ajr__bar{display:flex;align-items:center;flex-wrap:wrap;gap:10px 14px;margin-bottom:14px}
+.ajr__month{width:auto;min-width:150px}
+.ajr__bar > .btn{margin-left:auto}
+.ajr__r{grid-template-columns:150px minmax(0,1fr) minmax(0,1.6fr) auto;align-items:start}
+.ajr__r > small{line-height:1.5}
+.ajr__r .ahist__acts{align-items:center}
+
+/* products from Bitrix (admin.js px*): the list, the bulk bar, the editor with Bitrix's data beside the site's */
+.pxwrap{max-width:1180px;display:flex;flex-direction:column;gap:14px}
+.pxtop{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.pxtop p{font-size:14px;max-width:80ch}
+.pxtop .btn{flex:none}
+.pxbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.pxbar__r{display:flex;gap:8px;flex-wrap:wrap;flex:1 1 420px;justify-content:flex-end}
+.pxsec{height:42px;max-width:340px;border-radius:999px;font-size:13.5px;padding-left:16px}
+.pxall{display:inline-flex;align-items:center;gap:10px;font-size:13.5px;color:var(--muted);cursor:pointer;margin:-4px 0 -2px 14px}
+.pxall input{width:18px;height:18px;accent-color:var(--accent)}
+.pxfind{position:relative;flex:0 1 300px}
+.pxfind .ui{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--steel);width:18px;height:18px}
+.pxfind .input{height:42px;padding-left:40px;border-radius:999px;font-size:14px}
+.pxsel{position:sticky;top:0;z-index:4;display:flex;align-items:center;flex-wrap:wrap;gap:10px 14px;padding:10px 14px;border-radius:16px;background:var(--blue);color:#fff}
+.pxsel .btn{background:#fff;color:var(--blue)}
+.pxsel .btn--ghost{background:transparent;color:#fff;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.6)}
+.pxsel .link-btn{color:#fff}
+.pxnote{font-size:14px}
+.pxlist{display:flex;flex-direction:column;border-radius:22px;background:var(--surface-2);overflow:hidden}
+.pxrow{display:grid;grid-template-columns:44px minmax(0,1fr);align-items:center;border-bottom:1px solid var(--line)}
+.pxrow:last-child{border:0}
+.pxrow__sel{display:grid;place-items:center;align-self:stretch;cursor:pointer}
+.pxrow__sel input{width:18px;height:18px;accent-color:var(--accent)}
+.pxrow__open{display:grid;grid-template-columns:56px minmax(0,1fr) 120px 170px;align-items:center;gap:14px;padding:10px 16px 10px 0;text-align:left;width:100%}
+button.pxrow__open:hover{background:var(--blue-10)}
+.pxrow--page .pxrow__open{grid-template-columns:56px minmax(0,1fr)}
+.pxrow__img{width:56px;height:44px;border-radius:10px;background:var(--cstage);display:grid;place-items:center;overflow:hidden}
+.pxrow__img img{max-width:50px;max-height:40px;object-fit:contain}
+.pxrow__t{min-width:0;line-height:1.35}
+.pxrow__t b{display:block;color:var(--heading);font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pxrow__t small{display:block;color:var(--steel);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pxrow__p{text-align:right;font-weight:600;color:var(--strong);font-size:14px;line-height:1.3}
+.pxrow__p small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.pxrow__s{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.pxmore{display:flex;justify-content:center;padding:6px}
+.pxhead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.pxhead__r{display:flex;gap:8px}
+.pxed{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(280px,1fr);gap:16px;align-items:start}
+.pxed__l{display:flex;flex-direction:column;gap:14px;min-width:0}
+.pxed__r{position:sticky;top:0}
+.pxstate{display:flex;flex-direction:column;gap:10px}
+.pxstate__new{padding:12px 14px;border-radius:14px;background:var(--blue-10);font-size:14px;color:var(--text)}
+.pxseg{display:inline-flex;align-self:flex-start;gap:4px;padding:4px;border-radius:999px;background:var(--surface)}
+.pxseg button{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 16px;border-radius:999px;font-size:13.5px;font-weight:600;color:var(--muted)}
+.pxseg button .ui{width:18px;height:18px}
+.pxseg button.is-on{background:var(--accent);color:#fff}
+.pxseg button[data-v="hidden"].is-on{background:var(--steel)}
+.pxnone{font-size:14px}
+.pxpages{position:relative;margin-top:0}
+.pximgs{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
+.pximgs--inh{opacity:.75}
+.pximg{position:relative;margin:0;aspect-ratio:4/3;border-radius:14px;background:var(--cstage);display:grid;place-items:center;overflow:hidden}
+.pximg img{max-width:90%;max-height:90%;object-fit:contain}
+.pximg .iconbtn{position:absolute;top:4px;width:30px;height:30px;background:rgba(255,255,255,.9);color:var(--ink)}
+.pximg .iconbtn[data-act="px-img-rm"]{right:4px}
+.pximg .iconbtn[data-act="px-img-first"]{left:4px}
+.pximg small{position:absolute;left:6px;bottom:6px;padding:2px 8px;border-radius:999px;background:var(--accent);color:#fff;font-size:11px;font-weight:600}
+.pxspecs{display:flex;flex-direction:column;gap:6px}
+.pxspec{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 36px;gap:6px;align-items:center}
+.pxdl{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:6px 12px;font-size:13.5px}
+.pxdl dt{color:var(--muted)}
+.pxdl dd{margin:0;color:var(--strong);font-weight:500;overflow-wrap:anywhere}
+.pxbx__img{width:100%;max-height:200px;object-fit:contain;border-radius:14px;background:var(--cstage);padding:10px}
+.pxbx__desc{font-size:13px;color:var(--muted);line-height:1.5}
+@media (max-width:1180px){
+  .pxed{grid-template-columns:minmax(0,1fr)}
+  .pxed__r{position:static;order:-1}
+}
+@media (max-width:860px){
+  .pxtop{flex-direction:column}
+  .pxrow__open{grid-template-columns:48px minmax(0,1fr);gap:10px}
+  .pxrow__p,.pxrow__s{grid-column:2;text-align:left;align-items:flex-start;flex-direction:row;flex-wrap:wrap}
+}
+
+/* ==========================================================================
+   PANEL · TILES (owner's choice, 2026-11-18: the panel follows the site's window): the page white (MC Black in
+   dark mode), the menu an MC Blue tile 12 px in from the edges with pill links (the open one white), the bar and
+   every card a rounded tile, the tabs pills, pictures on white stages.
+   ========================================================================== */
+body[data-page="admin"]{background:var(--page)}
+.adm{gap:12px;padding:12px}
+.adm__nav{border-radius:24px;overflow:hidden}
+.adm__logo{padding:18px 20px 16px}
+.adm__links{padding:12px 10px;gap:3px}
+.adm__link{padding:10px 14px;border-radius:999px}
+.adm__link.is-on{background:#fff;color:var(--blue)}
+.adm__link.is-on .ui{opacity:1}
+.adm__link.is-on::before{display:none}
+.adm__main{gap:12px}
+.adm__test{padding:9px 18px;border-radius:16px}
+.adm__alerts{padding:11px 18px;border-radius:16px}
+.adm__bar{padding:16px 20px 16px 24px;border:0;border-radius:24px;background:var(--surface-2)}
+.adm__body{padding:12px 4px 60px}
+.apanel,.aitem,.atile,.alog-list,.aposts,.ahist,.aempty,.alib__f{border-radius:22px;background:var(--surface-2);box-shadow:none}
+.aitem summary{padding-left:22px}
+.alook,.abx__list{border-radius:16px}
+.ainfo{border-radius:22px}
+.atab{height:40px;padding:0 16px;border-radius:999px;background:var(--surface-2)}
+.aframe{border-radius:24px;box-shadow:inset 0 0 0 1px var(--line)}
+.pp__val,.pp__chip{border-radius:16px;background:var(--surface)}
+.pp__menu{border-radius:18px}
+.pp__val img,.pp__chip img,.pp__opt img{border-radius:10px;background:var(--cstage)}
+.pp__opt{border-radius:12px}
+.ip__thumb{border-radius:14px;background:var(--cstage)}
+.rte{border-radius:16px}
+.rte__bar button{border-radius:999px}
+.adrop{border-radius:22px;background:var(--surface-2)}
+.alib__f img,.alib__f > .ui{border-radius:14px;background:var(--cstage)}
+.apost:hover{background:var(--blue-10)}
+.apost__img{border-radius:12px}
+.anote{border-radius:16px}
+.amodal__box{border-radius:28px}
+.alogin__box{border-top:0;border-radius:28px}
+.acolor{border-radius:12px}
+.abx__id{border-radius:999px}
+.aitem__logo{width:84px;height:34px;padding:5px 8px;border-radius:10px;background:#fff}   /* the colour logos need white, in dark mode too */
 
 @media (max-width:1180px){
   .asplit{grid-template-columns:minmax(0,1fr)}
@@ -273,4 +410,14 @@ dl.asum dd{margin:0;color:var(--text)}
   .adm__acts .btn{padding:0 14px}
   .abx__r{flex-wrap:wrap}
   .abx__list--in{margin-left:12px}
+  .adm__alerts{padding:10px 16px}
+  .ajr__r{grid-template-columns:minmax(0,1fr)}
+  .abx__btns,.ajr__bar > .btn{margin-left:0}
+}
+/* phones: the tiles 8 px in, the menu sticks under the top edge */
+@media (max-width:860px){
+  .adm{padding:8px;gap:8px}
+  .adm__nav{top:8px;border-radius:20px}
+  .adm__bar{padding:14px 16px;border-radius:20px}
+  .adm__body{padding:8px 0 60px}
 }
