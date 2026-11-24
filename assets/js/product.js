@@ -47,22 +47,29 @@ function placeSpecs() {
 }
 WIDE.addEventListener('change', placeSpecs);
 
+/* the energy class lives in one place (owner's choice, 2026-11-24): the first key spec tile, with the label's
+   coloured classes; with a label it opens the label, its PDF and the product information sheet */
+function energyTile() {
+  const tags = energyTags(p), label = p.energy && p.energy.label;
+  if (!tags.length && !label) return '';
+  const inner = `${bi('spec-energy')}<b class="keyspec__energy">${tags.length ? tags.map(([k, c, top]) => energyTag(c, k, top)).join('') : 'ენერგოეტიკეტი'}</b>${tags.length ? '<small>ენერგოკლასი</small>' : ''}${label ? `<span class="keyspec__go" aria-hidden="true">${ui('right', 'ui--sm')}</span>` : ''}`;
+  return label ? `<button class="keyspec keyspec--energy" data-label aria-label="ენერგოეტიკეტი და საინფორმაციო ცხრილი">${inner}</button>` : `<div class="keyspec keyspec--energy">${inner}</div>`;
+}
+
 function keySpecs() {
-  const out = [];
-  const cls = energyTags(p).map(x => x[1]);
-  if (cls.length) out.push(['spec-energy', 'ენერგოკლასი', cls.join(' / ')]);
-  KEY.forEach(([k, ic, t, f, when]) => { if (p.spec[k] && out.length < 4 && (!when || when(p.spec))) out.push([ic, t, f(p.spec[k])]); });
-  return out.length < 2 ? '' : `<div class="keyspecs">${out.map(([ic, t, v]) => `<div class="keyspec">${bi(ic)}<b>${esc(v)}</b><small>${esc(t)}</small></div>`).join('')}</div>`;
+  const energy = energyTile(), out = [];
+  KEY.forEach(([k, ic, t, f, when]) => { if (p.spec[k] && out.length < (energy ? 3 : 4) && (!when || when(p.spec))) out.push([ic, t, f(p.spec[k])]); });
+  if (!energy && out.length < 2) return '';
+  return `<div class="keyspecs">${energy}${out.map(([ic, t, v]) => `<div class="keyspec">${bi(ic)}<b>${esc(v)}</b><small>${esc(t)}</small></div>`).join('')}</div>`;
 }
 
 function gallery() {
   const imgs = p.src.length ? p.src : [''];
-  const ek = energyTags(p)[0], e = ek ? energyTag(ek[1], ek[0], ek[2]) : '';
   return `<div class="gallery">
     <div class="gallery__thumbs" role="tablist" aria-label="ფოტოები">${imgs.length > 1 ? imgs.map((s, i) => `<button class="${i ? '' : 'is-on'}" data-g="${i}" aria-label="ფოტო ${i + 1}"><img src="${s}" alt=""></button>`).join('') : ''}</div>
     <div class="gallery__main" data-zoom>
       <img src="${imgs[0]}" alt="${esc(p.title)}" style="view-transition-name:pimg" fetchpriority="high">
-      <div class="card__tags">${e}${p.line ? `<span class="tag tag--blue">${esc(p.line)}</span>` : ''}</div>
+      <div class="card__tags">${p.line ? `<span class="tag tag--blue">${esc(p.line)}</span>` : ''}</div>
       <span class="gallery__hint">${ui('zoom')}გასადიდებლად დააჭირეთ</span>
     </div>
   </div>`;
@@ -92,9 +99,6 @@ function info() {
   const brand = db.brandsById.get(p.brand);
   const logo = brand && brand.logo ? `<img class="only-l" src="assets/brand/partners/${brand.logo}.svg" alt="${esc(brand.name)}"><img class="only-d" src="assets/brand/partners/${brand.logo}-dark.svg" alt="">` : `<span>${esc(p.brandName)}</span>`;
   const fav = store.has('fav', p.id), cmp = store.has('cmp', p.id);
-  const tags = energyTags(p);
-  const energies = tags.length ? `<div class="energies">${tags.map(([k, c, top]) => `<button data-label>${energyTag(c, k, top)} ${EKINDS[k][0]}</button>`).join('')}</div>`
-    : p.energy && p.energy.label ? `<div class="energies"><button class="elabel" data-label>${bi('spec-energy', 'ic ic--sm')}ენერგოეტიკეტი</button></div>` : '';
   const buy = buyable(p)
     ? `<div class="qty qty--lg"><button data-q="-1" aria-label="ნაკლები">${ui('minus', 'ui--sm')}</button><input value="1" inputmode="numeric" aria-label="რაოდენობა" data-qin><button data-q="1" aria-label="მეტი">${ui('plus', 'ui--sm')}</button></div>
        <button class="btn btn--red" data-add="${p.id}" data-buy>${ui('bag')}კალათაში<span class="hide-sm">&nbsp;დამატება</span></button>`
@@ -103,7 +107,7 @@ function info() {
     <div class="pinfo__brand">${brand ? `<a href="catalog.html?b=${brand.id}" aria-label="${esc(brand.name)}">${logo}</a>` : logo}${p.sku ? `<span>კოდი ${esc(p.sku)}</span>` : ''}</div>
     <div>${p.line ? `<div class="pinfo__line">${esc(p.line)}</div>` : ''}<h1>${esc(p.title)}</h1></div>
     <div class="pinfo__meta">${p.stock == null ? '' : `<span class="stock ${p.stock ? '' : 'stock--out'}">${p.stock ? 'მარაგშია' : 'შეკვეთით'}</span>`}<a href="catalog.html?c=${p.cat}&s=${p.sub}">${esc(p.subName)}</a>${p.type ? `<span>${esc(p.type)}</span>` : ''}</div>
-    <div class="pinfo__price"><div><small>ფასი</small>${priceHTML(p, 'price--lg')}</div>${energies}</div>
+    <div class="pinfo__price"><div><small>ფასი</small>${priceHTML(p, 'price--lg')}</div></div>
     ${options()}
     <div class="buy">${buy}
       <button class="iconbtn ${fav ? 'is-on' : ''}" data-fav="${p.id}" aria-label="რჩეულებში" title="რჩეულებში">${ui('heart')}</button>
@@ -245,6 +249,9 @@ function wire() {
     if (e.target.closest('[data-label]')) {
       const m = $('#label');
       $('img', m).src = /[\/:]/.test(p.energy.label) ? p.energy.label : ENERGY + p.energy.label;   // a label from Bitrix is a path already
+      // the label's PDF and the product information sheet, when the product has them
+      const docs = (p.docs || []).filter(d => /ენერგოეტიკეტი|საინფორმაციო ცხრილი/.test(d.t)).map(d => ({ ...d, f: /[\/:]/.test(d.f) ? d.f : ENERGY + d.f }));
+      $('[data-label-docs]', m).innerHTML = docs.map(d => `<a class="btn btn--ghost btn--sm" href="${esc(d.f)}" target="_blank" rel="noopener" title="${esc(d.t)}">${ui('download')}${/ცხრილი/.test(d.t) ? 'საინფორმაციო ცხრილი' : 'ეტიკეტი PDF'}</a>`).join('');
       openLayer(m);
       return;
     }

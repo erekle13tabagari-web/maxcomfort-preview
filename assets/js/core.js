@@ -470,7 +470,7 @@ function overlays(db) {
   </form></div>
   <div data-cb-done hidden style="text-align:center;padding:12px 0"><div class="done__mark" style="width:64px;height:64px"><i></i><i></i><i></i><i></i></div><h2 class="h2">მადლობა</h2><p>მოთხოვნა მიღებულია. დაგირეკავთ სამუშაო საათებში (${esc(C.hours)}).</p><button class="btn btn--ghost" style="margin-top:22px" data-close>დახურვა</button></div>
 </div></div>
-<div class="modal" id="label" role="dialog" aria-modal="true" aria-label="ენერგოეტიკეტი"><div class="modal__scrim" data-close></div><div class="modal__box modal__box--wide"><button class="iconbtn modal__x" data-close aria-label="დახურვა">${ui('close')}</button><img class="modal__label" alt="ენერგოეტიკეტი"></div></div>
+<div class="modal" id="label" role="dialog" aria-modal="true" aria-label="ენერგოეტიკეტი"><div class="modal__scrim" data-close></div><div class="modal__box modal__box--wide"><button class="iconbtn modal__x" data-close aria-label="დახურვა">${ui('close')}</button><img class="modal__label" alt="ენერგოეტიკეტი"><div class="modal__docs" data-label-docs></div></div></div>
 <div class="cmpbar" aria-live="polite"><div class="cmpbar__imgs"></div><span data-cmpbar-t></span><a class="btn btn--white btn--sm" href="compare.html">შედარება</a><button class="iconbtn" style="color:#fff" data-cmp-clear aria-label="გასუფთავება">${ui('close')}</button></div>
 <div class="fab">
   <button class="fab__btn fab__top" data-top aria-label="ზემოთ ასვლა" title="ზემოთ">${ui('up')}</button>

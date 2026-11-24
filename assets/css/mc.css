@@ -832,6 +832,17 @@ mark{background:var(--red-20);color:inherit;border-radius:2px;padding:0 1px}
 .keyspecs{display:flex;flex-wrap:wrap;gap:2px;background:var(--line);border-radius:var(--r);overflow:hidden}
 .keyspec{flex:1 1 auto;background:var(--surface);padding:16px;display:flex;flex-direction:column;gap:8px}
 .keyspec .ic{width:32px;height:32px;--ic:var(--icon);--ic-w:2.4}
+/* the energy class: its own tile with the label's coloured classes; it opens the label (product.js) */
+.keyspec--energy{font:inherit;color:inherit;text-align:left;border:0;cursor:pointer;transition:background .2s}
+.keyspec--energy:hover{background:var(--blue-10)}
+.keyspec--energy:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.keyspec__energy{display:flex;flex-wrap:wrap;gap:6px}
+.keyspec--energy{position:relative}
+.keyspec__go{position:absolute;top:14px;right:12px;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;color:var(--muted);transition:background .2s,color .2s}
+.keyspec--energy:hover .keyspec__go{background:var(--surface);color:var(--ink)}
+.modal__docs{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:16px}
+.modal__docs:empty{display:none}
+.modal__docs .btn{max-width:100%}
 .keyspec b{font-size:20px;font-weight:300;color:var(--ink);line-height:1.1;white-space:nowrap}
 .keyspec small{font-size:12.5px;color:var(--muted)}
 
