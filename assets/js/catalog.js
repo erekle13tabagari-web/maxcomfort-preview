@@ -68,11 +68,14 @@ function collapse(list) {
   });
   return out;
 }
-function sorted(list) {
+function sorted(list, sc = list) {
   const score = p => (p.src[0] && /\/(mc|lib)-/.test(p.src[0]) ? 2 : 0) + (p.energy ? 1 : 0) + (p.stock ? 1 : 0) + (p.group || p.series ? 1 : 0) + (p.price != null ? 1 : 0);
   const byPrice = dir => (a, b) => (a.price == null) - (b.price == null) || dir * ((a.price || 0) - (b.price || 0));
+  // recommended: brand by brand, in the brand filter's order (the most products first; owner's choice, 2026-11-24)
+  const bc = count(sc, p => p.brand);
+  const brandRank = p => (p.brand && bc.has(p.brand) ? -bc.get(p.brand) : 1);
   const cmp = {
-    pop: (a, b) => score(b) - score(a) || (b.price || 0) - (a.price || 0),
+    pop: (a, b) => brandRank(a) - brandRank(b) || String(a.brand || '').localeCompare(String(b.brand || '')) || score(b) - score(a) || (b.price || 0) - (a.price || 0),
     'price-asc': byPrice(1), 'price-desc': byPrice(-1),
     name: (a, b) => a.title.localeCompare(b.title, 'ka')
   }[st.sort] || (() => 0);
@@ -92,7 +95,7 @@ function facets(sc) {
   const group = (id, title, body, open = true) => `<div class="fgroup ${open ? '' : 'is-closed'}" data-g="${esc(id)}"><button class="fgroup__t" type="button" data-toggle>${esc(title)}${ui('down')}</button><div class="fgroup__b">${body}</div></div>`;
   const list = (name, m, sel, text = v => v, max = 6) => {
     const keys = [...new Set([...m.keys(), ...sel])];
-    const sortedKeys = name === 'b' || name === 't' ? keys.sort((a, b) => (m.get(b) || 0) - (m.get(a) || 0)) : keys.sort(numSort);
+    const sortedKeys = name === 'b' || name === 't' ? keys.sort((a, b) => (m.get(b) || 0) - (m.get(a) || 0) || String(a).localeCompare(String(b))) : keys.sort(numSort);
     const html = sortedKeys.map((v, i) => (i === max ? '<div data-fmore hidden style="display:contents">' : '') + opt(name, v, text(v), m.get(v) || 0, sel.includes(v))).join('') + (sortedKeys.length > max ? `</div><button class="fmore" type="button" data-more-btn>+ კიდევ ${sortedKeys.length - max}</button>` : '');
     return html;
   };
@@ -195,7 +198,7 @@ let results = [];
 function render(keepPage) {
   const sc = scope();
   const all = sc.filter(preds());
-  results = sorted(collapse(all));
+  results = sorted(collapse(all), sc);
   if (!keepPage) shown = PAGE;
   head();
   $('[data-filters-body]').innerHTML = facets(sc);
