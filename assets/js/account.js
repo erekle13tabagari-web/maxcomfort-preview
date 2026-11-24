@@ -471,6 +471,10 @@ function wire() {
 boot({}).then(async d => {
   db = d;
   $('[data-crumbs]').innerHTML = crumbs([['ჩემი ანგარიში', null]]);
+  if (C.accounts === false) {   // accounts switched off (config.js): no sign-in until the SMS provider is set up
+    $('[data-acc]').innerHTML = `<div class="empty">${bi('svc-support')}<h2 class="h3">ანგარიში დროებით მიუწვდომელია</h2><p class="muted">შეკვეთის ან კითხვის შემთხვევაში დაგვირეკეთ: <a href="${C.phoneHref}">${esc(C.phone)}</a>, ან დაგვიტოვეთ ნომერი და დაგიკავშირდებით.</p><div class="empty__cta"><button class="btn btn--red" data-ask="">დამირეკეთ ${arrow()}</button><a class="btn btn--ghost" href="catalog.html">კატალოგი</a></div></div>`;
+    return;
+  }
   wire();
   preload();
   try { user = await account.me(); } catch (e) { console.error(e); user = null; }

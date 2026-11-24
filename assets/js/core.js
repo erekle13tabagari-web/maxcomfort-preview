@@ -59,11 +59,12 @@ export function rich(html) {
   return doc.body.innerHTML;
 }
 
-/* Online selling can be paused in the admin panel (content "shop"): the server then takes no order, and the
-   pages offer a call-back request ("შეკვეთის მოთხოვნა") instead of the cart; products and prices stay. */
-export const SELL_NOTE = 'ონლაინ შეკვეთა დროებით შეჩერებულია. დატოვეთ ნომერი და დაგიკავშირდებით, ან დაგვირეკეთ.';
-/** Whether the product goes into the cart now: it has a price and selling is on. */
-export const buyable = p => p.price != null && C.sell !== false;
+/* Online selling can be paused in the admin panel (content "shop"): the server then takes no order. The cart still
+   fills, and the checkout page sends it as an enquiry instead (a Bitrix lead with the products, from the website;
+   owner's choice, 2026-11-24); products and prices stay. */
+export const SELL_NOTE = 'ონლაინ გადახდა ჯერ არ მუშაობს: დაამატეთ პროდუქცია კალათაში და გამოგვიგზავნეთ მოთხოვნა. მენეჯერი დაგიკავშირდებათ ფასის, მარაგისა და მიწოდების დასაზუსტებლად.';
+/** Whether the product goes into the cart: it has a price (selling paused: the cart becomes an enquiry). */
+export const buyable = p => p.price != null;
 /** The request button's words when it cannot go into the cart. */
 export const askLabel = p => (p.price != null ? 'შეკვეთის მოთხოვნა' : 'ფასის მოთხოვნა');
 
@@ -369,6 +370,7 @@ const LANG_BTN = (cls = '') => `<div class="lang ${cls}" data-lang><button class
 
 /* ---------- account link: the initials once signed in ---------- */
 function accLink() {
+  if (C.accounts === false) return '';   // accounts switched off (config.js)
   const h = account.hint();
   return `<a class="iconbtn acc-link" href="account.html" data-acc-link aria-label="${h ? 'ჩემი ანგარიში' : 'შესვლა'}" title="${h ? esc(h.name || 'ჩემი ანგარიში') : 'შესვლა / რეგისტრაცია'}">${h ? `<span class="av av--sm">${esc(h.i) || ui('user')}</span>` : ui('user')}</a>`;
 }
@@ -430,7 +432,7 @@ function footer(db) {
       <p data-c="footer.about">${esc(t('footer.about', 'გათბობის, კონდიცირების, ვენტილაციისა და წყალმომარაგების სისტემები 2006 წლიდან. ინჟინრული კომფორტი. გარანტირებული სერვისი.'))}</p></div>
     <div><h4>კატალოგი</h4><ul>${db.categories.filter(inMenu).map(c => `<li><a href="catalog.html?c=${c.id}">${esc(c.name)}</a></li>`).join('')}</ul></div>
     <div><h4>კომპანია</h4><ul><li><a href="about.html">ჩვენ შესახებ</a></li><li><a href="about.html#services">მომსახურება</a></li><li><a href="about.html#history">ისტორია</a></li><li><a href="media.html">მედია ცენტრი</a></li><li><a href="about.html#brands">ბრენდები</a></li><li><a href="career.html">კარიერა</a></li><li><a href="installer.html">ხელოსნებისთვის</a></li><li><a href="about.html#contact">კონტაქტი</a></li></ul></div>
-    <div class="ftr__help"><h4>დახმარება</h4><ul><li><a href="about.html#delivery">მიწოდება და გადახდა</a></li><li><a href="about.html#services">საგარანტიო სერვისი</a></li><li><a href="media.html?t=faq">კითხვა-პასუხი</a></li><li><a href="compare.html">შედარება</a></li><li><a href="account.html">ჩემი ანგარიში</a></li><li><button data-open="fav">რჩეულები</button></li><li><button data-callback>შეუკვეთეთ ზარი</button></li></ul></div>
+    <div class="ftr__help"><h4>დახმარება</h4><ul><li><a href="about.html#delivery">მიწოდება და გადახდა</a></li><li><a href="about.html#services">საგარანტიო სერვისი</a></li><li><a href="media.html?t=faq">კითხვა-პასუხი</a></li><li><a href="compare.html">შედარება</a></li>${C.accounts === false ? '' : '<li><a href="account.html">ჩემი ანგარიში</a></li>'}<li><button data-open="fav">რჩეულები</button></li><li><button data-callback>შეუკვეთეთ ზარი</button></li></ul></div>
     <div><div class="ftr__chead"><h4>კონტაქტი</h4><div class="ftr__soc">${socials()}</div></div><ul class="ftr__contact">
       <li>${ui('phone')}<span><b><a href="${C.phoneHref}">${esc(C.phone)}</a></b>${esc(C.hours)}</span></li>
       <li>${ui('mail')}<span><b><a href="mailto:${C.email}">${esc(C.email)}</a></b></span></li>
@@ -450,7 +452,7 @@ function overlays(db) {
   <div class="drawer__body"><nav class="mnav" aria-label="მთავარი მენიუ">${NAV.map(n => n.mega
       ? `<details class="fgroup"><summary class="fgroup__t" style="list-style:none;cursor:pointer">${n.t}${ui('down')}</summary><div class="fgroup__b mnav__cats">${db.categories.filter(inMenu).map(c => `<details class="mnav__cat"><summary>${bi(c.icon)}<span>${esc(c.name)}</span>${ui('down')}</summary><div class="mnav__subs"><a class="fopt" href="catalog.html?c=${c.id}"><b>ყველა</b><small>${c.count}</small></a>${c.subs.filter(s => s.count).map(s => `<a class="fopt" href="catalog.html?c=${c.id}&s=${s.id}"><span>${esc(s.name)}</span><small>${s.count}</small></a>`).join('')}</div></details>`).join('')}</div></details>`
       : `<a class="fgroup fgroup__t" href="${n.href}">${n.t}</a>`).join('')}</nav>
-    <div class="fgroup"><div class="fgroup__b" style="margin-top:0"><a class="fopt fopt--acc" href="account.html">${ui('user')}<span data-acc-text>${account.hint() ? 'ჩემი ანგარიში' : 'შესვლა / რეგისტრაცია'}</span></a><a class="fopt" href="media.html">მედია ცენტრი</a><a class="fopt" href="compare.html">შედარება</a></div></div>
+    <div class="fgroup"><div class="fgroup__b" style="margin-top:0">${C.accounts === false ? '' : `<a class="fopt fopt--acc" href="account.html">${ui('user')}<span data-acc-text>${account.hint() ? 'ჩემი ანგარიში' : 'შესვლა / რეგისტრაცია'}</span></a>`}<a class="fopt" href="media.html">მედია ცენტრი</a><a class="fopt" href="compare.html">შედარება</a></div></div>
     <div class="mlang" role="group" aria-label="ენა">${LANGS.map(([id, code], i) => i === 0 ? `<b aria-current="true">${code}</b>` : `<span title="მალე" lang="${id}">${code}</span>`).join('')}<small>EN, RU: მალე</small></div>
     <div style="padding:22px 0"><a class="btn btn--red btn--block" href="${C.phoneHref}">${ui('phone')}${esc(C.phone)}</a></div></div></aside>
 <div class="so" role="dialog" aria-modal="true" aria-label="ძიება"><div class="so__panel"><div class="wrap">
@@ -510,14 +512,14 @@ function renderCart(db) {
         <div class="line__row"><div class="qty"><button data-qty="-1" aria-label="ნაკლები">${ui('minus', 'ui--sm')}</button><input value="${qty}" inputmode="numeric" aria-label="რაოდენობა" data-qty-in><button data-qty="1" aria-label="მეტი">${ui('plus', 'ui--sm')}</button></div></div></div>
       <div><div class="line__price num">${money(p.price * qty)}</div><button class="line__rm" data-rm>წაშლა</button></div>
     </div>`).join('');
-  foot.innerHTML = `<div class="sum"><span>პროდუქცია</span><span class="num">${money(store.total(db))}</span></div>
-    <div class="sum"><span>მიწოდება</span><small>შეკვეთისას</small></div>
+  foot.innerHTML = `${C.sell !== false ? `<div class="sum"><span>პროდუქცია</span><span class="num">${money(store.total(db))}</span></div>
+    <div class="sum"><span>მიწოდება</span><small>შეკვეთისას</small></div>` : ''}
     <div class="sum sum--total"><span>სულ</span><span class="num">${money(store.total(db))}</span></div>
     ${C.sell !== false ? `<a class="btn btn--red btn--block" href="checkout.html">შეკვეთის გაფორმება ${arrow()}</a>
     <p class="drawer__note">მონტაჟს და მიწოდებას შეკვეთისას შეარჩევთ</p>`
     : `<div class="note note--blue drawer__paused">${ui('info')}<span>${esc(C.sellNote)}</span></div>
-    <button class="btn btn--red btn--block" data-ask="">${ui('phone')}დამირეკეთ</button>
-    <a class="drawer__note" href="${C.phoneHref}">${esc(C.phone)}</a>`}`;
+    <a class="btn btn--red btn--block" href="checkout.html">მოთხოვნის გაგზავნა ${arrow()}</a>
+    <a class="drawer__note" href="${C.phoneHref}">ან დაგვირეკეთ: ${esc(C.phone)}</a>`}`;
 }
 
 function renderFav(db) {
@@ -661,7 +663,6 @@ function setupEvents(db) {
     const t = e.target;
     let el;
     if ((el = t.closest('[data-add]'))) {
-      if (C.sell === false) return callback(db, el.dataset.add);
       const p = db.byId.get(+el.dataset.add);
       const q = +(el.dataset.qty || 1);
       store.add(p.id, q);

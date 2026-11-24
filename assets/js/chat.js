@@ -98,7 +98,9 @@ const ACTS = {
 
   shops: () => bot(`<p>${esc(C.hours)}</p><ul>${C.showrooms.map(s => `<li><b>${esc(s.name)}</b><br>${esc(s.address)}, ${esc(s.phone)}</li>`).join('')}</ul><a class="cmore" href="about.html#contact">რუკაზე ნახვა</a>`, AFTER),
 
-  order: () => account.hint()
+  order: () => C.accounts === false
+    ? bot(`შეკვეთის შესახებ დაგვირეკეთ: <a href="${C.phoneHref}">${esc(C.phone)}</a>, ან დატოვეთ ნომერი და დაგიკავშირდებით.`, AFTER)
+    : account.hint()
     ? bot('შეკვეთების სტატუსი და შემადგენლობა თქვენს ანგარიშშია.<a class="cmore" href="account.html#orders">ჩემი შეკვეთები</a>', AFTER)
     : bot(`შედით ტელეფონის ნომრით და ნახავთ ყველა შეკვეთას, ან დაგვირეკეთ: <a href="${C.phoneHref}">${esc(C.phone)}</a>.<a class="cmore" href="account.html">შესვლა</a>`, AFTER),
 

@@ -40,6 +40,11 @@ window.MC_CONFIG = {
     { id: 'installment', name: 'განვადება', note: 'პირობებს მენეჯერი შეგითანხმებთ' }
   ],
 
+  /* Customer accounts (account.html: sign-in with the phone number and an SMS code). false = hidden everywhere
+     (header, footer, phone menu, checkout, chat) and account.html says so: the launch has no SMS provider yet
+     (owner's choice, 2026-11-24). true once api/config.php has the SMS gateway.                               */
+  accounts: false,
+
   /* Sign-in with Google / Facebook / Apple on account.html (public IDs only; secrets go into api/config.php).
      Empty = the button is hidden in 'bitrix' mode; the preview shows all three. The phone number stays
      required: a first provider sign-in asks for it and confirms it by SMS.                                */

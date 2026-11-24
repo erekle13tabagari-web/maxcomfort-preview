@@ -1,7 +1,29 @@
 import { boot, $, $$, esc, bi, ui, arrow, money, crumbs, store, validate, toast, C } from './core.js';
-import { order, account, phoneE164 } from './api.js';
+import { order, lead, account, phoneE164 } from './api.js';
 
 let db;
+/* Selling paused in the admin panel: this page sends the cart as an enquiry (api/lead.php, kind enquiry): a Bitrix
+   lead with the products, marked as from the website. Contact and a comment only; no delivery or payment. */
+const ENQ = () => C.sell === false;
+
+function enquiryForm() {
+  return `
+  <div class="costep"><div class="costep__h"><span class="costep__n">1</span><h2>საკონტაქტო ინფორმაცია</h2></div>
+    <div class="form-stack">
+      <div class="grid2">
+        <label class="field"><span>სახელი და გვარი <em>*</em></span><input class="input" name="name" autocomplete="name" required><small class="field__err">შეიყვანეთ სახელი</small></label>
+        <label class="field"><span>ტელეფონი <em>*</em></span><input class="input" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="5XX XX XX XX" required><small class="field__err">შეიყვანეთ სწორი ნომერი</small></label>
+      </div>
+      <label class="field"><span>ელ. ფოსტა</span><input class="input" name="email" type="email" autocomplete="email"><small class="field__err">შეამოწმეთ ელ. ფოსტა</small></label>
+    </div></div>
+
+  <div class="costep"><div class="costep__h"><span class="costep__n">2</span><h2>კომენტარი</h2></div>
+    <div class="form-stack">
+      <label class="field"><span>რა გაინტერესებთ</span><textarea class="textarea" name="comment" placeholder="მაგ.: მჭირდება მონტაჟი, მიწოდება ქუთაისში, სასურველი დრო ზარისთვის"></textarea></label>
+      <label class="check"><input type="checkbox" name="consent" required><span>ვეთანხმები <a href="about.html#privacy" target="_blank">პერსონალური მონაცემების დამუშავებას</a> მოთხოვნაზე პასუხისთვის.</span></label>
+      <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+    </div></div>`;
+}
 const radio = (name, list, checked, extra = () => '') => `<div class="choices">${list.map(o => `
   <label class="choice"><input type="radio" name="${name}" value="${o.id}" ${o.id === checked ? 'checked' : ''}>
     ${o.icon ? bi(o.icon) : ''}<span><b>${esc(o.name)}</b>${o.note ? `<small>${esc(o.note)}</small>` : ''}</span>${extra(o)}</label>`).join('')}</div>`;
@@ -14,7 +36,7 @@ function form() {
   return `
   <div class="costep"><div class="costep__h"><span class="costep__n">1</span><h2>საკონტაქტო ინფორმაცია</h2></div>
     <div class="form-stack">
-      ${account.hint() ? '' : `<div class="note note--blue" data-signin>${ui('user')}<span>გაქვთ ანგარიში? <a href="account.html?back=checkout.html">შედით ნომრით</a> და მონაცემები თავად ჩაიწერება, შეკვეთა კი ანგარიშში გამოჩნდება.</span></div>`}
+      ${account.hint() || C.accounts === false ? '' : `<div class="note note--blue" data-signin>${ui('user')}<span>გაქვთ ანგარიში? <a href="account.html?back=checkout.html">შედით ნომრით</a> და მონაცემები თავად ჩაიწერება, შეკვეთა კი ანგარიშში გამოჩნდება.</span></div>`}
       ${radio('ctype', [{ id: 'person', name: 'ფიზიკური პირი' }, { id: 'company', name: 'კომპანია', note: 'ინვოისით და დღგ-ით' }], 'person')}
       <div class="grid2" data-company hidden>
         <label class="field"><span>კომპანიის სახელი <em>*</em></span><input class="input" name="company" autocomplete="organization"><small class="field__err">შეიყვანეთ კომპანია</small></label>
@@ -57,7 +79,7 @@ function summary() {
   const lines = store.lines(db);
   const total = store.total(db);
   $('[data-sum]').innerHTML = `
-    <h2>შეკვეთა <span class="muted" style="font-weight:500">(${store.count()})</span></h2>
+    <h2>${ENQ() ? 'მოთხოვნა' : 'შეკვეთა'} <span class="muted" style="font-weight:500">(${store.count()})</span></h2>
     <div class="cosum__lines">${lines.map(({ p, qty }) => `
       <div class="line" data-line="${p.id}">
         <a class="line__img" href="${p.url}"><img src="${p.src[0]}" alt=""></a>
@@ -66,20 +88,24 @@ function summary() {
           <div class="line__row"><div class="qty"><button type="button" data-qty="-1" aria-label="ნაკლები">${ui('minus', 'ui--sm')}</button><input value="${qty}" inputmode="numeric" aria-label="რაოდენობა" data-qty-in><button type="button" data-qty="1" aria-label="მეტი">${ui('plus', 'ui--sm')}</button></div></div></div>
         <div><div class="line__price num">${money(p.price * qty)}</div><button type="button" class="line__rm" data-rm>წაშლა</button></div>
       </div>`).join('')}</div>
-    <div class="cosum__tot">
+    ${ENQ() ? `<div class="cosum__tot">
+      <div class="sum sum--total"><span>სულ</span><span class="num">${money(total)}</span></div>
+      <button class="btn btn--red btn--block" type="submit" form="co">მოთხოვნის გაგზავნა ${arrow()}</button>
+      <p class="cosum__secure">${ui('info')}<span>ონლაინ გადახდა ჯერ არ მუშაობს. მენეჯერი დაგიკავშირდებათ ფასის, მარაგის, მიწოდებისა და მონტაჟის დასაზუსტებლად (${esc(C.hours)}).</span></p>
+    </div>` : `<div class="cosum__tot">
       <div class="sum"><span>პროდუქცია</span><span class="num">${money(total)}</span></div>
       <div class="sum"><span>მიწოდება</span><small data-sum-del></small></div>
       <div class="sum"><span>მონტაჟი</span><small data-sum-inst></small></div>
       <div class="sum sum--total"><span>სულ</span><span class="num">${money(total)}</span></div>
       <button class="btn btn--red btn--block" type="submit" form="co">შეკვეთის დადასტურება ${arrow()}</button>
       <p class="cosum__secure">${ui('lock')}<span>შეკვეთას მენეჯერი ზარით დაგიდასტურებთ. გადახდა ხდება დადასტურების შემდეგ, თქვენ მიერ არჩეული გზით.</span></p>
-    </div>`;
+    </div>`}`;
   sync();
 }
 
 function sync() {
   const form = $('#co');
-  if (!form) return;
+  if (!form || ENQ()) return;
   const f = form.elements;
   const del = f.delivery.value, inst = f.install.value, ct = f.ctype.value;
   $('[data-pickup]').hidden = del !== 'pickup';
@@ -110,11 +136,12 @@ function done(res, data) {
   const lines = data.items.map(i => `<li>${esc(i.name)} × ${i.qty}${short.has(i.id) ? ` <span class="tag">${short.get(i.id) > 0 ? 'მარაგშია ' + short.get(i.id) : 'შეკვეთით'}</span>` : ''}</li>`).join('');
   window.scrollTo({ top: 0 });
   $('[data-title]').hidden = true;
+  const enq = !!data.enquiry;
   $('[data-co]').outerHTML = `<div class="done">
     <div class="done__mark"><i></i><i></i><i></i><i></i></div>
-    <h1 class="h1">გმადლობთ, შეკვეთა მიღებულია</h1>
-    <p>მენეჯერი დაგიკავშირდებათ ნომერზე <b>${esc(data.customer.phone)}</b> შეკვეთის დასადასტურებლად (${esc(C.hours)}).</p>
-    <div class="done__no"><small>შეკვეთის ნომერი</small><b>${esc(res.id)}</b></div>
+    <h1 class="h1">გმადლობთ, ${enq ? 'მოთხოვნა' : 'შეკვეთა'} მიღებულია</h1>
+    <p>მენეჯერი დაგიკავშირდებათ ნომერზე <b>${esc(data.customer.phone)}</b> ${enq ? 'ფასისა და მიწოდების დასაზუსტებლად' : 'შეკვეთის დასადასტურებლად'} (${esc(C.hours)}).</p>
+    <div class="done__no"><small>${enq ? 'მოთხოვნის' : 'შეკვეთის'} ნომერი</small><b>${esc(res.id)}</b></div>
     <ul class="bullets" style="text-align:left;display:inline-block;margin-bottom:28px;color:var(--muted)">${lines}</ul>
     ${short.size ? '<p style="font-size:15px;margin:-12px 0 28px">მონიშნული პროდუქტი მარაგში საკმარისი რაოდენობით არ არის: მიწოდების ვადას მენეჯერი დაგიზუსტებთ.</p>' : ''}
     <div><a class="btn btn--ghost" href="index.html">მთავარი</a> <a class="btn" href="catalog.html">კატალოგი ${arrow()}</a></div>
@@ -130,6 +157,22 @@ async function submit(e) {
   const btn = $('[data-sum] button[type=submit]');
   btn.classList.add('is-busy');
   const v = Object.fromEntries(new FormData(f));
+  if (ENQ()) {   // the cart as an enquiry: a Bitrix lead with the products (prices are the server's own)
+    const lines = store.lines(db);
+    const data = { enquiry: true, customer: { name: v.name.trim(), phone: v.phone.trim() },
+      items: lines.map(({ p, qty }) => ({ id: p.id, name: p.title, qty })) };
+    try {
+      const res = await lead({ kind: 'enquiry', name: v.name.trim(), phone: v.phone.trim(), email: v.email.trim(), message: v.comment || '',
+        topic: 'შეკვეთის მოთხოვნა კალათიდან', items: lines.map(({ p, qty }) => ({ id: p.id, qty })) });
+      store.clear();
+      done(res, data);
+    } catch (err) {
+      console.error(err);
+      toast('მოთხოვნა ვერ გაიგზავნა. სცადეთ ხელახლა ან დაგვირეკეთ: ' + esc(C.phone));
+      btn.classList.remove('is-busy');
+    }
+    return;
+  }
   const room = C.showrooms.find(s => s.id === v.showroom);
   const data = {
     customer: { type: v.ctype, name: v.name.trim(), phone: v.phone.trim(), email: v.email.trim(), company: v.company || '', companyId: v.companyId || '' },
@@ -156,9 +199,13 @@ async function submit(e) {
 boot({}).then(d => {
   db = d;
   $('[data-crumbs]').innerHTML = crumbs([['კალათა', null], ['შეკვეთა', null]]);
-  if (C.sell === false) return paused();
   if (!store.lines(db).length) return empty();
-  $('#co').innerHTML = form();
+  if (ENQ()) {   // selling paused: the page sends the cart as an enquiry
+    document.title = 'მოთხოვნის გაგზავნა · მაქს კომფორტი';
+    $('[data-crumbs]').innerHTML = crumbs([['კალათა', null], ['მოთხოვნა', null]]);
+    $('[data-title]').innerHTML = `<div><h1 class="h1">მოთხოვნის გაგზავნა</h1><p>${esc(C.sellNote)}</p></div>`;
+  }
+  $('#co').innerHTML = ENQ() ? enquiryForm() : form();
   summary();
   const f = $('#co');
   f.addEventListener('change', sync);
@@ -184,5 +231,5 @@ boot({}).then(d => {
     if (e.target.closest('[data-rm]')) store.remove(id);
   });
   sum.addEventListener('change', e => { if (e.target.matches('[data-qty-in]')) store.setQty(+e.target.closest('[data-line]').dataset.line, parseInt(e.target.value, 10) || 0); });
-  addEventListener('mc:cart', () => { if (!$('#co') || C.sell === false) return; store.lines(db).length ? summary() : empty(); });
+  addEventListener('mc:cart', () => { if (!$('#co')) return; store.lines(db).length ? summary() : empty(); });
 }).catch(err => console.error(err));
