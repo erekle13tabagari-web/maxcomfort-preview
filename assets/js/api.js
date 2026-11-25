@@ -401,6 +401,8 @@ export function sizeKind(list) {
   // the unit after the number, also when a letter follows (150 მმ Q, 315 მმ E W)
   const units = list.map(p => (String(p.size).match(/\d\s*(მმ|სმ|kW|კვტ|W|HP|ლ|L)(?![A-Za-z0-9ა-ჰ])/) || [])[1]);
   if (units.every(u => u === 'მმ' || u === 'სმ')) return 'ზომა';
+  // panel radiators: 300x900, height by length in mm
+  if (list.every(p => /^\d+\s*[xX×]\s*\d+$/.test(String(p.size).trim()))) return 'ზომა';
   if (units.every(u => /^(kW|კვტ|W|HP)$/.test(u || ''))) return 'სიმძლავრე';
   if (units.every(u => u === 'ლ' || u === 'L')) return 'მოცულობა';
   return 'მოდელი';

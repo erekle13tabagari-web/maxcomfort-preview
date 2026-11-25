@@ -90,7 +90,20 @@ function options() {
     });
     const kind = sizeKind(db.series.get(p.series));   // ზომა, სიმძლავრე, მოცულობა or მოდელი
     const room = kind === 'სიმძლავრე' && p.spec['ფართობი, მ²'] ? 'ოთახისთვის ' + p.spec['ფართობი, მ²'].replace(/მ²/g, '').replace(/\s*-\s*/, '-').trim() + ' მ²' : '';
-    html += `<div><div class="opt__t">${kind} <span>${esc(room || (kind === 'მოდელი' ? '' : p.size))}</span></div><div class="sizes">${[...sizes.values()].map(v => `<button class="size ${v.size === p.size ? 'is-on' : ''}" data-go="${v.id}"><b>${esc(v.size)}</b><small>${v.price != null ? money(v.price) : 'მოთხოვნით'}</small></button>`).join('')}</div></div>`;
+    const list = [...sizes.values()];
+    let pick;
+    if (list.length > 8) {
+      // a long line is a dropdown (EMTAS panels come in 43 sizes); a few sizes stay buttons (owner's choice, 2026-11-25)
+      // the sale is named only when it sets some sizes apart (all 43 EMTAS panels are on sale: no need to say it 43 times)
+      const off = v => !!(v.sale && v.was), some = list.some(off) && !list.every(off);
+      const row = v => `<option value="${v.id}" ${v.size === p.size ? 'selected' : ''}>${esc(v.size + ' — ' + (v.price != null ? money(v.price) : 'მოთხოვნით') + (some && off(v) ? ' · Black Friday' : ''))}</option>`;
+      // 300x900 ... 900x1200: grouped by the first number, so the list reads in blocks
+      const first = list.map(v => (String(v.size).match(/^(\d+)\s*[xX×]\s*\d+$/) || [])[1]), heads = [...new Set(first)];
+      pick = `<select class="select sizesel" data-sel aria-label="${kind}">${first.every(Boolean) && heads.length > 1
+        ? heads.map(h => `<optgroup label="${h} მმ">${list.filter((_, i) => first[i] === h).map(row).join('')}</optgroup>`).join('')
+        : list.map(row).join('')}</select>`;
+    } else pick = `<div class="sizes">${list.map(v => `<button class="size ${v.size === p.size ? 'is-on' : ''}" data-go="${v.id}"><b>${esc(v.size)}</b><small>${v.price != null ? money(v.price) : 'მოთხოვნით'}</small></button>`).join('')}</div>`;
+    html += `<div><div class="opt__t">${kind} <span>${esc(room || (kind === 'მოდელი' || list.length > 8 ? '' : p.size))}</span></div>${pick}</div>`;
   }
   return html;
 }
@@ -216,21 +229,23 @@ function watchBuy() {
   if (ftr) { fio = new IntersectionObserver(([en]) => { foot = en.isIntersecting; set(); }, { threshold: 0 }); fio.observe(ftr); }
 }
 
+/** Another size or colour of the line, in place: the page keeps its scroll and open tab. */
+function goTo(id, refocus) {
+  const v = db.byId.get(id);
+  if (!v || v.id === p.id) return;
+  p = v;
+  history.replaceState(null, '', 'product.html?id=' + v.id + '#' + tab);
+  const y = scrollY;
+  const swap = () => { render(); scrollTo(0, y); if (refocus) { const s = $(refocus); if (s) s.focus({ preventScroll: true }); } };
+  // a transition cut short (another click, leaving the page) is no error
+  if (document.startViewTransition) document.startViewTransition(swap).ready.catch(() => {}); else swap();
+}
+
 function wire() {
   const main = $('main');
   main.addEventListener('click', e => {
     const go = e.target.closest('[data-go]');
-    if (go) {
-      const v = db.byId.get(+go.dataset.go);
-      if (!v || v.id === p.id) return;
-      p = v;
-      history.replaceState(null, '', 'product.html?id=' + v.id + '#' + tab);
-      const y = scrollY;
-      const swap = () => { render(); scrollTo(0, y); };
-      // a transition cut short (another click, leaving the page) is no error
-      if (document.startViewTransition) document.startViewTransition(swap).ready.catch(() => {}); else swap();
-      return;
-    }
+    if (go) return goTo(+go.dataset.go);
     const th = e.target.closest('[data-g]');
     if (th) {
       $$('[data-g]').forEach(b => b.classList.toggle('is-on', b === th));
@@ -259,6 +274,7 @@ function wire() {
     if (z) z.classList.toggle('is-zoom');
   });
   main.addEventListener('change', e => {
+    if (e.target.matches('[data-sel]')) return goTo(+e.target.value, '[data-sel]');
     if (e.target.matches('[data-qin]')) {
       const v = Math.min(99, Math.max(1, parseInt(e.target.value, 10) || 1));
       e.target.value = v;
