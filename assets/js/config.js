@@ -40,6 +40,11 @@ window.MC_CONFIG = {
     { id: 'installment', name: 'განვადება', note: 'პირობებს მენეჯერი შეგითანხმებთ' }
   ],
 
+  /* The order of brands in the catalogue: the brand filter lists them in this order and the recommended sort shows
+     their products in it, brand by brand (owner's choice, 2026-11-25). Brands not named here follow, the one with the
+     most products first. Names as on the site, any case.                                                          */
+  brandOrder: ['Beretta', 'Riello', 'Warmhaus', 'Tiemme', 'Emtas', 'Cordivari', 'Ecoradco'],
+
   /* Customer accounts (account.html: sign-in with the phone number and an SMS code). false = hidden everywhere
      (header, footer, phone menu, checkout, chat) and account.html says so: the launch has no SMS provider yet
      (owner's choice, 2026-11-24). true once api/config.php has the SMS gateway.                               */
