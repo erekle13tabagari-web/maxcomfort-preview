@@ -1996,10 +1996,29 @@ html[data-look="window"]{--xease:cubic-bezier(.65,0,.35,1);--xout:cubic-bezier(.
 a.drawer__note{display:block;color:var(--muted);text-decoration:none}
 
 /* A sale (Black Friday, owner's choice 2026-11-25): the sale price in red with the regular one crossed out after it,
-   the discount as a red tag on the card's photo and beside the price on the product page, with the last day */
+   a small black "Black Friday" sign on the card's photo and beside the price on the product page (no percentages) */
 .price--sale{color:var(--red)}
 .price__was{margin-left:8px;font-size:.62em;font-weight:500;color:var(--muted);text-decoration:line-through;text-decoration-thickness:1px;letter-spacing:0}
-.tag--sale{background:var(--red);color:#fff}
+.tag--bf{background:#161313;color:#fff;letter-spacing:.06em;box-shadow:inset 0 0 0 1px rgba(255,255,255,.16)}
+.tag--bf em{font-style:normal;color:#FF3B3F;margin-left:.32em}
 .pinfo__sale{display:flex;align-items:center;gap:10px;font-size:13px;line-height:1.4;color:var(--ink)}
 .pinfo__sale b{color:var(--red)}
 .card .price__was{margin-left:6px}
+
+/* The Black Friday window (core.js salePop): the posters' look, black with BLACK in white and FRIDAY in red, the last day
+   in a red pill; once a day while the sale runs. Phones: the words only, no photo. */
+.bfpop{width:min(860px,100%);display:grid;grid-template-columns:1.25fr .75fr;align-items:end;gap:8px;padding:44px 40px 40px;background:#161313;color:#fff;border-radius:28px;overflow:hidden}
+.bfpop .modal__x{color:#fff;background:rgba(255,255,255,.08)}
+.bfpop .modal__x:hover{background:rgba(255,255,255,.16)}
+.bfpop__k{margin:0;font-size:12.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.72)}
+.bfpop__t{margin:8px 0 16px;font-size:clamp(46px,8.2vw,92px);line-height:.9;font-weight:700;letter-spacing:-.01em;text-transform:uppercase;color:#fff}
+.bfpop__t span{display:block}
+.bfpop__t span + span{color:#E32226}
+.bfpop__pill{display:inline-block;padding:7px 16px;border-radius:999px;background:#E32226;color:#fff;font-size:14px;font-weight:700;letter-spacing:.02em}
+.bfpop__lead{margin:16px 0 26px;max-width:36ch;color:rgba(255,255,255,.82);font-size:15px;line-height:1.5}
+.bfpop__img{justify-self:end;max-height:min(380px,52vh);width:auto;max-width:100%;filter:drop-shadow(0 24px 30px rgba(0,0,0,.45))}
+@media (max-width:640px){
+  .bfpop{grid-template-columns:1fr;padding:34px 24px 28px;border-radius:22px}
+  .bfpop__img{display:none}
+  .bfpop__go{width:100%}
+}

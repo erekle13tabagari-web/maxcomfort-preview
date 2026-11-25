@@ -1,4 +1,4 @@
-import { boot, $, $$, esc, bi, ui, arrow, card, num, money, crumbs, search, groupLead, lineKey, openLayer, closeLayers, params, C } from './core.js';
+import { boot, $, $$, esc, bi, ui, arrow, card, num, money, crumbs, search, groupLead, lineKey, openLayer, closeLayers, params, saleNow, saleUntil, C } from './core.js';
 
 const PAGE = 24;
 const SKIP = new Set(['კოდი', 'მოდელი', 'დასახელება', 'მწარმოებელი', 'ზომები', 'ზომა', 'ტიპი', 'უზრუნველყოფილია', 'გაბარიტები', 'კავშირის დიამეტრი', 'კავშირების დიამეტრი']);
@@ -14,7 +14,7 @@ function readState(q = params()) {
     c: q.get('c') || '', s: q.get('s') || '', q: q.get('q') || '',
     b: list('b'), t: list('t'), color: list('color'), specs,
     min: q.get('min') ? +q.get('min') : null, max: q.get('max') ? +q.get('max') : null,
-    stock: q.get('stock') === '1', sort: q.get('sort') || 'pop'
+    stock: q.get('stock') === '1', sale: q.get('sale') === '1', sort: q.get('sort') || 'pop'
   };
 }
 function writeState(push) {
@@ -27,6 +27,7 @@ function writeState(push) {
   if (st.min != null) q.set('min', st.min);
   if (st.max != null) q.set('max', st.max);
   if (st.stock) q.set('stock', '1');
+  if (st.sale) q.set('sale', '1');   // the Black Friday window's link: only the products on sale
   if (st.sort !== 'pop') q.set('sort', st.sort);
   const url = 'catalog.html' + (q.toString() ? '?' + q : '');
   history[push ? 'pushState' : 'replaceState'](null, '', url);
@@ -40,6 +41,7 @@ function scope() {
   let list = st.q ? hits.flatMap(p => p.series ? db.series.get(p.series) : p.group ? db.groups.get(p.group) : [p]) : db.products;
   if (st.c) list = list.filter(p => p.cat === st.c);
   if (st.s) list = list.filter(p => p.sub === st.s);
+  if (st.sale) list = list.filter(p => p.sale && p.was);
   return list;
 }
 const specVal = (p, k) => p.spec[k];
@@ -77,13 +79,27 @@ const brandPos = id => {
   return i === undefined ? order.length : i;
 };
 const brandCmp = counts => (a, b) => brandPos(a) - brandPos(b) || (counts.get(b) || 0) - (counts.get(a) || 0) || String(a).localeCompare(String(b));
+/* the recommended order (owner's choice, 2026-11-25): kind by kind in the menu's order (a category's subcategories;
+   across categories theirs: boilers, burners, radiators ... then cooling, ventilation, water with its expansion tanks),
+   a kind's main products before its accessories and parts, and inside that the owner's brand order */
+let kindRank = null;
+const kindPos = p => {
+  if (!kindRank) {
+    kindRank = new Map();
+    let i = 0;
+    db.categories.forEach(c => c.subs.forEach(s => kindRank.set(c.id + '/' + s.id, i++)));
+  }
+  const r = kindRank.get(p.cat + '/' + p.sub);
+  return r === undefined ? 1e6 : r;
+};
+const accessory = p => (/აქსესუარ|ნაწილ/.test(p.type || '') ? 1 : 0);
 
 function sorted(list, sc = list) {
   const score = p => (p.src[0] && /\/(mc|lib)-/.test(p.src[0]) ? 2 : 0) + (p.energy ? 1 : 0) + (p.stock ? 1 : 0) + (p.group || p.series ? 1 : 0) + (p.price != null ? 1 : 0);
   const byPrice = dir => (a, b) => (a.price == null) - (b.price == null) || dir * ((a.price || 0) - (b.price || 0));
   const brands = brandCmp(count(sc, p => p.brand));
   const cmp = {
-    pop: (a, b) => brands(a.brand || '', b.brand || '') || score(b) - score(a) || (b.price || 0) - (a.price || 0),
+    pop: (a, b) => kindPos(a) - kindPos(b) || accessory(a) - accessory(b) || brands(a.brand || '', b.brand || '') || score(b) - score(a) || (b.price || 0) - (a.price || 0),
     'price-asc': byPrice(1), 'price-desc': byPrice(-1),
     name: (a, b) => a.title.localeCompare(b.title, 'ka')
   }[st.sort] || (() => 0);
@@ -160,22 +176,24 @@ const SYS = { heating: 'heat', cooling: 'cool', ventilation: 'vent', ducts: 'ven
 let headKey = '';
 function head() {
   const cat = db.cats.get(st.c), sub = db.subs.get(st.s), brand = st.b.length === 1 ? db.brandsById.get(st.b[0]) : null;
-  const title = st.q ? `ძიება: „${st.q}“` : sub ? sub.name : cat ? cat.name : brand ? brand.name : 'კატალოგი';
+  const sale = st.sale ? saleNow(db) : null;
+  const title = st.q ? `ძიება: „${st.q}“` : sale && !cat ? sale.name : sub ? sub.name : cat ? cat.name : brand ? brand.name : 'კატალოგი';
   document.title = title + ' · მაქს კომფორტი';
-  const key = [st.c, st.s, st.q, brand && brand.id].join('|');
+  const key = [st.c, st.s, st.q, brand && brand.id, st.sale].join('|');
   if (key === headKey) return;   // filters change the grid, not the top
   headKey = key;
-  const trail = [['კატალოგი', (cat || st.q || brand) ? 'catalog.html' : null]];
+  const trail = [['კატალოგი', (cat || st.q || brand || sale) ? 'catalog.html' : null]];
+  if (sale && !cat) trail.push([sale.name, null]);
   if (cat) trail.push([cat.name, sub ? 'catalog.html?c=' + cat.id : null]);
   if (sub) trail.push([sub.name, null]);
   if (st.q) trail.push(['ძიება', null]);
   $('[data-crumbs]').innerHTML = crumbs(trail);
   // a brand's page: its text from the admin panel (brands)
   const about = brand && !cat && !st.q ? ((C.cms || {}).brands || []).find(b => b && b.id === brand.id) : null;
-  const lead = about ? about.text || '' : '';
+  const lead = about ? about.text || '' : sale && !cat ? 'ფასდაკლება ' + saleUntil(sale.until) + '. ფასები უკვე შემცირებულია.' : '';
   $('#main').dataset.sys = cat ? SYS[cat.id] || 'blue' : 'blue';
   const pill = (on, href, icon, name, count, cls) => `<a class="${[cls, on && 'is-on'].filter(Boolean).join(' ')}" href="${href}" data-nav>${bi(icon)}${esc(name)} <small>${count}</small></a>`;
-  const nav = cat
+  const nav = sale && !cat ? '' : cat
     ? pill(!st.s, 'catalog.html?c=' + cat.id, cat.icon, 'ყველა', cat.count) + cat.subs.filter(s => s.count).map(s => pill(st.s === s.id, `catalog.html?c=${cat.id}&s=${s.id}`, s.icon, s.name, s.count)).join('')
     : !st.q && !brand
       ? pill(true, 'catalog.html', 'sys-home', 'ყველა', db.categories.reduce((n, c) => n + c.count, 0)) + db.categories.filter(c => c.count > 0).map(c => pill(false, 'catalog.html?c=' + c.id, c.icon, c.name, c.count, 'sys--' + (SYS[c.id] || 'blue'))).join('')

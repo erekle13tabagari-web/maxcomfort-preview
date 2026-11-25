@@ -244,7 +244,8 @@ export function energyTag(cls, kind, top) {
 export const energyTags = p => (p.energy ? Object.keys(EKINDS).filter(k => p.energy[k]).map(k => [k, p.energy[k], k === 'h' && p.cat !== 'cooling' ? 'A++' : ETOP[k]]) : []);
 /* A sale (api.js applies it while it runs): the discount in whole percent ("−15%", '' when not on sale) and its
    last day in words ("10 დეკემბრის ჩათვლით"). */
-export const saleOff = p => (p.was > p.price ? '−' + Math.round((1 - p.price / p.was) * 100) + '%' : '');
+/* owner's choice 2026-11-25: no percentages, the price speaks; a small sign with the sale's name ("Black Friday") */
+export const saleTag = p => (p.sale && p.was ? `<span class="tag tag--bf">${esc(p.sale.name || 'ფასდაკლება').replace(/(friday)/i, '<em>$1</em>')}</span>` : '');
 const MONTHS_OF = ['იანვრის', 'თებერვლის', 'მარტის', 'აპრილის', 'მაისის', 'ივნისის', 'ივლისის', 'აგვისტოს', 'სექტემბრის', 'ოქტომბრის', 'ნოემბრის', 'დეკემბრის'];
 export const saleUntil = d => { const [, m, day] = String(d || '').split('-').map(Number); return m && day ? `${day} ${MONTHS_OF[m - 1]} ჩათვლით` : ''; };
 
@@ -313,7 +314,7 @@ export function card(db, p, { cls = '', eager = false } = {}) {
       <img class="card__img card__img--1 ${two ? 'has-2' : ''}" src="${p.src[0] || ''}" alt="" ${eager ? '' : 'loading="lazy"'} decoding="async">
       ${two ? `<img class="card__img card__img--2" src="${p.src[1]}" alt="" loading="lazy" decoding="async">` : ''}
     </a>
-    <div class="card__tags">${saleOff(p) ? `<span class="tag tag--sale" title="${esc((p.sale && p.sale.name) || '')}">${saleOff(p)}</span>` : ''}${e}${p.stock === false ? '<span class="tag">შეკვეთით</span>' : ''}</div>
+    <div class="card__tags">${saleTag(p)}${e}${p.stock === false ? '<span class="tag">შეკვეთით</span>' : ''}</div>
     <div class="card__acts">
       <button class="cact ${fav ? 'is-on' : ''}" data-fav="${p.id}" aria-label="რჩეულებში" title="რჩეულებში">${ui('heart')}</button>
       <button class="cact ${cmp ? 'is-on' : ''}" data-cmp="${p.id}" aria-label="შედარება" title="შედარება">${ui('cmp')}</button>
@@ -457,9 +458,35 @@ function footer(db) {
 </footer>`;
 }
 
+/* the running sale (api.js keeps a product's sale only until its last day): its name and last day, or null */
+export const saleNow = db => { const p = db.products.find(x => x.sale && x.was); return p ? { name: p.sale.name || 'ფასდაკლება', until: p.sale.until } : null; };
+
+/* Black Friday (owner's choice, 2026-11-25): a window in the posters' style when someone comes to the site, once a day
+   while the sale runs; not on the checkout, account, legal or admin pages */
+function salePop(db) {
+  const s = saleNow(db);
+  if (!s) return '';
+  const [a, b] = s.name.split(/\s+(?=\S+$)/);
+  return `<div class="modal modal--bf" id="bf" role="dialog" aria-modal="true" aria-labelledby="bf-h"><div class="modal__scrim" data-close></div>
+<div class="modal__box bfpop"><button class="iconbtn modal__x" data-close aria-label="დახურვა">${ui('close')}</button>
+  <div class="bfpop__text"><p class="bfpop__k">სპეციალური შეთავაზებები</p>
+    <h2 class="bfpop__t" id="bf-h">${b ? `<span>${esc(a)}</span><span>${esc(b)}</span>` : `<span>${esc(s.name)}</span>`}</h2>
+    <p><span class="bfpop__pill">${esc(saleUntil(s.until))}</span></p>
+    <p class="bfpop__lead">ფასდაკლებები გათბობის სისტემებზე: ქვაბები, რადიატორები, საშრობები და ვენტილები.</p>
+    <a class="btn btn--red bfpop__go" href="catalog.html?sale=1">ნახეთ ფასდაკლებები ${arrow()}</a></div>
+  <img class="bfpop__img" src="assets/img/hero/heat-mynute-nb.webp" alt="" loading="lazy">
+</div></div>`;
+}
+function salePopOnce(db) {
+  if (!saleNow(db) || !$('#bf') || /(checkout|account|admin|privacy|consent|marketing)\.html/.test(location.pathname) || params().get('sale') === '1') return;
+  const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Tbilisi' });
+  try { if (localStorage.getItem('mc.bf') === today) return; localStorage.setItem('mc.bf', today); } catch (e) { /* no storage: show it */ }
+  setTimeout(() => { if (!document.querySelector('.modal.is-open,.drawer.is-open')) openLayer($('#bf')); }, 1200);
+}
+
 function overlays(db) {
   const topics = ['კონსულტაცია სისტემის შერჩევაზე', 'მონტაჟი', 'სერვისი და გარანტია', 'კითხვა პროდუქტზე', 'შეკვეთის სტატუსი', 'შეკვეთა ტელეფონით'];
-  return `
+  return `${salePop(db)}
 <div class="scrim" data-close></div>
 <aside class="drawer" id="cart" aria-label="კალათა"><div class="drawer__head"><h2>კალათა <span data-count-text="cart"></span></h2><button class="iconbtn" data-close aria-label="დახურვა">${ui('close')}</button></div><div class="drawer__body" data-cart-body></div><div class="drawer__foot" data-cart-foot></div></aside>
 <aside class="drawer" id="fav" aria-label="რჩეულები"><div class="drawer__head"><h2>რჩეულები <span data-count-text="fav"></span></h2><button class="iconbtn" data-close aria-label="დახურვა">${ui('close')}</button></div><div class="drawer__body" data-fav-body></div></aside>
@@ -905,6 +932,7 @@ export async function boot(page = {}) {
   addEventListener('mc:cmp', () => { renderCounts(); renderCmpBar(db); syncToggles(); });
   all();
   reveal();
+  salePopOnce(db);
   // the page draws its own parts after boot; the preview reports its texts once they are drawn
   setTimeout(setupPreview, 0);
   return db;
