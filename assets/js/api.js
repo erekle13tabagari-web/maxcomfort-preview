@@ -308,6 +308,9 @@ function reviewOn() {
   } catch (e) { return /[?&]review=1/.test(location.search); }
 }
 
+/** Today in Tbilisi as YYYY-MM-DD, the way a sale's last day is written. */
+const tbilisiDay = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Tbilisi' });
+
 function index(data) {
   const review = reviewOn();
   data.products = data.products.filter(p => !p.dup && (review || !p.review));
@@ -325,6 +328,15 @@ function index(data) {
     p.subName = sub ? sub.name : '';
     p.catName = cat ? cat.name : '';
     p.spec = Object.fromEntries(p.specs);
+    // a sale (api/catalog-sync.php, sale.json): its price while it runs, the regular one crossed out (was); after its
+    // last day in Tbilisi the regular price again, even before the catalog is built anew (the server does the same)
+    if (p.sale) {
+      if (p.sale.until >= tbilisiDay() && p.sale.price > 0) {
+        p.was = p.sale.was || p.price;
+        p.price = p.sale.price;
+        if (!(p.was > p.price)) p.was = null;
+      } else delete p.sale;
+    }
     p.q = norm([p.title, p.name, p.sku, p.brandName, p.brand, p.subName, p.catName, p.type, p.line].join(' '));
     byId.set(p.id, p);
     if (p.group) (groups.get(p.group) || groups.set(p.group, []).get(p.group)).push(p);

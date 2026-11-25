@@ -1,4 +1,4 @@
-import { boot, $, $$, esc, bi, ui, arrow, card, num, money, crumbs, priceHTML, energyTag, energyTags, EKINDS, store, callback, openLayer, params, buyable, askLabel, C } from './core.js';
+import { boot, $, $$, esc, bi, ui, arrow, card, num, money, crumbs, priceHTML, saleOff, saleUntil, energyTag, energyTags, EKINDS, store, callback, openLayer, params, buyable, askLabel, C } from './core.js';
 import { sizeKind } from './api.js';
 
 let db, p;
@@ -107,7 +107,7 @@ function info() {
     <div class="pinfo__brand">${brand ? `<a href="catalog.html?b=${brand.id}" aria-label="${esc(brand.name)}">${logo}</a>` : logo}${p.sku ? `<span>კოდი ${esc(p.sku)}</span>` : ''}</div>
     <div>${p.line ? `<div class="pinfo__line">${esc(p.line)}</div>` : ''}<h1>${esc(p.title)}</h1></div>
     <div class="pinfo__meta">${p.stock == null ? '' : `<span class="stock ${p.stock ? '' : 'stock--out'}">${p.stock ? 'მარაგშია' : 'შეკვეთით'}</span>`}<a href="catalog.html?c=${p.cat}&s=${p.sub}">${esc(p.subName)}</a>${p.type ? `<span>${esc(p.type)}</span>` : ''}</div>
-    <div class="pinfo__price"><div><small>ფასი</small>${priceHTML(p, 'price--lg')}</div></div>
+    <div class="pinfo__price"><div><small>ფასი</small>${priceHTML(p, 'price--lg')}</div>${p.sale && p.was ? `<div class="pinfo__sale"><span class="tag tag--sale">${saleOff(p)}</span><span><b>${esc(p.sale.name || 'ფასდაკლება')}</b> · ${saleUntil(p.sale.until)}${p.sale.note ? `<br>${esc(p.sale.note)}` : ''}</span></div>` : ''}</div>
     ${options()}
     <div class="buy">${buy}
       <button class="iconbtn ${fav ? 'is-on' : ''}" data-fav="${p.id}" aria-label="რჩეულებში" title="რჩეულებში">${ui('heart')}</button>
@@ -167,7 +167,7 @@ function ld() {
     '@context': 'https://schema.org', '@type': 'Product', name: p.title, sku: p.sku,
     brand: p.brandName ? { '@type': 'Brand', name: p.brandName } : undefined,
     image: p.src.map(s => new URL(s, location.href).href), category: p.catName + ' / ' + p.subName,
-    offers: p.price != null ? { '@type': 'Offer', price: p.price, priceCurrency: 'GEL', availability: p.stock == null ? undefined : 'https://schema.org/' + (p.stock ? 'InStock' : 'BackOrder'), url: location.href } : undefined
+    offers: p.price != null ? { '@type': 'Offer', price: p.price, priceCurrency: 'GEL', priceValidUntil: p.sale ? p.sale.until : undefined, availability: p.stock == null ? undefined : 'https://schema.org/' + (p.stock ? 'InStock' : 'BackOrder'), url: location.href } : undefined
   };
   let s = $('#ld');
   if (!s) { s = document.createElement('script'); s.type = 'application/ld+json'; s.id = 'ld'; document.head.appendChild(s); }

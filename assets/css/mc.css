@@ -1994,3 +1994,12 @@ html[data-look="window"]{--xease:cubic-bezier(.65,0,.35,1);--xout:cubic-bezier(.
 .pinfo__paused{margin-top:-4px}
 .drawer__paused{margin-bottom:12px;text-align:left}
 a.drawer__note{display:block;color:var(--muted);text-decoration:none}
+
+/* A sale (Black Friday, owner's choice 2026-11-25): the sale price in red with the regular one crossed out after it,
+   the discount as a red tag on the card's photo and beside the price on the product page, with the last day */
+.price--sale{color:var(--red)}
+.price__was{margin-left:8px;font-size:.62em;font-weight:500;color:var(--muted);text-decoration:line-through;text-decoration-thickness:1px;letter-spacing:0}
+.tag--sale{background:var(--red);color:#fff}
+.pinfo__sale{display:flex;align-items:center;gap:10px;font-size:13px;line-height:1.4;color:var(--ink)}
+.pinfo__sale b{color:var(--red)}
+.card .price__was{margin-left:6px}

@@ -242,8 +242,15 @@ export function energyTag(cls, kind, top) {
 }
 /** [kind, class, top of its scale] for each class a product has, in label order (space heaters run A++ to G). */
 export const energyTags = p => (p.energy ? Object.keys(EKINDS).filter(k => p.energy[k]).map(k => [k, p.energy[k], k === 'h' && p.cat !== 'cooling' ? 'A++' : ETOP[k]]) : []);
+/* A sale (api.js applies it while it runs): the discount in whole percent ("−15%", '' when not on sale) and its
+   last day in words ("10 დეკემბრის ჩათვლით"). */
+export const saleOff = p => (p.was > p.price ? '−' + Math.round((1 - p.price / p.was) * 100) + '%' : '');
+const MONTHS_OF = ['იანვრის', 'თებერვლის', 'მარტის', 'აპრილის', 'მაისის', 'ივნისის', 'ივლისის', 'აგვისტოს', 'სექტემბრის', 'ოქტომბრის', 'ნოემბრის', 'დეკემბრის'];
+export const saleUntil = d => { const [, m, day] = String(d || '').split('-').map(Number); return m && day ? `${day} ${MONTHS_OF[m - 1]} ჩათვლით` : ''; };
+
 export function priceHTML(p, cls = '') {
   if (p.price == null) return `<span class="price price--req ${cls}">ფასი მოთხოვნით</span>`;
+  if (p.was > p.price) return `<span class="price price--sale num ${cls}">${money(p.price)}<s class="price__was">${money(p.was)}</s></span>`;
   return `<span class="price num ${cls}">${money(p.price)}</span>`;
 }
 export function keySpecs(p, n = 2) {
@@ -306,7 +313,7 @@ export function card(db, p, { cls = '', eager = false } = {}) {
       <img class="card__img card__img--1 ${two ? 'has-2' : ''}" src="${p.src[0] || ''}" alt="" ${eager ? '' : 'loading="lazy"'} decoding="async">
       ${two ? `<img class="card__img card__img--2" src="${p.src[1]}" alt="" loading="lazy" decoding="async">` : ''}
     </a>
-    <div class="card__tags">${e}${p.stock === false ? '<span class="tag">შეკვეთით</span>' : ''}</div>
+    <div class="card__tags">${saleOff(p) ? `<span class="tag tag--sale" title="${esc((p.sale && p.sale.name) || '')}">${saleOff(p)}</span>` : ''}${e}${p.stock === false ? '<span class="tag">შეკვეთით</span>' : ''}</div>
     <div class="card__acts">
       <button class="cact ${fav ? 'is-on' : ''}" data-fav="${p.id}" aria-label="რჩეულებში" title="რჩეულებში">${ui('heart')}</button>
       <button class="cact ${cmp ? 'is-on' : ''}" data-cmp="${p.id}" aria-label="შედარება" title="შედარება">${ui('cmp')}</button>
