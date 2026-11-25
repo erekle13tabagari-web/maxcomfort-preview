@@ -468,6 +468,16 @@ function salePop(db) {
   const s = saleNow(db);
   if (!s) return '';
   const [a, b] = s.name.split(/\s+(?=\S+$)/);
+  // the sale's products on a white panel, as on the posters: one of each brand and kind, in the owner's brand order
+  // (config.js brandOrder: Beretta, Riello, Warmhaus, Tiemme, Emtas ...), at most four, each with its sale price and a
+  // link to its page
+  const order = (C.brandOrder || []).map(x => String(x).toUpperCase());
+  const rank = p => { const i = order.indexOf(String(p.brand || '').toUpperCase()); return i < 0 ? order.length : i; };
+  const picks = [], kinds = new Set();
+  db.products.filter(p => p.sale && p.was && p.src && p.src[0]).sort((x, y) => rank(x) - rank(y)).forEach(p => {
+    const k = (p.brand || '') + '/' + p.sub;
+    if (picks.length < 4 && !kinds.has(k)) { kinds.add(k); picks.push(p); }
+  });
   return `<div class="modal modal--bf" id="bf" role="dialog" aria-modal="true" aria-labelledby="bf-h"><div class="modal__scrim" data-close></div>
 <div class="modal__box bfpop"><button class="iconbtn modal__x" data-close aria-label="დახურვა">${ui('close')}</button>
   <div class="bfpop__text"><p class="bfpop__k">სპეციალური შეთავაზებები</p>
@@ -475,7 +485,8 @@ function salePop(db) {
     <p><span class="bfpop__pill">${esc(saleUntil(s.until))}</span></p>
     <p class="bfpop__lead">ფასდაკლებები გათბობის სისტემებზე: ქვაბები, რადიატორები, საშრობები და ვენტილები.</p>
     <a class="btn btn--red bfpop__go" href="catalog.html?sale=1">ნახეთ ფასდაკლებები ${arrow()}</a></div>
-  <img class="bfpop__img" src="assets/img/hero/heat-mynute-nb.webp" alt="" loading="lazy">
+  ${picks.length ? `<div class="bfpop__grid">${picks.map(p => `<a class="bfpop__item" href="${p.url}"><img src="${esc(p.src[0])}" alt="${esc(p.title)}" loading="lazy"><small>${esc(p.brandName || '')}</small><b>${money(p.price)}</b><s>${money(p.was)}</s></a>`).join('')}</div>`
+    : '<img class="bfpop__img" src="assets/img/hero/heat-mynute-nb.webp" alt="" loading="lazy">'}
 </div></div>`;
 }
 function salePopShow(db) {
