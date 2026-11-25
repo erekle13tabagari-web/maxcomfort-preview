@@ -275,6 +275,22 @@ ul,ol{padding:0;list-style:none}
 .mega__feat small{display:block;margin-top:12px;color:var(--steel);font-size:12px;letter-spacing:.1em;text-transform:uppercase;font-weight:600}
 .mega__feat b{display:block;color:var(--ink);font-weight:600;line-height:1.35;margin-top:4px}
 .mega__feat .price{margin-top:8px}
+/* the sale's tile (core.js megaSale): the pop-up's poster look in small, a sale product on a white tile */
+.mega__sale{display:grid;grid-template-columns:minmax(0,1fr) 84px;grid-template-areas:"k k" "t i" "p p" "g g";column-gap:12px;align-items:start;padding:20px 20px 16px;border-radius:var(--r);background:#161313;color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.mega__sk{grid-area:k;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.7)}
+.mega__st{grid-area:t;align-self:center;margin:10px 0 14px;font-size:clamp(28px,calc(2.2vw + 2px),40px);line-height:.9;font-weight:700;text-transform:uppercase;letter-spacing:-.01em;color:#fff}
+.mega__st span{display:block}
+.mega__st span + span{color:#E32226}
+.mega__sp{grid-area:p;justify-self:start;padding:5px 12px;border-radius:999px;background:#E32226;font-size:12.5px;font-weight:700}
+.mega__si{grid-area:i;align-self:center;background:#fff;border-radius:12px;padding:6px}
+.mega__si img{display:block;width:100%;aspect-ratio:1;object-fit:contain;mix-blend-mode:multiply;transition:transform .4s var(--ease)}
+.mega__sale:hover .mega__si img{transform:scale(1.05)}
+.mega__sg{grid-area:g;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,.14);font-size:13.5px;font-weight:600}
+.mega__sg .arr{width:18px;height:18px;flex:none;--ic:#fff;transition:transform .2s var(--ease)}
+.mega__sale:hover .mega__sg .arr{transform:translateX(3px)}
+@media (max-width:1320px) and (min-width:1181px){.mega__sale{grid-template-columns:minmax(0,1fr);grid-template-areas:"k" "t" "p" "g"}.mega__si{display:none}}
+.mnav__sale{display:flex;align-items:center;gap:10px}
+.mnav__sale small{margin-left:auto;color:var(--steel);font-size:13px;font-weight:500}
 /* the phone menu: the same five, products opening the four systems */
 .mnav > a.fgroup{padding:14px 0}
 .mnav > .fgroup:first-child{padding-top:14px}
@@ -1230,6 +1246,11 @@ body:has(.buybar.is-on){--fab-lift:82px}
   .nav__link{padding:0 10px;font-size:12px}
   .mega .wrap{grid-template-columns:repeat(4,minmax(0,1fr));gap:24px}
   .mega__feat{display:none}
+  /* the sale tile becomes a strip under the four systems */
+  .mega__sale{grid-column:1/-1;display:flex;align-items:center;gap:18px;padding:14px 20px}
+  .mega__sk,.mega__si{display:none}
+  .mega__st{margin:0;font-size:26px;display:flex;gap:.3em}
+  .mega__sg{margin:0 0 0 auto;padding:0;border:0}
   .hdr__cta{display:none}
   .grid{--cols:3}
   .ftr__top{grid-template-columns:repeat(2,minmax(0,1fr)) 1fr;row-gap:44px}
@@ -2010,15 +2031,18 @@ a.drawer__note{display:block;color:var(--muted);text-decoration:none}
 /* The Black Friday window (core.js salePop): the posters' look, black with BLACK in white and FRIDAY in red, the last day
    in a red pill, the sale's products on a white panel filling the right half; on every arrival while the sale runs.
    Phones: the words, then the products in a row of four. */
-.bfpop{width:min(1120px,100%);display:grid;grid-template-columns:1fr 1.08fr;align-items:end;gap:32px;padding:44px 40px 40px;background:#161313;color:#fff;border-radius:28px;overflow:hidden}
+.bfpop{width:min(1120px,100%);display:grid;grid-template-columns:1fr 1.08fr;align-items:stretch;gap:32px;padding:44px 40px 40px;background:#161313;color:#fff;border-radius:28px;overflow:hidden}
 .bfpop .modal__x{color:#fff;background:rgba(255,255,255,.08)}
 .bfpop .modal__x:hover{background:rgba(255,255,255,.16)}
 .bfpop__k{margin:0;font-size:12.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.72)}
-.bfpop__t{margin:8px 0 16px;font-size:clamp(46px,8.2vw,92px);line-height:.9;font-weight:700;letter-spacing:-.01em;text-transform:uppercase;color:#fff}
+/* the words fill their half: the title from the top, the last day, the text and the button down to the panel's foot */
+.bfpop__text{display:flex;flex-direction:column;min-width:0;padding-top:4px}
+.bfpop__go{align-self:flex-start}
+.bfpop__t{margin:10px 0 auto;padding-bottom:20px;font-size:clamp(46px,9vw,132px);line-height:.9;font-weight:700;letter-spacing:-.01em;text-transform:uppercase;color:#fff}
 .bfpop__t span{display:block}
 .bfpop__t span + span{color:#E32226}
-.bfpop__pill{display:inline-block;padding:7px 16px;border-radius:999px;background:#E32226;color:#fff;font-size:14px;font-weight:700;letter-spacing:.02em}
-.bfpop__lead{margin:16px 0 26px;max-width:36ch;color:rgba(255,255,255,.82);font-size:15px;line-height:1.5}
+.bfpop__pill{display:inline-block;padding:10px 22px;border-radius:999px;background:#E32226;color:#fff;font-size:19px;font-weight:700;letter-spacing:.02em}
+.bfpop__lead{margin:16px 0 26px;max-width:36ch;color:rgba(255,255,255,.82);font-size:16px;line-height:1.5}
 .bfpop__img{justify-self:end;max-height:min(380px,52vh);width:auto;max-width:100%;filter:drop-shadow(0 24px 30px rgba(0,0,0,.45))}
 .bfpop__grid{align-self:stretch;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px;border-radius:24px;background:#fff}
 .bfpop__item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:8px 8px 12px;border-radius:14px;color:#211D1D;text-align:center;transition:background .2s}
@@ -2037,4 +2061,5 @@ a.drawer__note{display:block;color:var(--muted);text-decoration:none}
   .bfpop__item b{font-size:13px}
   .bfpop__item s{font-size:10px}
   .bfpop__go{width:100%}
+  .bfpop__pill{padding:8px 18px;font-size:16px}
 }

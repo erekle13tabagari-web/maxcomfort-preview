@@ -412,8 +412,25 @@ function megaProducts(db) {
       <a class="mega__head" href="catalog.html?c=${c.id}">${bi(c.icon)}<span><b>${esc(c.name)}</b><small>${c.count} პროდუქტი</small></span></a>
       <ul class="mega__list">${c.subs.filter(s => s.count).map(s => `<li><a href="catalog.html?c=${c.id}&s=${s.id}">${esc(s.name)}</a></li>`).join('')}</ul>
     </div>`).join('')}
-    ${f ? `<a class="mega__feat cut" href="${f.url}"><span class="mega__img"><img src="${f.src[0]}" alt="" loading="lazy"></span><small>${esc(f.brandName)}</small><b>${esc(f.title)}</b><div>${priceHTML(f)}</div></a>` : ''}
+    ${megaSale(db) || (f ? `<a class="mega__feat cut" href="${f.url}"><span class="mega__img"><img src="${f.src[0]}" alt="" loading="lazy"></span><small>${esc(f.brandName)}</small><b>${esc(f.title)}</b><div>${priceHTML(f)}</div></a>` : '')}
   </div></div>`;
+}
+/* while a sale runs, the menu's right-hand tile is the sale page (owner's choice, 2026-11-25), in the pop-up's
+   poster look; the main product comes back when it ends */
+function megaSale(db) {
+  const s = saleNow(db);
+  if (!s) return '';
+  const n = db.products.filter(p => p.sale && p.was).length, [pick] = salePicks(db, 1), [a, b] = s.name.split(/\s+(?=\S+$)/);
+  return `<a class="mega__sale" href="catalog.html?sale=1"><span class="mega__sk">სპეციალური შეთავაზებები</span>
+    <b class="mega__st">${b ? `<span>${esc(a)}</span><span>${esc(b)}</span>` : `<span>${esc(s.name)}</span>`}</b>
+    <span class="mega__sp">${esc(saleUntil(s.until))}</span>
+    ${pick ? `<span class="mega__si"><img src="${esc(pick.src[0])}" alt="" loading="lazy"></span>` : ''}
+    <span class="mega__sg">${n} პროდუქტი ფასდაკლებით ${arrow()}</span></a>`;
+}
+/* the sale in the phone menu: a line of its own above the menu */
+function mnavSale(db) {
+  const s = saleNow(db);
+  return s ? `<a class="fgroup fgroup__t mnav__sale" href="catalog.html?sale=1"><span class="tag tag--bf">${esc(s.name).replace(/(friday)/i, '<em>$1</em>')}</span><span>ფასდაკლებები</span><small>${db.products.filter(p => p.sale && p.was).length}</small></a>` : '';
 }
 function header(db, page) {
   const here = document.body.dataset.page || '';
@@ -459,6 +476,18 @@ function footer(db) {
 }
 
 /* the running sale (api.js keeps a product's sale only until its last day): its name and last day, or null */
+/* the sale's products with a photo, one of each brand and kind, in the owner's brand order (config.js brandOrder:
+   Beretta, Riello, Warmhaus, Tiemme, Emtas ...): the pop-up's panel and the menu's sale tile */
+function salePicks(db, max) {
+  const order = (C.brandOrder || []).map(x => String(x).toUpperCase());
+  const rank = p => { const i = order.indexOf(String(p.brand || '').toUpperCase()); return i < 0 ? order.length : i; };
+  const picks = [], kinds = new Set();
+  db.products.filter(p => p.sale && p.was && p.src && p.src[0]).sort((x, y) => rank(x) - rank(y)).forEach(p => {
+    const k = (p.brand || '') + '/' + p.sub;
+    if (picks.length < max && !kinds.has(k)) { kinds.add(k); picks.push(p); }
+  });
+  return picks;
+}
 export const saleNow = db => { const p = db.products.find(x => x.sale && x.was); return p ? { name: p.sale.name || 'ფასდაკლება', until: p.sale.until } : null; };
 
 /* Black Friday (owner's choice, 2026-11-25): a window in the posters' style while the sale runs, every time someone
@@ -471,13 +500,7 @@ function salePop(db) {
   // the sale's products on a white panel, as on the posters: one of each brand and kind, in the owner's brand order
   // (config.js brandOrder: Beretta, Riello, Warmhaus, Tiemme, Emtas ...), at most four, each with its sale price and a
   // link to its page
-  const order = (C.brandOrder || []).map(x => String(x).toUpperCase());
-  const rank = p => { const i = order.indexOf(String(p.brand || '').toUpperCase()); return i < 0 ? order.length : i; };
-  const picks = [], kinds = new Set();
-  db.products.filter(p => p.sale && p.was && p.src && p.src[0]).sort((x, y) => rank(x) - rank(y)).forEach(p => {
-    const k = (p.brand || '') + '/' + p.sub;
-    if (picks.length < 4 && !kinds.has(k)) { kinds.add(k); picks.push(p); }
-  });
+  const picks = salePicks(db, 4);
   return `<div class="modal modal--bf" id="bf" role="dialog" aria-modal="true" aria-labelledby="bf-h"><div class="modal__scrim" data-close></div>
 <div class="modal__box bfpop"><button class="iconbtn modal__x" data-close aria-label="დახურვა">${ui('close')}</button>
   <div class="bfpop__text"><p class="bfpop__k">სპეციალური შეთავაზებები</p>
@@ -505,7 +528,7 @@ function overlays(db) {
 <aside class="drawer" id="cart" aria-label="კალათა"><div class="drawer__head"><h2>კალათა <span data-count-text="cart"></span></h2><button class="iconbtn" data-close aria-label="დახურვა">${ui('close')}</button></div><div class="drawer__body" data-cart-body></div><div class="drawer__foot" data-cart-foot></div></aside>
 <aside class="drawer" id="fav" aria-label="რჩეულები"><div class="drawer__head"><h2>რჩეულები <span data-count-text="fav"></span></h2><button class="iconbtn" data-close aria-label="დახურვა">${ui('close')}</button></div><div class="drawer__body" data-fav-body></div></aside>
 <aside class="drawer drawer--left" id="menu" aria-label="მენიუ"><div class="drawer__head"><img class="only-l" src="assets/brand/logo/mc-logo-primary.svg" alt="Max Comfort" width="96" height="49"><img class="only-d" src="assets/brand/logo/mc-logo-white.svg" alt="Max Comfort" width="96" height="49"><span class="drawer__acts">${THEME_BTN()}<button class="iconbtn" data-close aria-label="დახურვა">${ui('close')}</button></span></div>
-  <div class="drawer__body"><nav class="mnav" aria-label="მთავარი მენიუ">${NAV.map(n => n.mega
+  <div class="drawer__body"><nav class="mnav" aria-label="მთავარი მენიუ">${mnavSale(db)}${NAV.map(n => n.mega
       ? `<details class="fgroup"><summary class="fgroup__t" style="list-style:none;cursor:pointer">${n.t}${ui('down')}</summary><div class="fgroup__b mnav__cats">${db.categories.filter(inMenu).map(c => `<details class="mnav__cat"><summary>${bi(c.icon)}<span>${esc(c.name)}</span>${ui('down')}</summary><div class="mnav__subs"><a class="fopt" href="catalog.html?c=${c.id}"><b>ყველა</b><small>${c.count}</small></a>${c.subs.filter(s => s.count).map(s => `<a class="fopt" href="catalog.html?c=${c.id}&s=${s.id}"><span>${esc(s.name)}</span><small>${s.count}</small></a>`).join('')}</div></details>`).join('')}</div></details>`
       : `<a class="fgroup fgroup__t" href="${n.href}">${n.t}</a>`).join('')}</nav>
     <div class="fgroup"><div class="fgroup__b" style="margin-top:0">${C.accounts === false ? '' : `<a class="fopt fopt--acc" href="account.html">${ui('user')}<span data-acc-text>${account.hint() ? 'ჩემი ანგარიში' : 'შესვლა / რეგისტრაცია'}</span></a>`}<a class="fopt" href="media.html">მედია ცენტრი</a><a class="fopt" href="compare.html">შედარება</a></div></div>
