@@ -164,7 +164,7 @@ function related() {
 
 function ld() {
   const data = {
-    '@context': 'https://schema.org', '@type': 'Product', name: p.title, sku: p.sku,
+    '@context': 'https://schema.org', '@type': 'Product', name: p.title, sku: p.sku || undefined,
     brand: p.brandName ? { '@type': 'Brand', name: p.brandName } : undefined,
     image: p.src.map(s => new URL(s, location.href).href), category: p.catName + ' / ' + p.subName,
     offers: p.price != null ? { '@type': 'Offer', price: p.price, priceCurrency: 'GEL', priceValidUntil: p.sale ? p.sale.until : undefined, availability: p.stock == null ? undefined : 'https://schema.org/' + (p.stock ? 'InStock' : 'BackOrder'), url: location.href } : undefined

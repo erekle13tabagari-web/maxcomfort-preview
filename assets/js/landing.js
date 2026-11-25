@@ -8,10 +8,11 @@ import { boot, $, $$, esc, bi, arrow, priceHTML, lineKey } from './core.js';
    accessories, shown in the category's order of kinds.                                                  */
 const HERO = 'assets/img/hero/';
 const PANES = [
-  { id: 'heating', cls: 'heat', img: 'heat-mynute', w: 36 },        // w: the photo's width, % of a pane at rest
-  { id: 'cooling', cls: 'cool', img: 'cool-ln-white', w: 56 },
-  { id: 'ventilation', cls: 'vent', img: 'vent-hr300', w: 34, extra: 'ducts' },
-  { id: 'water', cls: 'water', img: 'water-7200v', w: 17 }
+  // the owner's photos (Desktop "web photoes", 2026-11-25): MYNUTE boiler, Mitsubishi LN red, Vortice recovery unit, tank
+  { id: 'heating', cls: 'heat', img: 'heat-mynute-nb', w: 36 },     // w: the photo's width, % of a pane at rest
+  { id: 'cooling', cls: 'cool', img: 'cool-ln-red-nb', w: 56 },
+  { id: 'ventilation', cls: 'vent', img: 'vent-vortice-nb', w: 30, extra: 'ducts' },
+  { id: 'water', cls: 'water', img: 'water-tank-nb', w: 18 }
 ];
 const SHOW = 8, STEP = 2200;   // ms per card; with --xt in mc.css (HOME PAGE · WINDOW) the pace of the opening
 const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
