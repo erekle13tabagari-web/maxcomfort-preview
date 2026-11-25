@@ -1820,6 +1820,20 @@ html[data-look="window"]{--xease:cubic-bezier(.65,0,.35,1);--xout:cubic-bezier(.
 .idirs__list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px}
 #register .ccard{background:var(--surface-2)}
 #register .cards3{align-content:start;flex:none}
+/* legal pages (privacy.html, consent.html, marketing.html: adapted from biomi.ge, 2026-11-25) and the forms' consents */
+.legal{padding-bottom:clamp(40px,6vw,80px)}
+.legal__nav{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 30px}
+.legal__nav a{padding:9px 16px;border-radius:999px;background:var(--surface-2);font-size:14px;font-weight:600;color:var(--ink);transition:background .2s}
+.legal__nav a:hover{background:var(--blue-10)}
+.legal__nav a[aria-current]{background:var(--blue);color:#fff}
+.legal__doc{max-width:80ch;font-size:16.5px}
+.legal__doc h2{font-size:22px}
+.legal__doc li + li{margin-top:8px}
+.legal__doc mark{padding:0 4px;border-radius:4px;background:var(--red-10);color:var(--red)}
+.legal__date{margin-top:40px;font-size:14px;color:var(--muted)}
+.consents{display:flex;flex-direction:column;gap:10px}
+.consents .check{font-size:13.5px}
+.ftr__legal{display:flex;flex-wrap:wrap;gap:6px 18px}
 
 /* media: the tabs as pills; the posts as tiles like the shop's cards; the questions as tiles */
 .pill{border-radius:999px}

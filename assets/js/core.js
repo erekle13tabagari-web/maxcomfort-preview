@@ -68,6 +68,14 @@ export const buyable = p => p.price != null;
 /** The request button's words when it cannot go into the cart. */
 export const askLabel = p => (p.price != null ? 'შეკვეთის მოთხოვნა' : 'ფასის მოთხოვნა');
 
+/* The consents every form asks (owner's choice, 2026-11-25, as on biomi.ge): processing of the request's data, required
+   (consent.html), and marketing messages, optional (marketing.html). api/lead.php writes both into the Bitrix lead with
+   the date and time. The static forms (about, career, installer) carry the same markup. */
+export const CONSENTS = `<div class="consents">
+  <label class="check"><input type="checkbox" name="consent" required><span>ვეთანხმები, რომ კომპანიამ ჩემი მოთხოვნის განხილვისა და ჩემთან უკუკავშირის მიზნით დაამუშაოს ჩემი მონაცემები (<a href="consent.html" target="_blank">თანხმობა</a>).</span></label>
+  <label class="check"><input type="checkbox" name="marketing"><span>მსურს მივიღო სარეკლამო და საინფორმაციო შეტყობინებები SMS-ით ან ელ. ფოსტით (<a href="marketing.html" target="_blank">პირობები</a>). არასავალდებულო.</span></label>
+</div>`;
+
 /** Contacts, showrooms, delivery and payment from the site content, over config.js. */
 function applyContent(cms) {
   C.cms = cms && typeof cms === 'object' ? cms : {};
@@ -438,7 +446,7 @@ function footer(db) {
       <li>${ui('mail')}<span><b><a href="mailto:${C.email}">${esc(C.email)}</a></b></span></li>
       <li>${ui('pin')}<span><b>${esc(C.showrooms[0].address)}</b>${C.showrooms.length} შოურუმი თბილისში</span></li></ul></div>
   </div>
-  <div class="ftr__bot"><div class="wrap"><span>© ${new Date().getFullYear()} ${esc(C.company)}. ყველა უფლება დაცულია.</span><span><a href="about.html#privacy">კონფიდენციალურობა</a></span></div></div>
+  <div class="ftr__bot"><div class="wrap"><span>© ${new Date().getFullYear()} ${esc(C.company)}. ყველა უფლება დაცულია.</span><span class="ftr__legal"><a href="privacy.html">კონფიდენციალურობა</a><a href="consent.html">მონაცემთა დამუშავება</a><a href="marketing.html">მარკეტინგული თანხმობა</a></span></div></div>
 </footer>`;
 }
 
@@ -467,6 +475,7 @@ function overlays(db) {
     <label class="field"><span>სახელი <em>*</em></span><input class="input" name="name" autocomplete="name" required><small class="field__err">შეიყვანეთ სახელი</small></label>
     <label class="field"><span>ტელეფონი <em>*</em></span><input class="input" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="5XX XX XX XX" required><small class="field__err">შეიყვანეთ სწორი ნომერი</small></label>
     <label class="field"><span>თემა</span><select class="select" name="topic">${topics.map(t => `<option>${t}</option>`).join('')}</select></label>
+    ${CONSENTS}
     <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
     <button class="btn btn--red btn--block" type="submit">გამოძახება ${arrow()}</button>
   </form></div>

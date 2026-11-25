@@ -1,4 +1,4 @@
-import { boot, $, $$, esc, bi, ui, arrow, money, crumbs, store, validate, toast, C } from './core.js';
+import { boot, $, $$, esc, bi, ui, arrow, money, crumbs, store, validate, toast, C, CONSENTS } from './core.js';
 import { order, lead, account, phoneE164 } from './api.js';
 
 let db;
@@ -20,7 +20,7 @@ function enquiryForm() {
   <div class="costep"><div class="costep__h"><span class="costep__n">2</span><h2>კომენტარი</h2></div>
     <div class="form-stack">
       <label class="field"><span>რა გაინტერესებთ</span><textarea class="textarea" name="comment" placeholder="მაგ.: მჭირდება მონტაჟი, მიწოდება ქუთაისში, სასურველი დრო ზარისთვის"></textarea></label>
-      <label class="check"><input type="checkbox" name="consent" required><span>ვეთანხმები <a href="about.html#privacy" target="_blank">პერსონალური მონაცემების დამუშავებას</a> მოთხოვნაზე პასუხისთვის.</span></label>
+      ${CONSENTS}
       <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
     </div></div>`;
 }
@@ -70,7 +70,7 @@ function form() {
     <div class="form-stack">
       ${radio('payment', pay, 'cash')}
       <label class="field"><span>კომენტარი</span><textarea class="textarea" name="comment" placeholder="მაგ.: სასურველი დრო ზარისთვის, სართული, ლიფტი"></textarea></label>
-      <label class="check"><input type="checkbox" name="consent" required><span>ვეთანხმები <a href="about.html#privacy" target="_blank">პერსონალური მონაცემების დამუშავებას</a> შეკვეთის შესასრულებლად.</span></label>
+      ${CONSENTS}
       <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
     </div></div>`;
 }
@@ -162,7 +162,7 @@ async function submit(e) {
     const data = { enquiry: true, customer: { name: v.name.trim(), phone: v.phone.trim() },
       items: lines.map(({ p, qty }) => ({ id: p.id, name: p.title, qty })) };
     try {
-      const res = await lead({ kind: 'enquiry', name: v.name.trim(), phone: v.phone.trim(), email: v.email.trim(), message: v.comment || '',
+      const res = await lead({ kind: 'enquiry', name: v.name.trim(), phone: v.phone.trim(), email: v.email.trim(), message: v.comment || '', consent: !!v.consent, marketing: !!v.marketing,
         topic: 'შეკვეთის მოთხოვნა კალათიდან', items: lines.map(({ p, qty }) => ({ id: p.id, qty })) });
       store.clear();
       done(res, data);
@@ -180,6 +180,7 @@ async function submit(e) {
     installation: v.install === 'yes',
     payment: v.payment,
     comment: v.comment || '',
+    consent: !!v.consent, marketing: !!v.marketing,
     items: store.lines(db).map(({ p, qty }) => ({ id: p.id, sku: p.sku, name: p.name, color: p.color ? p.color.name : '', price: p.price, qty })),
     total: store.total(db)
   };

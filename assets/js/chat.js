@@ -3,7 +3,7 @@
    products by name, and hands the conversation to a manager as a callback request in Bitrix (name and
    phone number required). No AI service behind it: fixed answers plus the catalog, so it also works
    in the preview. */
-import { $, C, esc, ui, priceHTML, search, validate, validPhone } from './core.js';
+import { $, C, esc, ui, priceHTML, search, validate, validPhone, CONSENTS } from './core.js';
 import { lead, account, norm, phoneNice } from './api.js';
 
 const KEY = 'mc.chat';
@@ -112,6 +112,7 @@ const ACTS = {
       <form class="cform form-stack" data-chat-form novalidate>
         <label class="field"><span>სახელი <em>*</em></span><input class="input" name="name" autocomplete="name" required value="${esc(saved.name || '')}"><small class="field__err">შეიყვანეთ სახელი</small></label>
         <label class="field"><span>ტელეფონი <em>*</em></span><input class="input" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="5XX XX XX XX" required value="${esc(saved.phone || '')}"><small class="field__err">ნომერი სავალდებულოა</small></label>
+        ${CONSENTS}
         <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
         <button class="btn btn--red btn--block btn--sm" type="submit">დამირეკეთ</button>
       </form>`, [['მენიუ', 'menu']]);
@@ -155,7 +156,7 @@ async function send(f) {
   const name = f.name.value.trim(), phone = f.phone.value.trim();
   const log = msgs.filter(m => m.who !== 'form').map(m => (m.who === 'me' ? 'კლიენტი: ' : 'ასისტენტი: ') + m.html.replace(/<form[\s\S]*<\/form>/, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()).slice(-16).join('\n');
   try {
-    await lead({ kind: 'chat', name, phone, topic: 'ჩატი საიტზე', message: log });
+    await lead({ kind: 'chat', name, phone, topic: 'ჩატი საიტზე', message: log, consent: f.consent.checked, marketing: f.marketing.checked });
     try { localStorage.setItem('mc.contact', JSON.stringify({ ...JSON.parse(localStorage.getItem('mc.contact') || '{}'), name, phone })); } catch (e) { /* */ }
     const last = msgs.findLast(m => m.html.includes('data-chat-form'));
     if (last) { last.html = `<p>მოთხოვნა გაიგზავნა.</p>`; delete last.chips; }

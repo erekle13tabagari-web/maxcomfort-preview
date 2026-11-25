@@ -1397,6 +1397,12 @@ function pxShown(k, e = PX.data.layer[k] || {}) {
 }
 const pxPlaceName = (cat, sub) => { const c = PX.cats.find(x => x.id === cat), s = c && c.subs.find(x => x.id === sub); return c && s ? c.name + ' › ' + s.name : ''; };
 const pxMoney = v => (v == null ? tr('<span class="muted">ფასი არ აქვს</span>') : money(v));
+/** Where the price is from, once Balance's prices are imported (api/catalog-sync.php, mc_price), with Bitrix's beside it. */
+const pxPriceFrom = b => {
+  const bx = b.bitrixPrice > 0 && b.bitrixPrice !== b.price ? ' · Bitrix: ' + money(b.bitrixPrice) : '';
+  if (b.priceFrom === 'balance') return ` <small class="muted">${tr('Balance-დან')}${bx}</small>`;
+  return b.price == null && bx ? ` <small class="muted">${tr('Balance-ის ფაილში არ არის')}${bx}</small>` : '';
+};
 
 async function pxLoad(box) {
   try {
@@ -1570,7 +1576,7 @@ function pxEditor(k) {
           ${b.sku ? `<dt>${tr('კოდი')}</dt><dd>${esc(b.sku)}</dd>` : ''}
           ${b.section ? `<dt>${tr('განყოფილება')}</dt><dd>${esc(b.section)}</dd>` : ''}
           ${b.brand ? `<dt>${tr('ბრენდი')}</dt><dd>${esc(b.brand)}</dd>` : ''}
-          <dt>${tr('ფასი')}</dt><dd>${pxMoney(b.price)}</dd>
+          <dt>${tr('ფასი')}</dt><dd>${pxMoney(b.price)}${pxPriceFrom(b)}</dd>
           <dt>${tr('მარაგი')}</dt><dd>${b.stock ? tr('მარაგშია') : tr('შეკვეთით')}</dd>
         </dl>
         ${b.desc ? `<p class="pxbx__desc">${esc(b.desc.slice(0, 400))}${b.desc.length > 400 ? '…' : ''}</p>` : ''}
