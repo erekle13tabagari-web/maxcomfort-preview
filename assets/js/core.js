@@ -461,8 +461,9 @@ function footer(db) {
 /* the running sale (api.js keeps a product's sale only until its last day): its name and last day, or null */
 export const saleNow = db => { const p = db.products.find(x => x.sale && x.was); return p ? { name: p.sale.name || 'ფასდაკლება', until: p.sale.until } : null; };
 
-/* Black Friday (owner's choice, 2026-11-25): a window in the posters' style when someone comes to the site, once a day
-   while the sale runs; not on the checkout, account, legal or admin pages */
+/* Black Friday (owner's choice, 2026-11-25): a window in the posters' style while the sale runs, every time someone
+   comes to the site and on every refresh (not on a click from one of the site's pages to another); not on the
+   checkout, account, legal or admin pages, nor on the sale page its button opens */
 function salePop(db) {
   const s = saleNow(db);
   if (!s) return '';
@@ -477,10 +478,12 @@ function salePop(db) {
   <img class="bfpop__img" src="assets/img/hero/heat-mynute-nb.webp" alt="" loading="lazy">
 </div></div>`;
 }
-function salePopOnce(db) {
+function salePopShow(db) {
   if (!saleNow(db) || !$('#bf') || /(checkout|account|admin|privacy|consent|marketing)\.html/.test(location.pathname) || params().get('sale') === '1') return;
-  const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Tbilisi' });
-  try { if (localStorage.getItem('mc.bf') === today) return; localStorage.setItem('mc.bf', today); } catch (e) { /* no storage: show it */ }
+  const how = ((performance.getEntriesByType && performance.getEntriesByType('navigation')[0]) || {}).type;
+  let fromHere = false;
+  try { fromHere = !!document.referrer && new URL(document.referrer).host === location.host; } catch (e) { /* no referrer */ }
+  if (how !== 'reload' && fromHere) return;   // a click inside the site: no window
   setTimeout(() => { if (!document.querySelector('.modal.is-open,.drawer.is-open')) openLayer($('#bf')); }, 1200);
 }
 
@@ -932,7 +935,7 @@ export async function boot(page = {}) {
   addEventListener('mc:cmp', () => { renderCounts(); renderCmpBar(db); syncToggles(); });
   all();
   reveal();
-  salePopOnce(db);
+  salePopShow(db);
   // the page draws its own parts after boot; the preview reports its texts once they are drawn
   setTimeout(setupPreview, 0);
   return db;
