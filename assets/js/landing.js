@@ -1,4 +1,4 @@
-import { boot, $, $$, esc, bi, arrow, priceHTML, lineKey } from './core.js';
+import { boot, $, $$, esc, bi, arrow, priceHTML, lineKey, saleNow } from './core.js';
 
 /* Home page "Window" (index.html): the four systems fill the first screen.
    With a mouse, the pane under the pointer opens (the grid gives it the room) and its products take turns on
@@ -36,6 +36,10 @@ function paneHTML(db, P, i) {
   const c = db.cats.get(P.id), x = P.extra && db.cats.get(P.extra);
   const subs = c.subs.filter(s => s.count).map(s => `<a href="catalog.html?c=${P.id}&s=${s.id}">${esc(s.name)}</a>`).join('')
     + (x ? `<a href="catalog.html?c=${x.id}">${esc(x.name)}</a>` : '');
+  // while a sale runs, a Black Friday sticker beside the count of a system that has sale products (owner's choice,
+  // 2026-11-26: all of it is heating); it opens the sale page, the rest of the pane still opens the system
+  const s = saleNow(db), bf = s && db.products.some(p => p.cat === P.id && p.sale && p.was)
+    ? `<a class="xpane__bf bfsticker" href="catalog.html?sale=1" aria-label="${esc(s.name)}: ფასდაკლებები">${esc(s.name).replace(/\s*(friday)/i, '<em>$1</em>')}</a>` : '';
   const cards = deckOf(db, P.id).map((p, k) => `<a class="xcard" href="${esc(p.url)}" tabindex="-1" data-k="${k}">
       <span class="xcard__img"><img data-src="${esc(p.src[0])}" alt="" decoding="async"></span>
       <small>${esc(p.brandName || p.brand || '')}</small><b>${esc(p.title)}</b>${priceHTML(p)}</a>`).join('');
@@ -48,7 +52,7 @@ function paneHTML(db, P, i) {
         <h2 class="xpane__t">${esc(c.name)}</h2>
         <div class="xpane__body"><p class="xpane__lead">${esc(c.lead)}</p><div class="xpane__links">${subs}</div></div>
       </div>
-      <span class="xpane__count">${c.count} პროდუქტი ${arrow()}</span>
+      <span class="xpane__count">${c.count} პროდუქტი ${arrow()}${bf}</span>
       <img class="xpane__img" src="${HERO + P.img}.webp" alt="" style="--wn:${P.w}">
       <div class="xdeck" aria-hidden="true">${cards}</div>
     </div>

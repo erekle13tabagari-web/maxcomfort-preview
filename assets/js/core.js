@@ -243,11 +243,11 @@ export function energyTag(cls, kind, top) {
 /** [kind, class, top of its scale] for each class a product has, in label order (space heaters run A++ to G). */
 export const energyTags = p => (p.energy ? Object.keys(EKINDS).filter(k => p.energy[k]).map(k => [k, p.energy[k], k === 'h' && p.cat !== 'cooling' ? 'A++' : ETOP[k]]) : []);
 /* A sale (api.js applies it while it runs): the discount in whole percent ("−15%", '' when not on sale) and its
-   last day in words ("10 დეკემბრის ჩათვლით"). */
+   last day in words ("10 დეკემბრამდე", owner's wording 2026-11-26; the sale still runs through that day). */
 /* owner's choice 2026-11-25: no percentages, the price speaks; a small sign with the sale's name ("Black Friday") */
 export const saleTag = p => (p.sale && p.was ? `<span class="tag tag--bf">${esc(p.sale.name || 'ფასდაკლება').replace(/(friday)/i, '<em>$1</em>')}</span>` : '');
-const MONTHS_OF = ['იანვრის', 'თებერვლის', 'მარტის', 'აპრილის', 'მაისის', 'ივნისის', 'ივლისის', 'აგვისტოს', 'სექტემბრის', 'ოქტომბრის', 'ნოემბრის', 'დეკემბრის'];
-export const saleUntil = d => { const [, m, day] = String(d || '').split('-').map(Number); return m && day ? `${day} ${MONTHS_OF[m - 1]} ჩათვლით` : ''; };
+const MONTHS_TO = ['იანვრამდე', 'თებერვლამდე', 'მარტამდე', 'აპრილამდე', 'მაისამდე', 'ივნისამდე', 'ივლისამდე', 'აგვისტომდე', 'სექტემბრამდე', 'ოქტომბრამდე', 'ნოემბრამდე', 'დეკემბრამდე'];
+export const saleUntil = d => { const [, m, day] = String(d || '').split('-').map(Number); return m && day ? `${day} ${MONTHS_TO[m - 1]}` : ''; };
 
 export function priceHTML(p, cls = '') {
   if (p.price == null) return `<span class="price price--req ${cls}">ფასი მოთხოვნით</span>`;
@@ -407,16 +407,18 @@ const NAV = [
 function megaProducts(db) {
   const cats = db.categories.filter(inMenu);
   const f = db.byId.get(FEATURED.heating) || db.products.find(p => p.cat === 'heating');
-  return `<div class="mega"><div class="wrap mega__in">
+  const sale = megaSale(db);   // while a sale runs it comes first (owner's choice, 2026-11-26), in place of the main product
+  return `<div class="mega"><div class="wrap mega__in${sale ? ' mega__in--sale' : ''}">
+    ${sale}
     ${cats.map(c => `<div class="mega__cat">
       <a class="mega__head" href="catalog.html?c=${c.id}">${bi(c.icon)}<span><b>${esc(c.name)}</b><small>${c.count} პროდუქტი</small></span></a>
       <ul class="mega__list">${c.subs.filter(s => s.count).map(s => `<li><a href="catalog.html?c=${c.id}&s=${s.id}">${esc(s.name)}</a></li>`).join('')}</ul>
     </div>`).join('')}
-    ${megaSale(db) || (f ? `<a class="mega__feat cut" href="${f.url}"><span class="mega__img"><img src="${f.src[0]}" alt="" loading="lazy"></span><small>${esc(f.brandName)}</small><b>${esc(f.title)}</b><div>${priceHTML(f)}</div></a>` : '')}
+    ${sale ? '' : (f ? `<a class="mega__feat cut" href="${f.url}"><span class="mega__img"><img src="${f.src[0]}" alt="" loading="lazy"></span><small>${esc(f.brandName)}</small><b>${esc(f.title)}</b><div>${priceHTML(f)}</div></a>` : '')}
   </div></div>`;
 }
-/* while a sale runs, the menu's right-hand tile is the sale page (owner's choice, 2026-11-25), in the pop-up's
-   poster look; the main product comes back when it ends */
+/* while a sale runs, the menu's first tile is the sale page (owner's choices, 2026-11-25 and 26), in the pop-up's
+   poster look and moving; the main product comes back, on the right, when it ends */
 function megaSale(db) {
   const s = saleNow(db);
   if (!s) return '';
@@ -431,7 +433,7 @@ function megaSale(db) {
    the eye and opens the sale page; a holder of no width at the end of the link carries it, so nothing moves */
 function navSale(db) {
   const s = saleNow(db);
-  return s ? `<span class="nav__bfwrap"><a class="nav__bf" href="catalog.html?sale=1" aria-label="${esc(s.name)}: ფასდაკლებები">${esc(s.name).replace(/\s*(friday)/i, '<em>$1</em>')}</a></span>` : '';
+  return s ? `<span class="nav__bfwrap"><a class="nav__bf bfsticker" href="catalog.html?sale=1" aria-label="${esc(s.name)}: ფასდაკლებები">${esc(s.name).replace(/\s*(friday)/i, '<em>$1</em>')}</a></span>` : '';
 }
 /* the sale in the phone menu: a line of its own above the menu */
 function mnavSale(db) {

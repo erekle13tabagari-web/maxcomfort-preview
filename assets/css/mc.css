@@ -247,14 +247,15 @@ ul,ol{padding:0;list-style:none}
 .nav__link[aria-current]{background:rgba(255,255,255,.16)}
 /* the Black Friday sticker on Products (core.js navSale): sways every few seconds with a shine, opens the sale page */
 .nav__bfwrap{position:relative;width:0;align-self:center}
-.nav__bf{position:absolute;right:-20px;bottom:10px;z-index:2;display:block;overflow:hidden;padding:4px 9px;border-radius:999px;background:#161313;color:#fff;font-size:10px;line-height:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;box-shadow:0 0 0 1.5px #fff,0 6px 14px -4px rgba(0,0,0,.5);transform-origin:50% 100%;animation:bfsway 3.6s ease-in-out infinite;transition:background .2s}
-.nav__bf em{font-style:normal;color:#FF3B3F;margin-left:.32em;transition:color .2s}
-.nav__bf::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.5) 50%,transparent 65%);transform:translateX(-120%);animation:bfshine 3.6s ease-in-out infinite}
-.nav__bf:hover{background:#E32226;animation-play-state:paused}
-.nav__bf:hover em{color:#fff}
+.bfsticker{position:relative;display:inline-block;overflow:hidden;padding:4px 9px;border-radius:999px;background:#161313;color:#fff;font-size:10px;line-height:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;box-shadow:0 0 0 1.5px #fff,0 6px 14px -4px rgba(0,0,0,.5);transform-origin:50% 100%;animation:bfsway 3.6s ease-in-out infinite;transition:background .2s}
+.bfsticker em{font-style:normal;color:#FF3B3F;margin-left:.32em;transition:color .2s}
+.bfsticker::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.5) 50%,transparent 65%);transform:translateX(-120%);animation:bfshine 3.6s ease-in-out infinite}
+.bfsticker:hover{background:#E32226;animation-play-state:paused}
+.bfsticker:hover em{color:#fff}
+.nav__bf{position:absolute;right:-20px;bottom:10px;z-index:2;display:block}
 @keyframes bfsway{0%,60%,100%{transform:rotate(-5deg)}66%{transform:rotate(8deg) translateY(-2px)}72%{transform:rotate(-9deg) translateY(-2px)}78%{transform:rotate(5deg)}84%{transform:rotate(-7deg)}90%{transform:rotate(-4deg)}}
 @keyframes bfshine{0%,45%{transform:translateX(-120%)}65%,100%{transform:translateX(120%)}}
-@media (prefers-reduced-motion:reduce){.nav__bf,.nav__bf::after{animation:none}}
+@media (prefers-reduced-motion:reduce){.bfsticker,.bfsticker::after{animation:none}}
 .hdr__tools{display:flex;align-items:center;gap:4px}
 .hdr .iconbtn{color:#fff;border-radius:50%}
 .hdr .iconbtn:hover{background:rgba(255,255,255,.12)}
@@ -286,7 +287,22 @@ ul,ol{padding:0;list-style:none}
 .mega__feat b{display:block;color:var(--ink);font-weight:600;line-height:1.35;margin-top:4px}
 .mega__feat .price{margin-top:8px}
 /* the sale's tile (core.js megaSale): the pop-up's poster look in small, a sale product on a white tile */
-.mega__sale{display:grid;grid-template-columns:minmax(0,1fr) 84px;grid-template-areas:"k k" "t i" "p p" "g g";column-gap:12px;align-items:start;padding:20px 20px 16px;border-radius:var(--r);background:#161313;color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+/* first and wider while the sale runs; it slides in as the menu opens, a shine passes over it, FRIDAY glows, the
+   last day pulses, the product floats and the arrow nudges (owner's choice, 2026-11-26: more noticeable) */
+.mega .mega__in--sale{grid-template-columns:minmax(0,1.2fr) repeat(4,minmax(0,1fr))}
+.nav__item.is-open .mega__sale{animation:bfin .5s var(--ease) both}
+.mega__sale::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.18) 47%,rgba(255,255,255,.05) 53%,transparent 70%);transform:translateX(-120%);animation:bfshine 3.2s ease-in-out infinite}
+.mega__st span + span{animation:bfglow 1.8s ease-in-out infinite}
+.mega__sp{animation:bfpulse 1.8s ease-out infinite}
+.mega__si{animation:bffloat 3s ease-in-out infinite}
+.mega__sg .arr{animation:bfnudge 1.2s ease-in-out infinite}
+@keyframes bfin{from{opacity:0;transform:translateX(-18px) scale(.97)}}
+@keyframes bfglow{50%{text-shadow:0 0 16px rgba(255,59,63,.8),0 0 2px rgba(255,59,63,.6)}}
+@keyframes bfpulse{0%{box-shadow:0 0 0 0 rgba(227,34,38,.7)}70%,100%{box-shadow:0 0 0 12px rgba(227,34,38,0)}}
+@keyframes bffloat{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-6px) rotate(-2deg)}}
+@keyframes bfnudge{0%,100%{transform:translateX(0)}50%{transform:translateX(5px)}}
+@media (prefers-reduced-motion:reduce){.mega__sale,.mega__sale::after,.mega__st span,.mega__sp,.mega__si,.mega__sg .arr{animation:none!important}}
+.mega__sale{position:relative;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr) 84px;grid-template-areas:"k k" "t i" "p p" "g g";column-gap:12px;align-items:start;padding:20px 20px 16px;border-radius:var(--r);background:#161313;color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
 .mega__sk{grid-area:k;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.7)}
 .mega__st{grid-area:t;align-self:center;margin:10px 0 14px;font-size:clamp(28px,calc(2.2vw + 2px),40px);line-height:.9;font-weight:700;text-transform:uppercase;letter-spacing:-.01em;color:#fff}
 .mega__st span{display:block}
@@ -297,7 +313,6 @@ ul,ol{padding:0;list-style:none}
 .mega__sale:hover .mega__si img{transform:scale(1.05)}
 .mega__sg{grid-area:g;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,.14);font-size:13.5px;font-weight:600}
 .mega__sg .arr{width:18px;height:18px;flex:none;--ic:#fff;transition:transform .2s var(--ease)}
-.mega__sale:hover .mega__sg .arr{transform:translateX(3px)}
 @media (max-width:1320px) and (min-width:1181px){.mega__sale{grid-template-columns:minmax(0,1fr);grid-template-areas:"k" "t" "p" "g"}.mega__si{display:none}}
 .mnav__sale{display:flex;align-items:center;gap:10px}
 .mnav__sale small{margin-left:auto;color:var(--steel);font-size:13px;font-weight:500}
@@ -1719,8 +1734,10 @@ html[data-look="window"]{--xease:cubic-bezier(.65,0,.35,1);--xout:cubic-bezier(.
   transition:opacity calc(.45s * var(--xt)),transform calc(.6s * var(--xt)) var(--xout),visibility calc(.45s * var(--xt))}
 .xpane__links a{pointer-events:auto;position:relative;z-index:7;padding:7px 12px;border-radius:30px;background:var(--chip);color:#fff;font-size:12px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;transition:background .2s,transform .2s}
 .xpane__links a:hover{background:var(--chip-2);transform:translateY(-2px)}
-.xpane__count{position:absolute;z-index:2;left:var(--pad);bottom:var(--pad);display:inline-flex;align-items:center;gap:10px;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
+.xpane__count{position:absolute;z-index:6;pointer-events:none;left:var(--pad);bottom:var(--pad);display:inline-flex;align-items:center;gap:10px;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
 .xpane__count .arr{width:18px;height:18px;--ic:currentColor;transition:transform .3s var(--xout)}
+/* the Black Friday sticker beside the count (landing.js): above the pane's link, which takes every other click */
+.xpane__bf{z-index:7;pointer-events:auto;margin-left:4px;padding:5px 11px;font-size:11px;letter-spacing:.05em}
 .xpane:hover .xpane__count .arr{transform:translateX(6px)}
 /* the photo at rest: the system's product, cut out, in the corner, its size set by the screen; it leaves when the pane opens */
 .xpane__img{position:absolute;right:-8px;bottom:-12px;width:calc(var(--wn,40) * (50vw - 18px) / 100);max-height:calc((100svh - 120px) * .43);object-fit:contain;object-position:right bottom;
