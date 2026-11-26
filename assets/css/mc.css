@@ -245,6 +245,16 @@ ul,ol{padding:0;list-style:none}
 .nav__link{display:flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:999px;font-size:13px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#fff;white-space:nowrap;transition:background .2s}
 .nav__item:hover .nav__link,.nav__item.is-open .nav__link{background:rgba(255,255,255,.12)}
 .nav__link[aria-current]{background:rgba(255,255,255,.16)}
+/* the Black Friday sticker on Products (core.js navSale): sways every few seconds with a shine, opens the sale page */
+.nav__bfwrap{position:relative;width:0;align-self:center}
+.nav__bf{position:absolute;right:-20px;bottom:10px;z-index:2;display:block;overflow:hidden;padding:4px 9px;border-radius:999px;background:#161313;color:#fff;font-size:10px;line-height:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;box-shadow:0 0 0 1.5px #fff,0 6px 14px -4px rgba(0,0,0,.5);transform-origin:50% 100%;animation:bfsway 3.6s ease-in-out infinite;transition:background .2s}
+.nav__bf em{font-style:normal;color:#FF3B3F;margin-left:.32em;transition:color .2s}
+.nav__bf::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.5) 50%,transparent 65%);transform:translateX(-120%);animation:bfshine 3.6s ease-in-out infinite}
+.nav__bf:hover{background:#E32226;animation-play-state:paused}
+.nav__bf:hover em{color:#fff}
+@keyframes bfsway{0%,60%,100%{transform:rotate(-5deg)}66%{transform:rotate(8deg) translateY(-2px)}72%{transform:rotate(-9deg) translateY(-2px)}78%{transform:rotate(5deg)}84%{transform:rotate(-7deg)}90%{transform:rotate(-4deg)}}
+@keyframes bfshine{0%,45%{transform:translateX(-120%)}65%,100%{transform:translateX(120%)}}
+@media (prefers-reduced-motion:reduce){.nav__bf,.nav__bf::after{animation:none}}
 .hdr__tools{display:flex;align-items:center;gap:4px}
 .hdr .iconbtn{color:#fff;border-radius:50%}
 .hdr .iconbtn:hover{background:rgba(255,255,255,.12)}
@@ -1619,7 +1629,8 @@ body:has(.buybar.is-on){--fab-lift:82px}
 .qty--lg button{width:44px;height:44px}
 .buy .iconbtn{border-radius:50%}
 /* the "not sure?" box: a pane in the product's system colour */
-.pinfo .consult{gap:18px;padding:20px 22px;border-radius:22px;background:var(--pane,var(--blue));color:#fff}
+/* the consult band and the open tab are MC Blue on every product page (owner's choice, 2026-11-26), not the system's colour */
+.pinfo .consult{gap:18px;padding:20px 22px;border-radius:22px;background:var(--blue);color:#fff;--ink2:rgba(255,255,255,.86)}
 .pinfo .consult .ic{--ic:#fff;--ic-accent:#fff;width:44px;height:44px}
 .pinfo .consult p{color:var(--ink2)}
 .pinfo .consult b{color:#fff}
@@ -1632,7 +1643,7 @@ body:has(.buybar.is-on){--fab-lift:82px}
 .info__nav .wrap{gap:8px}
 .tab,.tab:first-child{height:46px;padding:0 20px;margin:0;border:0;border-radius:999px;background:var(--surface-2);color:var(--muted)}
 .tab:hover{color:var(--ink);background:var(--blue-10)}
-.tab.is-on{background:var(--sys,var(--accent));color:#fff}
+.tab.is-on{background:var(--accent);color:#fff}
 .tabpanel{margin-top:12px;padding:clamp(20px,2.6vw,36px);border-radius:24px;background:var(--surface-2)}
 .tabpanel .doc,.tabpanel .assure div{background:var(--surface)}
 .tabpanel .doc:hover{background:var(--blue-10)}
@@ -2036,7 +2047,9 @@ a.drawer__note{display:block;color:var(--muted);text-decoration:none}
 .bfpop .modal__x:hover{background:rgba(255,255,255,.16)}
 .bfpop__k{margin:0;font-size:12.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.72)}
 /* the words fill their half: the title from the top, the last day, the text and the button down to the panel's foot */
-.bfpop__text{display:flex;flex-direction:column;min-width:0;padding-top:4px}
+.bfpop__text{display:flex;flex-direction:column;min-width:0;padding-top:4px;color:inherit;text-decoration:none}   /* all of it opens the sale page */
+.bfpop__text:hover .bfpop__go{background:#C91D21}
+.bfpop__text:hover .bfpop__go .arr{transform:translateX(3px)}
 .bfpop__go{align-self:flex-start}
 .bfpop__t{margin:10px 0 auto;padding-bottom:20px;font-size:clamp(46px,9vw,132px);line-height:.9;font-weight:700;letter-spacing:-.01em;text-transform:uppercase;color:#fff}
 .bfpop__t span{display:block}

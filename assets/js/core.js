@@ -427,6 +427,12 @@ function megaSale(db) {
     ${pick ? `<span class="mega__si"><img src="${esc(pick.src[0])}" alt="" loading="lazy"></span>` : ''}
     <span class="mega__sg">${n} პროდუქტი ფასდაკლებით ${arrow()}</span></a>`;
 }
+/* while a sale runs, a Black Friday sticker on Products (owner's choice, 2026-11-26): it sways now and then to draw
+   the eye and opens the sale page; a holder of no width at the end of the link carries it, so nothing moves */
+function navSale(db) {
+  const s = saleNow(db);
+  return s ? `<span class="nav__bfwrap"><a class="nav__bf" href="catalog.html?sale=1" aria-label="${esc(s.name)}: ფასდაკლებები">${esc(s.name).replace(/\s*(friday)/i, '<em>$1</em>')}</a></span>` : '';
+}
 /* the sale in the phone menu: a line of its own above the menu */
 function mnavSale(db) {
   const s = saleNow(db);
@@ -436,7 +442,7 @@ function header(db, page) {
   const here = document.body.dataset.page || '';
   const nav = NAV.map(n => `<div class="nav__item${n.mega ? ' nav__item--mega' : ''}">
       <a class="nav__link" href="${n.href}"${n.on && n.on(here) ? ' aria-current="page"' : ''}>${n.t}${n.mega ? ui('down') : ''}</a>
-      ${n.mega ? megaProducts(db) : ''}
+      ${n.mega ? navSale(db) + megaProducts(db) : ''}
     </div>`).join('');
   // one blue tile (mc.css: header); the phone, hours and showrooms are in the footer and the phone menu
   return `
@@ -503,11 +509,11 @@ function salePop(db) {
   const picks = salePicks(db, 4);
   return `<div class="modal modal--bf" id="bf" role="dialog" aria-modal="true" aria-labelledby="bf-h"><div class="modal__scrim" data-close></div>
 <div class="modal__box bfpop"><button class="iconbtn modal__x" data-close aria-label="დახურვა">${ui('close')}</button>
-  <div class="bfpop__text"><p class="bfpop__k">სპეციალური შეთავაზებები</p>
+  <a class="bfpop__text" href="catalog.html?sale=1"><p class="bfpop__k">სპეციალური შეთავაზებები</p>
     <h2 class="bfpop__t" id="bf-h">${b ? `<span>${esc(a)}</span><span>${esc(b)}</span>` : `<span>${esc(s.name)}</span>`}</h2>
     <p><span class="bfpop__pill">${esc(saleUntil(s.until))}</span></p>
     <p class="bfpop__lead">ფასდაკლებები გათბობის სისტემებზე: ქვაბები, რადიატორები, საშრობები და ვენტილები.</p>
-    <a class="btn btn--red bfpop__go" href="catalog.html?sale=1">ნახეთ ფასდაკლებები ${arrow()}</a></div>
+    <span class="btn btn--red bfpop__go">ნახეთ ფასდაკლებები ${arrow()}</span></a>
   ${picks.length ? `<div class="bfpop__grid">${picks.map(p => `<a class="bfpop__item" href="${p.url}"><img src="${esc(p.src[0])}" alt="${esc(p.title)}" loading="lazy"><small>${esc(p.brandName || '')}</small><b>${money(p.price)}</b><s>${money(p.was)}</s></a>`).join('')}</div>`
     : '<img class="bfpop__img" src="assets/img/hero/heat-mynute-nb.webp" alt="" loading="lazy">'}
 </div></div>`;
