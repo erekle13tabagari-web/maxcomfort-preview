@@ -554,11 +554,9 @@ function textGroup(key) {
   return [GROUPS[g] || g, rest.map(x => PARTS[x] || (/^\d+$/.test(x) ? '#' + x : x)).join(' · ')];
 }
 R.texts = () => {
-  const tl = W('timeline');
   return `<div class="atabs">${TPAGES.map(([id, n]) => `<button class="atab ${S.page === id ? 'is-on' : ''}" data-act="tpage" data-page="${id}">${n}</button>`).join('')}</div>
   <div class="asplit">
     <div class="asplit__l"><p class="muted">${tr('დააჭირეთ ტექსტს მარჯვნივ, ან შეცვალეთ აქ. ცარიელი ველი საწყის ტექსტს აბრუნებს.')}</p><div data-tfields><p class="muted">${tr('გვერდი იტვირთება…')}</p></div>
-      ${S.page === 'about' ? `<section class="apanel"><h2 class="ah2">${tr('ისტორიის წლები')}</h2>${tl.map((x, i) => `<div class="arow"><div class="agrid agrid--yt">${field(tr('წელი'), `timeline|${i}.year`, x.year, { max: 20 })}${field(tr('ტექსტი'), `timeline|${i}.text`, x.text, { max: 400 })}</div>${itemActs('timeline|', i, tl.length)}</div>`).join('')}${addBtn('timeline|', tr('წლის დამატება'))}</section>` : ''}
     </div>
     <div class="asplit__r"><iframe class="aframe" title="${tr('გვერდის გადახედვა')}" data-frame></iframe></div>
   </div>`;

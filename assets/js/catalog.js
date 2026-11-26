@@ -93,13 +93,15 @@ const kindPos = p => {
   return r === undefined ? 1e6 : r;
 };
 const accessory = p => (/აქსესუარ|ნაწილ/.test(p.type || '') ? 1 : 0);
+/* the sale page (owner, 2026-11-26): inside a brand from the smallest to the biggest, by power (kW), else by size */
+const sizeOf = p => { const kw = parseFloat(String((p.spec || {})['სიმძლავრე, kW'] || '').replace(',', '.')); return kw > 0 ? kw : typeof p.sizeSort === 'number' ? p.sizeSort : 1e6; };
 
 function sorted(list, sc = list) {
   const score = p => (p.src[0] && /\/(mc|lib)-/.test(p.src[0]) ? 2 : 0) + (p.energy ? 1 : 0) + (p.stock ? 1 : 0) + (p.group || p.series ? 1 : 0) + (p.price != null ? 1 : 0);
   const byPrice = dir => (a, b) => (a.price == null) - (b.price == null) || dir * ((a.price || 0) - (b.price || 0));
   const brands = brandCmp(count(sc, p => p.brand));
   const cmp = {
-    pop: (a, b) => kindPos(a) - kindPos(b) || accessory(a) - accessory(b) || brands(a.brand || '', b.brand || '') || score(b) - score(a) || (b.price || 0) - (a.price || 0),
+    pop: (a, b) => kindPos(a) - kindPos(b) || accessory(a) - accessory(b) || brands(a.brand || '', b.brand || '') || (st.sale ? sizeOf(a) - sizeOf(b) : 0) || score(b) - score(a) || (b.price || 0) - (a.price || 0),
     'price-asc': byPrice(1), 'price-desc': byPrice(-1),
     name: (a, b) => a.title.localeCompare(b.title, 'ka')
   }[st.sort] || (() => 0);
@@ -239,7 +241,7 @@ function render(keepPage) {
     $('[data-more]').hidden = true;
     return;
   }
-  grid.innerHTML = results.slice(0, shown).map((p, i) => card(db, p, { eager: i < 8 })).join('');
+  grid.innerHTML = results.slice(0, shown).map((p, i) => card(db, p, { eager: i < 8, sale: !!st.sale })).join('');
   $$('.card', grid).forEach((c, i) => { c.classList.add('reveal-in'); c.style.animationDelay = Math.min(i, 12) * 30 + 'ms'; });
   more();
 }
@@ -255,7 +257,7 @@ function more() {
 function showMore() {
   const grid = $('[data-grid]'), from = shown;
   shown += PAGE;
-  grid.insertAdjacentHTML('beforeend', results.slice(from, shown).map(p => card(db, p)).join(''));
+  grid.insertAdjacentHTML('beforeend', results.slice(from, shown).map(p => card(db, p, { sale: !!st.sale })).join(''));
   $$('.card', grid).slice(from).forEach((c, i) => { c.classList.add('reveal-in'); c.style.animationDelay = Math.min(i, 12) * 30 + 'ms'; });
   more();
   writeShown();

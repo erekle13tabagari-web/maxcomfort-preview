@@ -23,7 +23,7 @@ window.MC_CONFIG = {
 
   // pickup points (checkout) and the contact page
   showrooms: [
-    { id: 'tsereteli', name: 'წერეთლის შოურუმი', address: 'ა. წერეთლის გამზ. 114', phone: '0322 477 555 (321)', email: 'beretta@maxcomfort.ge' },
+    { id: 'tsereteli', name: 'წერეთლის შოურუმი', address: 'ა. წერეთლის გამზ. 116', phone: '0322 477 555 (321)', email: 'beretta@maxcomfort.ge' },
     { id: 'agladze', name: 'ელიავას შოურუმი #1', address: 'რ. აგლაძის 7ა', phone: '0322 477 555 (313)', email: 'shop@maxcomfort.ge', hq: true },
     { id: 'kosmonavtebi', name: 'ელიავას შოურუმი #2', address: 'კოსმონავტების ქ. 21', phone: '0322 477 555 (312)', email: 'beretta1@maxcomfort.ge' }
   ],

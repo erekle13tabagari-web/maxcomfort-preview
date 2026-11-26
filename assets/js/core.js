@@ -270,8 +270,9 @@ export function keySpecs(p, n = 2) {
 }
 /** One card per model line (sizes) or colour group: what the listings collapse on. */
 export const lineKey = p => p.series || p.group || 'p' + p.id;
-/** A line of several sizes on a card: "5 ზომა · 150-315 მმ", and its lowest price. */
-export function lineInfo(db, p) {
+/** A line of several sizes on a card: "5 ზომა · 150-315 მმ", and the model with its lowest price (null when they all cost the same;
+   of equal prices the one on sale). On the sale page (saleOnly) only the line's models on sale count. */
+export function lineInfo(db, p, saleOnly = false) {
   const list = p.series && db.series.get(p.series);
   const sizes = list ? [...new Set(list.map(v => v.size))] : [];
   if (sizes.length < 2) return null;
@@ -282,9 +283,10 @@ export function lineInfo(db, p) {
   const lo = nums.reduce((x, m) => (!x || val(m) < val(x) ? m : x), null), hi = nums.reduce((x, m) => (!x || val(m) > val(x) ? m : x), null);
   const range = kind === 'მოდელი' ? sizes.slice(0, 3).join(', ') + (sizes.length > 3 ? '…' : '')
     : lo && hi ? (lo[1] === hi[1] ? `${lo[1]} ${lo[2]}` : `${lo[1]}-${hi[1]} ${lo[2]}`) : `${sizes[0]} - ${sizes[sizes.length - 1]}`;
-  const prices = list.map(v => v.price).filter(v => v != null);
+  const off = v => v.was > v.price, priced = list.filter(v => v.price != null && (!saleOnly || (v.sale && off(v))));
+  const low = priced.reduce((x, v) => (!x || v.price < x.price || (v.price === x.price && off(v) && !off(x)) ? v : x), null);
   const icon = { 'ზომა': 'spec-dimensions', 'სიმძლავრე': 'spec-power', 'მოცულობა': 'prd-cylinder', 'მოდელი': 'spec-code' }[kind];
-  return { icon, text: `${sizes.length} ${kind}${range ? ' · ' + range : ''}`, from: prices.length && new Set(prices).size > 1 ? Math.min(...prices) : null };
+  return { icon, text: `${sizes.length} ${kind}${range ? ' · ' + range : ''}`, from: new Set(priced.map(v => v.price)).size > 1 ? low : null };
 }
 /** The variant a listing shows for a colour group: in stock first, then the cheapest. */
 export function groupLead(db, p, color) {
@@ -300,15 +302,17 @@ export function swatches(db, p, cls = 'sw') {
 }
 
 /** Product card. The stage is the whole point: one soft neutral, the product, nothing else. */
-export function card(db, p, { cls = '', eager = false } = {}) {
+export function card(db, p, { cls = '', eager = false, sale = false } = {}) {
   const two = p.src[1] && p.src[1] !== p.src[0];
   const ek = energyTags(p)[0], e = ek ? energyTag(ek[1], ek[0], ek[2]) : '';
-  const li = lineInfo(db, p);
+  const li = lineInfo(db, p, sale);
   // a line shows its sizes instead of this one size's figures
   const specs = li ? `<span class="card__line">${bi(li.icon)}${esc(li.text)}</span>` : keySpecs(p).map(([i, t]) => `<span>${bi(i)}${esc(t)}</span>`).join('');
-  const price = li && li.from != null ? `<span class="price num">${money(li.from)}<small class="price__from">-დან</small></span>` : priceHTML(p);
+  // a line: its lowest price "-დან", in red with the regular price crossed out when that model is on sale (owner, 2026-11-26)
+  const f = li && li.from, fo = f && f.was > f.price;
+  const price = f ? `<span class="price num${fo ? ' price--sale' : ''}">${money(f.price)}<small class="price__from">-დან</small>${fo ? `<s class="price__was">${money(f.was)}</s>` : ''}</span>` : priceHTML(p);
   const fav = store.has('fav', p.id), cmp = store.has('cmp', p.id);
-  return `<article class="card ${cls}" data-id="${p.id}">
+  return `<article class="card ${cls}" data-id="${p.id}"${sale ? ' data-sale' : ''}>
   <div class="card__media">
     <a class="card__stage" href="${p.url}" tabindex="-1" aria-hidden="true">
       <img class="card__img card__img--1 ${two ? 'has-2' : ''}" src="${p.src[0] || ''}" alt="" ${eager ? '' : 'loading="lazy"'} decoding="async">
@@ -472,14 +476,14 @@ function footer(db) {
     <div class="ftr__brand"><img src="assets/brand/logo/mc-logo-white.svg" alt="Max Comfort" width="170" height="87">
       <p data-c="footer.about">${esc(t('footer.about', 'გათბობის, კონდიცირების, ვენტილაციისა და წყალმომარაგების სისტემები 2006 წლიდან. ინჟინრული კომფორტი. გარანტირებული სერვისი.'))}</p></div>
     <div><h4>კატალოგი</h4><ul>${db.categories.filter(inMenu).map(c => `<li><a href="catalog.html?c=${c.id}">${esc(c.name)}</a></li>`).join('')}</ul></div>
-    <div><h4>კომპანია</h4><ul><li><a href="about.html">ჩვენ შესახებ</a></li><li><a href="about.html#services">მომსახურება</a></li><li><a href="about.html#history">ისტორია</a></li><li><a href="media.html">მედია ცენტრი</a></li><li><a href="about.html#brands">ბრენდები</a></li><li><a href="career.html">კარიერა</a></li><li><a href="installer.html">ხელოსნებისთვის</a></li><li><a href="about.html#contact">კონტაქტი</a></li></ul></div>
+    <div><h4>კომპანია</h4><ul><li><a href="about.html">ჩვენ შესახებ</a></li><li><a href="about.html#services">მომსახურება</a></li><li><a href="media.html">მედია ცენტრი</a></li><li><a href="about.html#brands">ბრენდები</a></li><li><a href="career.html">კარიერა</a></li><li><a href="installer.html">ხელოსნებისთვის</a></li><li><a href="about.html#contact">კონტაქტი</a></li></ul></div>
     <div class="ftr__help"><h4>დახმარება</h4><ul><li><a href="about.html#delivery">მიწოდება და გადახდა</a></li><li><a href="about.html#services">საგარანტიო სერვისი</a></li><li><a href="media.html?t=faq">კითხვა-პასუხი</a></li><li><a href="compare.html">შედარება</a></li>${C.accounts === false ? '' : '<li><a href="account.html">ჩემი ანგარიში</a></li>'}<li><button data-open="fav">რჩეულები</button></li><li><button data-callback>შეუკვეთეთ ზარი</button></li></ul></div>
     <div><div class="ftr__chead"><h4>კონტაქტი</h4><div class="ftr__soc">${socials()}</div></div><ul class="ftr__contact">
       <li>${ui('phone')}<span><b><a href="${C.phoneHref}">${esc(C.phone)}</a></b>${esc(C.hours)}</span></li>
       <li>${ui('mail')}<span><b><a href="mailto:${C.email}">${esc(C.email)}</a></b></span></li>
       <li>${ui('pin')}<span><b>${esc(C.showrooms[0].address)}</b>${C.showrooms.length} შოურუმი თბილისში</span></li></ul></div>
   </div>
-  <div class="ftr__bot"><div class="wrap"><span>© ${new Date().getFullYear()} ${esc(C.company)}. ყველა უფლება დაცულია.</span><span class="ftr__legal"><a href="privacy.html">კონფიდენციალურობა</a><a href="consent.html">მონაცემთა დამუშავება</a><a href="marketing.html">მარკეტინგული თანხმობა</a></span></div></div>
+  <div class="ftr__bot"><div class="wrap"><span>© ${new Date().getFullYear()} ${esc(C.company)}. ყველა უფლება დაცულია.</span></div></div>
 </footer>`;
 }
 
@@ -775,7 +779,7 @@ function setupEvents(db) {
     if ((el = t.closest('.card [data-sw]'))) {
       const v = db.byId.get(+el.dataset.sw), old = el.closest('.card');
       const tmp = document.createElement('div');
-      tmp.innerHTML = card(db, v, { cls: old.className.replace(/\bcard\b|\breveal-in\b/g, '').trim(), eager: true });
+      tmp.innerHTML = card(db, v, { cls: old.className.replace(/\bcard\b|\breveal-in\b/g, '').trim(), eager: true, sale: old.hasAttribute('data-sale') });
       old.replaceWith(tmp.firstElementChild);
       return;
     }

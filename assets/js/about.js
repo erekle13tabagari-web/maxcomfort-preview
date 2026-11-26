@@ -15,9 +15,6 @@ boot({}).then(() => {
     $$('[data-brands] img').forEach(img => (img.complete ? even(img) : img.addEventListener('load', () => even(img), { once: true })));
   }
 
-  const tl = (C.cms || {}).timeline;
-  if (Array.isArray(tl) && tl.length) $('[data-timeline]').innerHTML = tl.filter(x => x && (x.year || x.text)).map(x => `<div><b>${esc(x.year)}</b><p>${esc(x.text)}</p></div>`).join('');
-
   const icons = { pickup: 'svc-showroom', tbilisi: 'svc-delivery', regions: 'svc-network' };
   $('[data-delivery]').innerHTML =
     C.delivery.map(d => `<div class="value">${bi(icons[d.id] || 'svc-delivery')}<h3>${esc(d.name)}</h3><p>${esc(d.note)}. ${d.price === 0 ? 'უფასოდ.' : 'ღირებულებას მენეჯერი დაგიდასტურებთ.'}</p></div>`).join('') +

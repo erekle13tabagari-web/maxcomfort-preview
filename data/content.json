@@ -17,7 +17,7 @@
   {
    "id": "tsereteli",
    "name": "წერეთლის შოურუმი",
-   "address": "ა. წერეთლის გამზ. 114",
+   "address": "ა. წერეთლის გამზ. 116",
    "phone": "0322 477 555 (321)",
    "email": "beretta@maxcomfort.ge",
    "hq": false,
@@ -371,7 +371,7 @@
    "name": "Untes",
    "logo": "assets/brand/partners/untes.svg",
    "logoDark": "assets/brand/partners/untes-dark.svg",
-   "strip": true,
+   "strip": false,
    "site": "",
    "text": ""
   },
@@ -389,7 +389,7 @@
    "name": "Sakra",
    "logo": "assets/brand/partners/sakra.svg",
    "logoDark": "assets/brand/partners/sakra-dark.svg",
-   "strip": true,
+   "strip": false,
    "site": "",
    "text": ""
   },
