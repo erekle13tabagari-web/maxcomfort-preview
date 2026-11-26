@@ -399,12 +399,11 @@ function renderAccount() {
   $$('[data-acc-text]').forEach(a => { a.textContent = account.hint() ? 'ჩემი ანგარიში' : 'შესვლა / რეგისტრაცია'; });
 }
 
-/* the main menu, in the owner's order (2026-11-17): about us, products, services, career, contact.
+/* the main menu, in the owner's order (2026-11-17): about us, products, career, contact (services left out for now, 2026-11-26).
    Products opens one mega menu with the four systems side by side and the main product, the wall boiler. */
 const NAV = [
   { t: 'ჩვენ შესახებ', href: 'about.html', on: p => p === 'about' },
   { t: 'პროდუქცია', href: 'catalog.html', on: p => p === 'catalog' || p === 'product', mega: true },
-  { t: 'სერვისები', href: 'about.html#services' },
   { t: 'კარიერა', href: 'career.html', on: p => p === 'career' },
   { t: 'კონტაქტი', href: 'about.html#contact' }
 ];
@@ -477,7 +476,7 @@ function footer(db) {
       <p data-c="footer.about">${esc(t('footer.about', 'გათბობის, კონდიცირების, ვენტილაციისა და წყალმომარაგების სისტემები 2006 წლიდან. ინჟინრული კომფორტი. გარანტირებული სერვისი.'))}</p></div>
     <div><h4>კატალოგი</h4><ul>${db.categories.filter(inMenu).map(c => `<li><a href="catalog.html?c=${c.id}">${esc(c.name)}</a></li>`).join('')}</ul></div>
     <div><h4>კომპანია</h4><ul><li><a href="about.html">ჩვენ შესახებ</a></li><li><a href="media.html">მედია ცენტრი</a></li><li><a href="about.html#brands">ბრენდები</a></li><li><a href="career.html">კარიერა</a></li><li><a href="installer.html">ხელოსნებისთვის</a></li><li><a href="about.html#contact">კონტაქტი</a></li></ul></div>
-    <div class="ftr__help"><h4>დახმარება</h4><ul><li><a href="about.html#services">საგარანტიო სერვისი</a></li><li><a href="media.html?t=faq">კითხვა-პასუხი</a></li><li><a href="compare.html">შედარება</a></li>${C.accounts === false ? '' : '<li><a href="account.html">ჩემი ანგარიში</a></li>'}<li><button data-open="fav">რჩეულები</button></li><li><button data-callback>შეუკვეთეთ ზარი</button></li></ul></div>
+    <div class="ftr__help"><h4>დახმარება</h4><ul><li><a href="media.html?t=faq">კითხვა-პასუხი</a></li><li><a href="compare.html">შედარება</a></li>${C.accounts === false ? '' : '<li><a href="account.html">ჩემი ანგარიში</a></li>'}<li><button data-open="fav">რჩეულები</button></li><li><button data-callback>შეუკვეთეთ ზარი</button></li></ul></div>
     <div class="ftr__cwrap"><div><h4>კონტაქტი</h4><ul class="ftr__contact">
       <li>${ui('phone')}<span><b><a href="${C.phoneHref}">${esc(C.phone)}</a></b>${esc(C.hours)}</span></li>
       <li>${ui('mail')}<span><b><a href="mailto:${C.email}">${esc(C.email)}</a></b></span></li>
