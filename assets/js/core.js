@@ -478,12 +478,13 @@ function footer(db) {
     <div><h4>კატალოგი</h4><ul>${db.categories.filter(inMenu).map(c => `<li><a href="catalog.html?c=${c.id}">${esc(c.name)}</a></li>`).join('')}</ul></div>
     <div><h4>კომპანია</h4><ul><li><a href="about.html">ჩვენ შესახებ</a></li><li><a href="about.html#services">მომსახურება</a></li><li><a href="media.html">მედია ცენტრი</a></li><li><a href="about.html#brands">ბრენდები</a></li><li><a href="career.html">კარიერა</a></li><li><a href="installer.html">ხელოსნებისთვის</a></li><li><a href="about.html#contact">კონტაქტი</a></li></ul></div>
     <div class="ftr__help"><h4>დახმარება</h4><ul><li><a href="about.html#delivery">მიწოდება და გადახდა</a></li><li><a href="about.html#services">საგარანტიო სერვისი</a></li><li><a href="media.html?t=faq">კითხვა-პასუხი</a></li><li><a href="compare.html">შედარება</a></li>${C.accounts === false ? '' : '<li><a href="account.html">ჩემი ანგარიში</a></li>'}<li><button data-open="fav">რჩეულები</button></li><li><button data-callback>შეუკვეთეთ ზარი</button></li></ul></div>
-    <div><div class="ftr__chead"><h4>კონტაქტი</h4><div class="ftr__soc">${socials()}</div></div><ul class="ftr__contact">
+    <div class="ftr__cwrap"><div><h4>კონტაქტი</h4><ul class="ftr__contact">
       <li>${ui('phone')}<span><b><a href="${C.phoneHref}">${esc(C.phone)}</a></b>${esc(C.hours)}</span></li>
       <li>${ui('mail')}<span><b><a href="mailto:${C.email}">${esc(C.email)}</a></b></span></li>
       <li>${ui('pin')}<span><b>${esc(C.showrooms[0].address)}</b>${C.showrooms.length} შოურუმი თბილისში</span></li></ul></div>
+      ${socials() ? `<div class="ftr__soc">${socials()}</div>` : ''}</div>
   </div>
-  <div class="ftr__bot"><div class="wrap"><span>© ${new Date().getFullYear()} ${esc(C.company)}. ყველა უფლება დაცულია.</span></div></div>
+  <div class="ftr__bot"><div class="wrap"><span>© ${new Date().getFullYear()} ${esc(C.company)}. ყველა უფლება დაცულია.</span><span class="ftr__legal"><a href="privacy.html">${ui('shield')}კონფიდენციალურობა</a><a href="consent.html">${ui('lock')}მონაცემთა დამუშავება</a><a href="marketing.html">${ui('mail')}მარკეტინგული თანხმობა</a></span></div></div>
 </footer>`;
 }
 

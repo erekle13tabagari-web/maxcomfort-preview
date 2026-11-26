@@ -61,6 +61,9 @@ window.MC_CONFIG = {
   },
 
   social: {
-    youtube: 'https://www.youtube.com/channel/UCRv76wLBC73jiP7LX4C3l8Q'
+    youtube: 'https://www.youtube.com/@MaxComfort%E1%83%9B%E1%83%90%E1%83%A5%E1%83%A1%E1%83%99%E1%83%9D%E1%83%9B%E1%83%A4%E1%83%9D%E1%83%A0%E1%83%A2%E1%83%98',
+    facebook: 'https://www.facebook.com/profile.php?id=61579333198709',
+    instagram: 'https://www.instagram.com/maxcomfort_georgia',
+    linkedin: 'https://www.linkedin.com/company/maxcomfort/'
   }
 };

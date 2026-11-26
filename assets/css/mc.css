@@ -1989,10 +1989,16 @@ html[data-look="window"]{--xease:cubic-bezier(.65,0,.35,1);--xout:cubic-bezier(.
 .ftr__brand img{width:124px}
 .ftr{font-size:8pt}
 .ftr__brand p{margin-top:12px;max-width:34ch;font-size:8pt;line-height:1.55}
-/* the social links on the right of the contact heading (owner's choice, 2026-11-18); they take no height of their own */
-.ftr__chead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
-.ftr__chead h4{margin:0}
-.ftr__chead .ftr__soc{margin:-14px 0 -4px}   /* centred on the heading's capitals */
+/* the social links in a column beside the contacts (owner's choice, 2026-11-26) */
+.ftr__cwrap{display:flex;align-items:flex-start;gap:28px}
+.ftr__cwrap .ftr__soc{flex-direction:column;margin:0}
+/* the legal documents in the bottom line, each with a small icon (owner's choice, 2026-11-26) */
+.ftr__legal a{display:inline-flex;align-items:center;gap:6px}
+.ftr__legal .ui{width:13px;height:13px;opacity:.8}
+/* on the right, kept clear of the floating chat button (84 px from the window's edge); on phones one under another */
+.ftr__legal{gap:6px 22px}
+@media (min-width:761px){.ftr__bot .wrap{padding-right:max(var(--gut),calc(88px - max(0px,(100vw - 24px - var(--wrap)) / 2)))}}
+@media (max-width:760px){.ftr__legal{flex-direction:column;gap:8px}}
 .ftr__soc a{width:32px;height:32px}
 .ftr__soc svg{width:15px;height:15px}
 .ftr h4{margin-bottom:10px;font-size:8pt}
@@ -2002,6 +2008,11 @@ html[data-look="window"]{--xease:cubic-bezier(.65,0,.35,1);--xout:cubic-bezier(.
 .ftr__contact li{gap:9px}
 .ftr__contact .ui{width:15px;height:15px;margin-top:0}
 .ftr__bot .wrap{padding-block:13px;font-size:8pt}
+/* the columns as wide as their text, closer together, the four of them centred on the page with the logo on the left
+   (owner's choice, 2026-11-26): an empty last track as wide as the logo's */
+@media (min-width:1181px){
+  .ftr__top{grid-template-columns:minmax(max-content,1fr) repeat(4,max-content) minmax(0,1fr);column-gap:clamp(48px,4.4vw,84px)}
+}
 @media (max-width:980px){
   .ftr__top{row-gap:26px}
 }

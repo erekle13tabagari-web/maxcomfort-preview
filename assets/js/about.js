@@ -11,6 +11,19 @@ boot({}).then(() => {
   if (brands.length) {
     $('[data-brands]').innerHTML = brands.map(b => { const img = `<img src="${esc(b.logo)}" alt="${esc(b.name)}" loading="lazy">`; return b.id ? `<a href="catalog.html?b=${encodeURIComponent(b.id)}" title="${esc(b.name)}">${img}</a>` : `<span title="${esc(b.name)}">${img}</span>`; }).join('');
     $('[data-brands-box]').hidden = false;
+    // even rows and columns (owner, 2026-11-26): of the column counts that fit (chips 88-240 px wide), the most that
+    // divide the number of logos (21: 7 x 3 on a computer, 3 x 7 on a phone); none does: the one with the fullest last row
+    const list = $('[data-brands]'), n = brands.length;
+    const fit = () => {
+      const w = list.clientWidth, gap = parseFloat(getComputedStyle(list).columnGap) || 0;
+      if (!w) return;
+      const hi = Math.max(1, Math.floor((w + gap) / (88 + gap))), lo = Math.min(hi, Math.ceil((w + gap) / (240 + gap)));
+      let best = hi, full = -1;
+      for (let c = hi; c >= lo; c--) { const f = (n % c || c) / c; if (f > full) { full = f; best = c; } }
+      list.style.gridTemplateColumns = `repeat(${best},minmax(0,1fr))`;
+    };
+    fit();
+    if (window.ResizeObserver) new ResizeObserver(fit).observe(list);
     const even = img => { const a = img.naturalWidth / img.naturalHeight; if (a > 0) img.style.height = Math.round(Math.max(18, Math.min(40, 60 / Math.sqrt(a)))) + 'px'; };
     $$('[data-brands] img').forEach(img => (img.complete ? even(img) : img.addEventListener('load', () => even(img), { once: true })));
   }

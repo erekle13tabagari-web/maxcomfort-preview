@@ -6,11 +6,11 @@
   "email": "info@maxcomfort.ge",
   "hours": "ორშ-პარ 10:00-18:00",
   "social": {
-   "youtube": "https://www.youtube.com/channel/UCRv76wLBC73jiP7LX4C3l8Q",
-   "facebook": "",
-   "instagram": "",
+   "youtube": "https://www.youtube.com/@MaxComfort%E1%83%9B%E1%83%90%E1%83%A5%E1%83%A1%E1%83%99%E1%83%9D%E1%83%9B%E1%83%A4%E1%83%9D%E1%83%A0%E1%83%A2%E1%83%98",
+   "facebook": "https://www.facebook.com/profile.php?id=61579333198709",
+   "instagram": "https://www.instagram.com/maxcomfort_georgia",
    "tiktok": "",
-   "linkedin": ""
+   "linkedin": "https://www.linkedin.com/company/maxcomfort/"
   }
  },
  "showrooms": [
@@ -30,7 +30,7 @@
    "phone": "0322 477 555 (313)",
    "email": "shop@maxcomfort.ge",
    "hq": true,
-   "map": ""
+   "map": "41.7377977,44.7810139"
   },
   {
    "id": "kosmonavtebi",
@@ -223,15 +223,6 @@
  ],
  "brands": [
   {
-   "id": "MITSUBISHI",
-   "name": "Mitsubishi Electric",
-   "logo": "assets/brand/partners/mitsubishi-electric.svg",
-   "logoDark": "assets/brand/partners/mitsubishi-electric-dark.svg",
-   "strip": true,
-   "site": "",
-   "text": ""
-  },
-  {
    "id": "BERETTA",
    "name": "Beretta",
    "logo": "assets/brand/partners/beretta.svg",
@@ -281,6 +272,15 @@
    "name": "Samsung",
    "logo": "assets/brand/partners/samsung.svg",
    "logoDark": "assets/brand/partners/samsung-dark.svg",
+   "strip": true,
+   "site": "",
+   "text": ""
+  },
+  {
+   "id": "MITSUBISHI",
+   "name": "Mitsubishi Electric",
+   "logo": "assets/brand/partners/mitsubishi-electric.svg",
+   "logoDark": "assets/brand/partners/mitsubishi-electric-dark.svg",
    "strip": true,
    "site": "",
    "text": ""
