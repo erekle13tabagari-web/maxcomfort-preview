@@ -412,7 +412,7 @@ function navDots() {
     $('.adm__dot', a).classList.toggle('adm__dot--bad', waits);
   });
 }
-const PREVIEW = { contacts: 'about.html#contact', showrooms: 'about.html#contact', orders: 'about.html#delivery', texts: null, spots: 'index.html', brands: 'about.html#brands', posts: 'media.html', faq: 'media.html?t=faq', jobs: 'career.html#jobs' };
+const PREVIEW = { contacts: 'about.html#contact', showrooms: 'about.html#contact', orders: null, texts: null, spots: 'index.html', brands: 'about.html#brands', posts: 'media.html', faq: 'media.html?t=faq', jobs: 'career.html#jobs' };
 function bar() {
   const v = view();
   $('[data-title]').textContent = v.t;
@@ -543,7 +543,7 @@ R.orders = () => {
 /* page texts: the preview frame lists the page's editable texts; a click there opens the field here */
 const TPAGES = [['index', tr('ქვედა ზოლი'), k => /^footer\./.test(k)], ['about', tr('ჩვენ შესახებ'), k => /^about\./.test(k)], ['media', tr('მედია ცენტრი'), k => /^media\./.test(k)], ['career', tr('კარიერა'), k => /^career\./.test(k)]];
 const GROUPS = { footer: tr('ქვედა ზოლი (ყველა გვერდზე)'),
-  'about.hero': tr('თავი'), 'about.story': tr('კომპანია'), 'about.brands': tr('ბრენდები'), 'about.tri': tr('მისია, ხედვა, დაპირება'), 'about.val': tr('ღირებულებები'), 'about.svc': tr('სერვისი'), 'about.del': tr('მიწოდება და გადახდა'), 'about.hist': tr('ისტორია'), 'about.stat': tr('ციფრები'), 'about.contact': tr('კონტაქტი'), 'about.privacy': tr('კონფიდენციალურობა'), media: tr('მედია ცენტრი'), 'media.band': tr('ზარის ზოლი'),
+  'about.hero': tr('თავი'), 'about.story': tr('კომპანია'), 'about.brands': tr('ბრენდები'), 'about.tri': tr('მისია, ხედვა, დაპირება'), 'about.val': tr('ღირებულებები'), 'about.svc': tr('სერვისი'), 'about.contact': tr('კონტაქტი'), 'about.privacy': tr('კონფიდენციალურობა'), media: tr('მედია ცენტრი'), 'media.band': tr('ზარის ზოლი'),
   'career.hero': tr('თავი'), 'career.dir': tr('მიმართულებები'), 'career.jobs': tr('ვაკანსიები'), 'career.apply': tr('განაცხადი') };
 const PARTS = { fact: tr('ფაქტი'), eyebrow: tr('წარწერა'), title: tr('სათაური'), lead: tr('ტექსტი'), text: tr('ტექსტი'), note: tr('ქვეწარწერა'), n: tr('რიცხვი'), t: tr('წარწერა'), rich: tr('ტექსტი'), about: tr('ტექსტი'),
   stat: tr('ციფრი'), cooling: tr('კონდიცირება'), heating: tr('გათბობა'), ventilation: tr('ვენტილაცია'), water: tr('წყალმომარაგება') };

@@ -94,7 +94,7 @@ const ACTS = {
 
   delivery: () => bot(`<p><b>მიწოდება</b></p><ul>${C.delivery.map(d => `<li>${esc(d.name)}: ${esc(d.note)}${d.price === 0 ? ', უფასოდ' : ''}</li>`).join('')}</ul>
     <p>მიწოდების ფასს მენეჯერი გეტყვით შეკვეთის დადასტურებისას. მონტაჟს ასრულებს ჩვენი საინჟინრო გუნდი.</p>
-    <p><b>გადახდა:</b> ${C.payment.map(p => esc(p.name).toLowerCase()).join(', ')}.</p><a class="cmore" href="about.html#services">მომსახურების შესახებ</a>`, [['შოურუმები', 'shops'], ...AFTER]),
+    <p><b>გადახდა:</b> ${C.payment.map(p => esc(p.name).toLowerCase()).join(', ')}.</p>`, [['შოურუმები', 'shops'], ...AFTER]),
 
   shops: () => bot(`<p>${esc(C.hours)}</p><ul>${C.showrooms.map(s => `<li><b>${esc(s.name)}</b><br>${esc(s.address)}, ${esc(s.phone)}</li>`).join('')}</ul><a class="cmore" href="about.html#contact">რუკაზე ნახვა</a>`, AFTER),
 

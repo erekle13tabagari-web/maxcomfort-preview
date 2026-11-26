@@ -28,11 +28,6 @@ boot({}).then(() => {
     $$('[data-brands] img').forEach(img => (img.complete ? even(img) : img.addEventListener('load', () => even(img), { once: true })));
   }
 
-  const icons = { pickup: 'svc-showroom', tbilisi: 'svc-delivery', regions: 'svc-network' };
-  $('[data-delivery]').innerHTML =
-    C.delivery.map(d => `<div class="value">${bi(icons[d.id] || 'svc-delivery')}<h3>${esc(d.name)}</h3><p>${esc(d.note)}. ${d.price === 0 ? 'უფასოდ.' : 'ღირებულებას მენეჯერი დაგიდასტურებთ.'}</p></div>`).join('') +
-    `<div class="value">${bi('svc-calc')}<h3>გადახდა</h3><p>${C.payment.map(p => esc(p.name)).join(', ')}.</p></div>`;
-
   $('[data-contacts]').innerHTML =
     `<a class="ccard" href="${C.phoneHref}">${bi('ct-phone')}<small>ცხელი ხაზი</small><b>${esc(C.phone)}</b><span class="muted">გაყიდვები, მონტაჟი, სერვისი</span></a>
      <a class="ccard" href="mailto:${C.email}">${bi('ct-email')}<small>ელ. ფოსტა</small><b>${esc(C.email)}</b><span class="muted">პასუხი სამუშაო დღეს</span></a>
