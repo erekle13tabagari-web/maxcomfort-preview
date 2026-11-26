@@ -1999,6 +1999,17 @@ html[data-look="window"]{--xease:cubic-bezier(.65,0,.35,1);--xout:cubic-bezier(.
 .ftr__legal{gap:6px 22px}
 @media (min-width:761px){.ftr__bot .wrap{padding-right:max(var(--gut),calc(88px - max(0px,(100vw - 24px - var(--wrap)) / 2)))}}
 @media (max-width:760px){.ftr__legal{flex-direction:column;gap:8px}}
+/* the studio credit, as on biomi.ge (owner's choice, 2026-11-26): white capitals at the end of the line, the heart in
+   BAGARI's red breathing as on bagari.studio (a slow swell, a slower release), still for anyone who asks for less motion */
+.ftr__made{color:#fff;font-weight:600;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;transition:opacity .2s}
+.ftr .ftr__made:hover,.ftr__made:focus-visible{color:#fff;opacity:.78}
+.ftr__made .heart{display:inline-block;height:.754em;width:auto;vertical-align:baseline;fill:#CB3534;transform-origin:50% 55%;animation:heart-breathe 4.2s ease-in-out infinite}
+@keyframes heart-breathe{0%,100%{transform:scale(1)}38%{transform:scale(1.12)}55%{transform:scale(1.09)}}
+@media (prefers-reduced-motion:reduce){.ftr__made .heart{animation:none}}
+/* the copyright on the left, the legal links and the credit together on the right (a wrapped credit stays right);
+   on phones the three one under another, each as wide as its text */
+@media (min-width:761px){.ftr__bot .wrap{justify-content:flex-end}.ftr__bot .wrap > span:first-child{margin-right:auto}.ftr__made{margin-left:16px}}
+@media (max-width:760px){.ftr__bot .wrap{flex-direction:column;align-items:flex-start;gap:14px}.ftr__legal{align-items:flex-start}}
 .ftr__soc a{width:32px;height:32px}
 .ftr__soc svg{width:15px;height:15px}
 .ftr h4{margin-bottom:10px;font-size:8pt}
