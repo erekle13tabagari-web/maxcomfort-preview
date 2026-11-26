@@ -77,7 +77,7 @@ function article(id) {
       <div class="rich article__body">${rich(p.body)}</div>
       <div class="article__acts">${go}<button class="btn btn--ghost" type="button" data-share>${ui('link')}ბმულის გაზიარება</button></div>
     </div>
-    ${more.length ? `<section class="sec sec--cloud"><div class="wrap"><div class="sec__head"><div><span class="eyebrow">მედია ცენტრი</span><h2 class="h2">სხვა ${p.type === 'promo' ? 'აქციები' : p.type === 'blog' ? 'სტატიები' : 'სიახლეები'}</h2></div><a class="link" href="media.html?t=${p.type}">ყველა ${arrow()}</a></div><div class="posts">${more.map(postCard).join('')}</div></div></section>` : ''}`;
+    ${more.length ? `<section class="sec sec--cloud"><div class="wrap"><div class="sec__head"><div><h2 class="h2 title-dash">სხვა ${p.type === 'promo' ? 'აქციები' : p.type === 'blog' ? 'სტატიები' : 'სიახლეები'}</h2></div><a class="link" href="media.html?t=${p.type}">ყველა ${arrow()}</a></div><div class="posts">${more.map(postCard).join('')}</div></div></section>` : ''}`;
   $('[data-share]', box).addEventListener('click', async () => {
     try {
       if (navigator.share) await navigator.share({ title: p.title, url: location.href });

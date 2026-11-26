@@ -81,7 +81,8 @@ const brandPos = id => {
 const brandCmp = counts => (a, b) => brandPos(a) - brandPos(b) || (counts.get(b) || 0) - (counts.get(a) || 0) || String(a).localeCompare(String(b));
 /* the recommended order (owner's choice, 2026-11-25): kind by kind in the menu's order (a category's subcategories;
    across categories theirs: boilers, burners, radiators ... then cooling, ventilation, water with its expansion tanks),
-   a kind's main products before its accessories and parts, and inside that the owner's brand order */
+   a kind's main products before its accessories and parts, inside that the owner's brand order, and inside a brand
+   from the smallest to the biggest */
 let kindRank = null;
 const kindPos = p => {
   if (!kindRank) {
@@ -93,7 +94,7 @@ const kindPos = p => {
   return r === undefined ? 1e6 : r;
 };
 const accessory = p => (/აქსესუარ|ნაწილ/.test(p.type || '') ? 1 : 0);
-/* the sale page (owner, 2026-11-26): inside a brand from the smallest to the biggest, by power (kW), else by size */
+/* inside a brand from the smallest to the biggest, by power (kW), else by size (owner, 2026-11-26: on every listing) */
 const sizeOf = p => { const kw = parseFloat(String((p.spec || {})['სიმძლავრე, kW'] || '').replace(',', '.')); return kw > 0 ? kw : typeof p.sizeSort === 'number' ? p.sizeSort : 1e6; };
 
 function sorted(list, sc = list) {
@@ -101,7 +102,7 @@ function sorted(list, sc = list) {
   const byPrice = dir => (a, b) => (a.price == null) - (b.price == null) || dir * ((a.price || 0) - (b.price || 0));
   const brands = brandCmp(count(sc, p => p.brand));
   const cmp = {
-    pop: (a, b) => kindPos(a) - kindPos(b) || accessory(a) - accessory(b) || brands(a.brand || '', b.brand || '') || (st.sale ? sizeOf(a) - sizeOf(b) : 0) || score(b) - score(a) || (b.price || 0) - (a.price || 0),
+    pop: (a, b) => kindPos(a) - kindPos(b) || accessory(a) - accessory(b) || brands(a.brand || '', b.brand || '') || sizeOf(a) - sizeOf(b) || score(b) - score(a) || (b.price || 0) - (a.price || 0),
     'price-asc': byPrice(1), 'price-desc': byPrice(-1),
     name: (a, b) => a.title.localeCompare(b.title, 'ka')
   }[st.sort] || (() => 0);

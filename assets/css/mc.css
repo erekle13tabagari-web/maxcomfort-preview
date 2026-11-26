@@ -156,6 +156,9 @@ ul,ol{padding:0;list-style:none}
 .eyebrow::after{content:"";width:28px;height:2px;background:currentColor}
 .on-blue .eyebrow,.on-dark .eyebrow{color:#fff}          /* never red text on MC Blue */
 .on-blue .eyebrow::after,.on-dark .eyebrow::after{background:var(--red)}
+/* a title's red dash, under it (owner, 2026-11-26: the small text over the titles went everywhere, its dash moved down) */
+.title-dash::after{content:"";display:block;width:28px;height:2px;margin-top:16px;background:var(--red)}
+.display.title-dash::after{margin-top:22px}
 .muted{color:var(--muted)}
 /* titles in Mtavruli everywhere (owner's choice, 2026-10-20): headings, product names, menus, the top strip */
 .h3,.pinfo h1,.card__title,.mega__feat b,.line__name,.sres b,.buybar__t b,.pill,.pane__links a,
@@ -831,10 +834,8 @@ mark{background:var(--red-20);color:inherit;border-radius:2px;padding:0 1px}
 /* up close: the story (captioned, dark) and the marketing gallery (light) */
 .story{background:var(--black);color:#fff;padding-block:clamp(40px,4.6vw,72px)}
 .story .h2{color:#fff}
-.story .eyebrow{color:#fff}
 .story--light{background:var(--page-2);color:var(--text)}
 .story--light .h2{color:var(--heading)}
-.story--light .eyebrow{color:var(--red)}
 .srow{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:clamp(24px,4vw,56px);align-items:center}
 .srow + .srow{margin-top:clamp(20px,2.6vw,36px)}
 .srow img{width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:var(--r);background:#000}
@@ -1213,8 +1214,7 @@ body:has(.buybar.is-on){--fab-lift:82px}
 .dash__nav small{margin-left:auto;color:var(--steel);font-size:12.5px;font-weight:600}
 .dash__nav button{margin-top:8px;border-top:1px solid var(--line);border-radius:0 0 var(--r) var(--r);padding-top:4px;height:52px;color:var(--muted)}
 .dash__hello{margin-bottom:22px}
-.dash__hello .h1{margin-top:12px;font-size:clamp(28px,3vw,40px)}
-.dash__hello .eyebrow + .h1{margin-top:14px}
+.dash__hello .h1{font-size:clamp(28px,3vw,40px)}
 .dash__h{font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink);margin:36px 0 14px}
 .dash__grid{--cols:3}
 .dstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}

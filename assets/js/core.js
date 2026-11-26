@@ -552,7 +552,7 @@ function overlays(db) {
 </div></div><div data-close></div></div>
 <div class="modal" id="callback" role="dialog" aria-modal="true" aria-labelledby="cb-h"><div class="modal__scrim" data-close></div><div class="modal__box">
   <button class="iconbtn modal__x" data-close aria-label="დახურვა">${ui('close')}</button>
-  <div data-cb-form><span class="eyebrow">უფასო კონსულტაცია</span><h2 class="h2" id="cb-h">დაგირეკავთ</h2><p data-cb-lead>დატოვეთ ნომერი და ინჟინერი სამუშაო საათებში დაგიკავშირდებათ.</p>
+  <div data-cb-form><h2 class="h2 title-dash" id="cb-h">დაგირეკავთ</h2><p data-cb-lead>დატოვეთ ნომერი და ინჟინერი სამუშაო საათებში დაგიკავშირდებათ.</p>
   <form class="form-stack" style="margin-top:22px" novalidate data-lead-form="callback">
     <input type="hidden" name="product">
     <label class="field"><span>სახელი <em>*</em></span><input class="input" name="name" autocomplete="name" required><small class="field__err">შეიყვანეთ სახელი</small></label>

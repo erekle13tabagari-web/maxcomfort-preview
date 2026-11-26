@@ -67,8 +67,7 @@ async function sso(provider, btn) {
 function perks() {
   return `<aside class="auth__side on-blue">
     <img class="auth__roof" src="assets/brand/pattern/hero-roofs.svg" alt="" aria-hidden="true">
-    <span class="eyebrow">ჩემი ანგარიში</span>
-    <h2 class="h2">ყველაფერი ერთ ადგილას</h2>
+    <h2 class="h2 title-dash">ყველაფერი ერთ ადგილას</h2>
     <ul class="auth__perks">
       <li>${bi('svc-delivery')}<span><b>შეკვეთების სტატუსი</b>რა შეუკვეთეთ და სად არის ახლა</span></li>
       <li>${bi('ct-location')}<span><b>შენახული მისამართები</b>შეკვეთის გაფორმება ორ წუთში</span></li>
@@ -286,7 +285,7 @@ async function renderDash() {
   const main = $('[data-dash]'), tab = tabNow();
   counts();
   if (tab === 'overview') {
-    main.innerHTML = `<div class="dash__hello"><span class="eyebrow">ჩემი ანგარიში</span><h1 class="h1">გამარჯობა${user.name ? ', ' + esc(user.name.split(' ')[0]) : ''}</h1></div>
+    main.innerHTML = `<div class="dash__hello"><h1 class="h1 title-dash">გამარჯობა${user.name ? ', ' + esc(user.name.split(' ')[0]) : ''}</h1></div>
       <div class="dstats">
         <a class="dstat" href="#orders"><small>შეკვეთები</small><b data-n-orders>…</b></a>
         <a class="dstat" href="#favourites"><small>რჩეულები</small><b>${store.fav.length}</b></a>
