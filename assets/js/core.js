@@ -483,7 +483,7 @@ function footer(db) {
       <li>${ui('pin')}<span><b>${esc(C.showrooms[0].address)}</b>${C.showrooms.length} შოურუმი თბილისში</span></li></ul></div>
       ${socials() ? `<div class="ftr__soc">${socials()}</div>` : ''}</div>
   </div>
-  <div class="ftr__bot"><div class="wrap"><span>© ${new Date().getFullYear()} ${esc(C.company)}. ყველა უფლება დაცულია.</span><span class="ftr__legal"><a href="privacy.html">${ui('shield')}კონფიდენციალურობა</a><a href="consent.html">${ui('lock')}მონაცემთა დამუშავება</a><a href="marketing.html">${ui('mail')}მარკეტინგული თანხმობა</a></span><a class="ftr__made" href="https://bagari.studio" target="_blank" rel="noopener" title="bagari.studio" aria-label="სიყვარულით შექმნილია BAGARI სტუდიის მიერ">შექმნილი <svg class="heart" viewBox="2 3 20 18.4" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> ით</a></div></div>
+  <div class="ftr__bot"><div class="wrap"><span>© ${new Date().getFullYear()} ${esc(C.company)}. ყველა უფლება დაცულია.</span><span class="ftr__legal"><a href="privacy.html">${ui('shield')}კონფიდენციალურობა</a><a href="consent.html">${ui('lock')}მონაცემთა დამუშავება</a><a href="marketing.html">${ui('mail')}მარკეტინგული თანხმობა</a>${C.gtag ? `<button type="button" data-cookie-open>${ui('info')}ქუქი-ფაილები</button>` : ''}</span><a class="ftr__made" href="https://bagari.studio" target="_blank" rel="noopener" title="bagari.studio" aria-label="სიყვარულით შექმნილია BAGARI სტუდიის მიერ">შექმნილი <svg class="heart" viewBox="2 3 20 18.4" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> ით</a></div></div>
 </footer>`;
 }
 
@@ -956,6 +956,47 @@ function setupPreview() {
   }
 }
 
+/* ---------- cookie consent and Google Analytics ----------
+   C.gtag (config.js: the Google tag, on the live site only) loads with Google's consent mode: everything is denied
+   until the visitor accepts the banner, so no analytics cookies before that (Google gets only cookieless pings);
+   "უარი" keeps it so. The choice stays in this browser (mc.consent; a new CONSENT_V asks everyone again, e.g. once a
+   Meta pixel joins). The footer's "ქუქი-ფაილები" opens the banner again; a withdrawn consent deletes Google's
+   cookies. Not in the admin panel's preview.                                                                       */
+const CONSENT_V = 1;
+const consentOf = () => { try { const v = JSON.parse(localStorage.getItem('mc.consent')); return v && v.v === CONSENT_V ? v : null; } catch (e) { return null; } };
+function cookieBar() {
+  if ($('[data-cookie]')) return;
+  document.body.insertAdjacentHTML('beforeend', `<div class="cookie" role="region" aria-label="ქუქი-ფაილები" data-cookie>
+    <p><b>ქუქი-ფაილები.</b> საიტის გასაუმჯობესებლად ვიყენებთ Google Analytics-ს. მისი ქუქი-ფაილები მხოლოდ თქვენი თანხმობით ინახება. <a href="privacy.html#cookies">დაწვრილებით</a></p>
+    <div class="cookie__acts"><button type="button" class="btn btn--ghost btn--sm" data-consent="0">უარი</button><button type="button" class="btn btn--sm" data-consent="1">თანხმობა</button></div></div>`);
+}
+function setupConsent() {
+  if (!C.gtag || EDIT || draftOn()) return;
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
+  const saved = consentOf();
+  gtag('consent', 'default', { ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: saved && saved.a ? 'granted' : 'denied', wait_for_update: 500 });
+  gtag('js', new Date());
+  const s = document.createElement('script');
+  s.async = true;
+  s.src = 'https://www.googletagmanager.com/gtm.js?id=' + encodeURIComponent(C.gtag);
+  document.head.appendChild(s);
+  if (!saved) cookieBar();
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-consent]');
+    if (b) {
+      const a = b.dataset.consent === '1';
+      try { localStorage.setItem('mc.consent', JSON.stringify({ v: CONSENT_V, a, at: new Date().toISOString().slice(0, 10) })); } catch (err) { /* private mode: asked again next time */ }
+      gtag('consent', 'update', { analytics_storage: a ? 'granted' : 'denied' });
+      if (!a) document.cookie.split(';').map(c => c.split('=')[0].trim()).filter(n => /^_ga/.test(n)).forEach(n => {
+        document.cookie = n + '=; Max-Age=0; path=/';
+        document.cookie = n + '=; Max-Age=0; path=/; domain=.' + location.hostname;
+      });
+      $('[data-cookie]').remove();
+    } else if (e.target.closest('[data-cookie-open]')) cookieBar();
+  });
+}
+
 /** Boot a page: load the catalog and the site content, draw the header, footer and overlays, wire everything. */
 export async function boot(page = {}) {
   const [db, cms] = await Promise.all([catalog(), content()]);
@@ -973,6 +1014,7 @@ export async function boot(page = {}) {
   setupLeadForms(db);
   setupFab(db);
   setupScrollbar();
+  setupConsent();
   addEventListener('mc:account', renderAccount);
   addEventListener('storage', e => { if (e.key === 'mc.signed') renderAccount(); });
   const all = () => { renderCounts(); renderCart(db); renderFav(db); renderCmpBar(db); syncToggles(); };

@@ -1993,7 +1993,14 @@ html[data-look="window"]{--xease:cubic-bezier(.65,0,.35,1);--xout:cubic-bezier(.
 .ftr__cwrap{display:flex;align-items:flex-start;gap:28px}
 .ftr__cwrap .ftr__soc{flex-direction:column;margin:0}
 /* the legal documents in the bottom line, each with a small icon (owner's choice, 2026-11-26) */
-.ftr__legal a{display:inline-flex;align-items:center;gap:6px}
+.ftr__legal a,.ftr__legal button{display:inline-flex;align-items:center;gap:6px}
+/* the cookie banner (core.js setupConsent): bottom left on computers, the whole width on phones */
+.cookie{position:fixed;z-index:70;left:20px;bottom:20px;max-width:440px;display:flex;flex-direction:column;gap:14px;padding:18px 20px;border-radius:20px;background:var(--surface);color:var(--text);box-shadow:0 24px 48px -20px rgba(17,19,48,.45),0 0 0 1px var(--line);font-size:14px;line-height:1.55;animation:chin .5s var(--ease) both}
+.cookie b{color:var(--heading)}
+.cookie a{color:var(--heading);text-decoration:underline;text-underline-offset:3px}
+.cookie__acts{display:flex;gap:8px;justify-content:flex-end}
+.cookie__acts .btn{min-width:112px}
+@media (max-width:760px){.cookie{left:8px;right:8px;bottom:8px;max-width:none;padding:16px}.cookie__acts .btn{flex:1}}
 .ftr__legal .ui{width:13px;height:13px;opacity:.8}
 /* on the right, kept clear of the floating chat button (84 px from the window's edge); on phones one under another */
 .ftr__legal{gap:6px 22px}

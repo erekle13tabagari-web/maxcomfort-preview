@@ -50,6 +50,11 @@ window.MC_CONFIG = {
      (owner's choice, 2026-11-24). true once api/config.php has the SMS gateway.                               */
   accounts: false,
 
+  /* Google Analytics: the Google tag (GTM-MBTJ6BWK, the owner's Analytics property, 2026-11-27), on maxcomfort.ge only
+     (not this computer or the GitHub preview). It loads with Google's consent mode: no analytics cookies until the
+     visitor accepts the cookie banner (core.js setupConsent). '' = no tag and no banner.                          */
+  gtag: /^maxcomfort\.ge$/i.test(location.hostname) ? 'GTM-MBTJ6BWK' : '',
+
   /* Sign-in with Google / Facebook / Apple on account.html (public IDs only; secrets go into api/config.php).
      Empty = the button is hidden in 'bitrix' mode; the preview shows all three. The phone number stays
      required: a first provider sign-in asks for it and confirms it by SMS.                                */
