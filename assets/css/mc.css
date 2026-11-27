@@ -1538,6 +1538,13 @@ body:has(.buybar.is-on){--fab-lift:82px}
 .chead__subs a:hover{background:var(--blue-10);transform:translateY(-2px)}
 .chead__subs .ic{width:24px;height:24px;--ic:var(--sys,var(--blue));--ic-accent:var(--sys,var(--blue));--ic-w:2.6}
 .chead__subs small{font-size:11.5px;font-weight:500;color:var(--muted)}
+/* a section's guide and questions below the products (catalog.js guide; api/seo.php writes the same in) */
+.cguide{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:clamp(28px,4vw,64px);align-items:start;margin:0 0 clamp(48px,6vw,88px);padding-top:clamp(32px,4vw,52px);border-top:1px solid var(--line)}
+.cguide > :only-child{grid-column:1/-1;max-width:920px}
+.cguide__t{margin-bottom:16px;font-size:clamp(20px,2vw,26px);font-weight:700;line-height:1.15;letter-spacing:.01em;text-transform:uppercase;color:var(--heading)}
+.cguide__text p{max-width:68ch;line-height:1.7;color:var(--text)}
+.cguide__text p + p{margin-top:12px}
+@media (max-width:900px){.cguide{grid-template-columns:minmax(0,1fr)}}
 .chead__subs a.is-on{background:var(--sys,var(--blue));color:#fff}
 .chead__subs a.is-on .ic{--ic:#fff;--ic-accent:#fff}
 .chead__subs a.is-on small{color:inherit;opacity:.8}

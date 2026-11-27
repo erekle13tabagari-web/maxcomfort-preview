@@ -176,12 +176,26 @@ function facets(sc) {
    for screen readers; the catalogue itself offers the systems the same way; a search or a brand shows its name
    (and a brand its text from the admin panel). The system's colour marks the chosen pill (ducts belong to ventilation) */
 const SYS = { heating: 'heat', cooling: 'cool', ventilation: 'vent', ducts: 'vent', water: 'water' };
+/* A section's texts from the admin panel (content "sections", id "heating" or "heating/boilers"): its heading and
+   Google's title; below the products a short guide and questions (the same markup api/seo.php writes in). */
+const section = (cat, sub) => cat && !st.q ? ((C.cms || {}).sections || []).find(x => x && x.id === cat.id + (sub ? '/' + sub.id : '')) || null : null;
+const paras = s => String(s || '').split(/\r?\n+/).filter(x => x.trim()).map(x => `<p>${esc(x.trim())}</p>`).join('');
+function guide(cat, sub) {
+  const g = $('[data-guide]'), x = section(cat, sub);
+  const faq = x ? (x.faq || []).filter(f => f && f.q && f.a) : [];
+  if (!x || (!x.text && !faq.length)) { g.hidden = true; g.innerHTML = ''; return; }
+  g.innerHTML = (x.text ? `<div class="cguide__text"><h2 class="cguide__t" id="guide-h">${esc(x.name || (sub || cat).name)}</h2>${paras(x.text)}</div>` : '') +
+    (faq.length ? `<div class="cguide__faq"><h2 class="cguide__t" id="guide-q">ხშირად დასმული კითხვები</h2><div class="faq__list">${faq.map(f => `<details class="faq__item"><summary>${esc(f.q)}${ui('down')}</summary><div class="faq__a">${paras(f.a)}</div></details>`).join('')}</div></div>` : '');
+  g.setAttribute('aria-labelledby', x.text ? 'guide-h' : 'guide-q');
+  g.hidden = false;
+}
+
 let headKey = '';
 function head() {
   const cat = db.cats.get(st.c), sub = db.subs.get(st.s), brand = st.b.length === 1 ? db.brandsById.get(st.b[0]) : null;
-  const sale = st.sale ? saleNow(db) : null;
-  const title = st.q ? `ძიება: „${st.q}“` : sale && !cat ? sale.name : sub ? sub.name : cat ? cat.name : brand ? brand.name : 'კატალოგი';
-  document.title = title + ' · მაქს კომფორტი';
+  const sale = st.sale ? saleNow(db) : null, sec = section(cat, sub);
+  const title = st.q ? `ძიება: „${st.q}“` : sale && !cat ? sale.name : sec && sec.name ? sec.name : sub ? sub.name : cat ? cat.name : brand ? brand.name : 'კატალოგი';
+  document.title = (sec && sec.title && !(sale && !cat) ? sec.title : title) + ' · მაქს კომფორტი';
   const key = [st.c, st.s, st.q, brand && brand.id, st.sale].join('|');
   if (key === headKey) return;   // filters change the grid, not the top
   headKey = key;
@@ -203,6 +217,7 @@ function head() {
       : '';
   const h = $('[data-head]');
   h.innerHTML = `<h1 class="${nav ? 'sr' : 'chead__t'}" id="cat-h">${esc(title)}</h1>${lead ? `<p class="chead__lead">${esc(lead)}</p>` : ''}${nav ? `<nav class="chead__subs" aria-label="${cat ? 'ქვეკატეგორიები' : 'სისტემები'}">${nav}</nav>` : ''}`;
+  guide(cat, sub);
   const bar = $('.chead__subs', h), on = bar && $('.is-on', bar);   // phones: the chosen kind in the middle of the row (again once the fonts are in)
   const center = () => { if (on && bar.scrollWidth > bar.clientWidth) bar.scrollLeft = on.offsetLeft - bar.offsetLeft - (bar.clientWidth - on.offsetWidth) / 2; };
   center();

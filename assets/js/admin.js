@@ -163,7 +163,7 @@ const S = {
   user: null, c: null, w: {}, dirty: new Set(), db: null, view: 'home', post: null, page: 'index',
   open: new Set(), defs: {}, frame: { texts: [], page: '' }
 };
-const SECTIONS = { contacts: tr('კონტაქტები'), showrooms: tr('შოურუმები'), delivery: tr('მიწოდება'), payment: tr('გადახდა'), shop: tr('ონლაინ გაყიდვა'), texts: tr('გვერდების ტექსტები'), timeline: tr('ისტორიის წლები'), spots: tr('სლაიდები'), brands: tr('ბრენდები'), posts: tr('მედია ცენტრი'), faq: tr('კითხვა-პასუხი'), jobs: tr('ვაკანსიები'), products: tr('პროდუქცია') };
+const SECTIONS = { contacts: tr('კონტაქტები'), showrooms: tr('შოურუმები'), delivery: tr('მიწოდება'), payment: tr('გადახდა'), shop: tr('ონლაინ გაყიდვა'), texts: tr('გვერდების ტექსტები'), timeline: tr('ისტორიის წლები'), spots: tr('სლაიდები'), brands: tr('ბრენდები'), posts: tr('მედია ცენტრი'), faq: tr('კითხვა-პასუხი'), jobs: tr('ვაკანსიები'), products: tr('პროდუქცია'), sections: tr('კატალოგის ტექსტები') };
 const VIEWS = [
   { id: 'home', t: tr('მიმოხილვა'), ic: 'grid', s: [] },
   { id: 'journal', t: tr('შეკვეთები'), ic: 'bag', s: [], owner: true },
@@ -171,6 +171,7 @@ const VIEWS = [
   { id: 'showrooms', t: tr('შოურუმები'), ic: 'pin', s: ['showrooms'] },
   { id: 'orders', t: tr('მიწოდება და გადახდა'), ic: 'box', s: ['delivery', 'payment'] },
   { id: 'products', t: tr('პროდუქცია'), ic: 'fan', s: [] },
+  { id: 'sections', t: tr('კატალოგის ტექსტები'), ic: 'filter', s: ['sections'] },
   { id: 'texts', t: tr('გვერდების ტექსტები'), ic: 'edit', s: ['texts', 'timeline'] },
   { id: 'spots', t: tr('სლაიდები'), ic: 'eye', s: ['spots'], hidden: true },   // no page shows them since the window home page
   { id: 'brands', t: tr('ბრენდები'), ic: 'shield', s: ['brands'] },
@@ -276,6 +277,8 @@ const NEW = {
   'spots.*.facts': () => ({ b: '', t: '' }),
   brands: () => ({ id: '', name: 'ახალი ბრენდი', logo: '', logoDark: '', strip: true, site: '', text: '' }),
   faq: () => ({ id: uid('q'), q: '', a: '', on: true }),
+  sections: () => ({ id: '', name: '', title: '', desc: '', text: '', faq: [] }),
+  'sections.*.faq': () => ({ q: '', a: '' }),
   jobs: () => ({ id: uid('j'), on: false, title: '', place: 'თბილისი', type: 'სრული განაკვეთი', text: '', to: '' })
 };
 
@@ -420,7 +423,7 @@ function bar() {
   const revs = v.s.map(s => (S.c.revs || {})[s] || 0).reduce((a, b) => a + b, 0);
   $('[data-status]').textContent = dirty.length ? tr('შეუნახავი ცვლილებები') : v.s.length ? (revs ? tr('ყველაფერი შენახულია') : tr('საწყისი შიგთავსი')) : '';
   $('[data-status]').classList.toggle('is-dirty', !!dirty.length);
-  const page = v.id === 'texts' ? S.page + '.html' : PREVIEW[v.id];
+  const page = v.id === 'texts' ? S.page + '.html' : v.id === 'sections' ? secUrl(secShown()) : PREVIEW[v.id];
   $('[data-acts]').innerHTML = (page ? `<button class="btn btn--ghost btn--sm" data-act="preview" data-page="${page}">${ui('eye')}<span>${tr('ნახვა საიტზე')}</span></button>` : '') +
     (v.s.length ? `<button class="btn btn--red btn--sm" data-act="save" ${dirty.length ? '' : 'disabled'}>${ui('check')}<span>${tr('შენახვა')}</span></button>` : '');
 }
@@ -447,7 +450,7 @@ R.home = () => {
   const posts = (c.posts || []).filter(p => p.on).length;
   const tiles = [['showrooms', tr('შოურუმი'), (c.showrooms || []).length],
     ['brands', tr('ბრენდი ზოლში'), (c.brands || []).filter(b => b.strip).length], ['posts', tr('გამოქვეყნებული ჩანაწერი'), posts],
-    ['faq', tr('კითხვა-პასუხი'), (c.faq || []).filter(f => f.on).length], ['jobs', tr('ღია ვაკანსია'), (c.jobs || []).filter(j => j.on && (!j.to || j.to >= today())).length], ['texts', tr('შეცვლილი ტექსტი'), Object.keys(Array.isArray(c.texts) ? {} : c.texts || {}).length]];
+    ['faq', tr('კითხვა-პასუხი'), (c.faq || []).filter(f => f.on).length], ['jobs', tr('ღია ვაკანსია'), (c.jobs || []).filter(j => j.on && (!j.to || j.to >= today())).length], ['sections', tr('კატალოგის ტექსტი'), (c.sections || []).filter(x => x && x.id).length], ['texts', tr('შეცვლილი ტექსტი'), Object.keys(Array.isArray(c.texts) ? {} : c.texts || {}).length]];
   return `<div class="ahome">
     <p class="ahome__hi">${tr('გამარჯობა,')} ${esc(S.user.name)}. ${tr('აქ იცვლება საიტის ტექსტები, კონტაქტები, ბრენდები, მედია ცენტრი და ვაკანსიები.')}</p>
     ${shopCard()}
@@ -712,6 +715,34 @@ R.faq = () => {
       ${toggle(tr('ჩანს საიტზე'), `faq|${i}.on`, f.on)}`, itemActs('faq|', i, list.length), f.on ? '' : tr('დამალულია'))).join('')}
     ${addBtn('faq|', tr('კითხვის დამატება'))}</div>`;
 };
+
+/* A catalogue section's texts (catalog.html?c=…&s=…): the heading, Google's title and description, the guide and the
+   questions below the products. The server writes them into the page's head (api/seo.php); empty fields fall back. */
+const secList = () => (S.db ? S.db.categories : []).flatMap(c => [[c.id, c.name], ...c.subs.map(s => [c.id + '/' + s.id, c.name + ' › ' + s.name])]);
+const secName = id => (secList().find(([k]) => k === id) || [, id || tr('სექცია არ არის არჩეული')])[1];
+const secUrl = id => { const [c, s] = String(id || '').split('/'); return c ? 'catalog.html?c=' + c + (s ? '&s=' + s : '') : 'catalog.html'; };
+const secShown = () => { const l = W('sections'); return (l[S.secOpen] || l[0] || {}).id || ''; };
+function secFrame() { frame($('[data-body]'), secUrl(secShown()), '[data-guide]'); }
+R.sections = () => {
+  const list = W('sections');
+  const used = new Set(list.map(x => x.id));
+  return `<div class="asplit"><div class="asplit__l">
+    <p class="muted">${tr('კატალოგის განყოფილების ტექსტები: სათაური და აღწერა Google-ისთვის, ხოლო პროდუქციის ქვემოთ — მოკლე რჩევა და კითხვა-პასუხი. ცარიელი ველის ნაცვლად საიტი თავად წერს სათაურს და აღწერას.')}</p>
+    ${list.map((x, i) => card('sections|' + i, esc(secName(x.id)), `
+      ${select(tr('განყოფილება'), `sections|${i}.id`, x.id, [['', tr('— აირჩიეთ —')], ...secList().filter(([k]) => k === x.id || !used.has(k))])}
+      <div class="agrid">${field(tr('სათაური გვერდზე'), `sections|${i}.name`, x.name, { max: 80, ph: tr('მაგ. გათბობის ქვაბები'), hint: tr('ცარიელი: განყოფილების სახელი') })}
+      ${field(tr('სათაური Google-ში'), `sections|${i}.title`, x.title, { max: 120, hint: tr('ცარიელი: სათაური გვერდზე') })}</div>
+      ${field(tr('აღწერა Google-ში'), `sections|${i}.desc`, x.desc, { area: true, rows: 2, max: 300, hint: tr('150–160 სიმბოლო; ცარიელი: ავტომატური') })}
+      ${field(tr('რჩევა პროდუქციის ქვემოთ'), `sections|${i}.text`, x.text, { area: true, rows: 6, max: 4000, hint: tr('ახალი ხაზი = ახალი აბზაცი') })}
+      <h3 class="ah3">${tr('კითხვა-პასუხი')} <small>${tr('პროდუქციის ქვემოთ, ამ რიგით')}</small></h3>
+      ${(x.faq || []).map((f, k) => `<div class="alook"><div class="alook__head"><b>${esc(f.q || tr('კითხვა ') + (k + 1))}</b>${itemActs(`sections|${i}.faq`, k, x.faq.length)}</div>
+        ${field(tr('კითხვა'), `sections|${i}.faq.${k}.q`, f.q, { max: 200 })}
+        ${field(tr('პასუხი'), `sections|${i}.faq.${k}.a`, f.a, { area: true, rows: 3, max: 1500, hint: tr('ახალი ხაზი = ახალი აბზაცი') })}</div>`).join('')}
+      ${addBtn(`sections|${i}.faq`, tr('კითხვის დამატება'))}`, itemActs('sections|', i, list.length), tr('კითხვა: ') + (x.faq || []).length)).join('')}
+    ${addBtn('sections|', tr('განყოფილების დამატება'))}
+  </div><div class="asplit__r"><iframe class="aframe" title="${tr('კატალოგის გვერდის გადახედვა')}" data-frame></iframe></div></div>`;
+};
+A.sections = () => secFrame();
 
 /* vacancies (career.html): shown in this order; one past its last day leaves the page by itself */
 R.jobs = () => {
@@ -1024,14 +1055,14 @@ async function save() {
   } catch (err) { failed(err); }
   saving = false;
   draftNow();
-  const keep = S.view === 'texts' || S.view === 'spots' || S.view === 'brands';
+  const keep = S.view === 'texts' || S.view === 'spots' || S.view === 'brands' || S.view === 'sections';
   if (keep) { bar(); navDots(); if (S.view === 'texts') textFields(); else rerender(); } else render();
 }
 /** Draws the view again where it is (after adding, moving or removing an item). */
 function rerender() {
   const body = $('[data-body]'), y = body.scrollTop, l = $('.asplit__l', body), ly = l ? l.scrollTop : 0;
   const keepFrame = $('[data-frame]', body);
-  if (keepFrame && (S.view === 'spots' || S.view === 'brands' || S.view === 'texts')) {
+  if (keepFrame && (S.view === 'spots' || S.view === 'brands' || S.view === 'texts' || S.view === 'sections')) {
     const left = $('.asplit__l', body);
     const tmp = document.createElement('div');
     tmp.innerHTML = R[S.view]();
@@ -1060,12 +1091,13 @@ function onEdit(e) {
     touch(sec);
     // a card's title follows its name
     const it = t.closest('.aitem');
-    if (it && /^\d+\.(name|title|q)$/.test(path)) {
+    if (it && S.view !== 'sections' && /^\d+\.(name|title|q)$/.test(path)) {   // a section's card keeps its catalogue name
       const tn = [...$('.aitem__t', it).childNodes].find(n => n.nodeType === 3);
       if (tn) tn.textContent = v || '…';
     }
     if (S.view === 'posts' && /\.type$/.test(path) && e.type === 'change') rerender();   // a promotion has dates
     if (S.view === 'spots' || S.view === 'brands') reloadFrame();
+    if (S.view === 'sections') { if (/^\d+\.id$/.test(path)) { S.secOpen = +path.split('.')[0]; rerender(); secFrame(); bar(); } else reloadFrame(); }
     if (S.view === 'texts' && sec === 'timeline') reloadFrame();
   } else if (t.matches('[data-tx]')) {
     setText(t.dataset.tx, t.matches('.rte__area') ? rich(t.innerHTML) : t.value);
@@ -1764,7 +1796,13 @@ root.addEventListener('input', e => { if (e.target.matches('[data-pp-q]')) ppSea
 root.addEventListener('mousedown', e => {   // the text editor keeps its selection while a button is pressed
   if (e.target.closest('[data-cmd]')) { e.preventDefault(); const s = getSelection(); rteRange = s.rangeCount ? s.getRangeAt(0).cloneRange() : null; }
 });
-root.addEventListener('toggle', e => { const d = e.target; if (d.matches && d.matches('details[data-open-key]')) { if (d.open) S.open.add(d.dataset.openKey); else S.open.delete(d.dataset.openKey); } }, true);
+root.addEventListener('toggle', e => {
+  const d = e.target;
+  if (!d.matches || !d.matches('details[data-open-key]')) return;
+  if (d.open) S.open.add(d.dataset.openKey); else S.open.delete(d.dataset.openKey);
+  const m = /^sections\|(\d+)$/.exec(d.dataset.openKey);
+  if (m && d.open && S.view === 'sections' && S.secOpen !== +m[1]) { S.secOpen = +m[1]; secFrame(); bar(); }   // the frame shows the section being edited
+}, true);
 root.addEventListener('focusin', e => { const t = e.target.closest('[data-tx]'); if (t) post({ mc: 'show', key: t.dataset.tx }); });
 document.addEventListener('click', e => { if (!e.target.closest('.pp')) $$('.pp__menu').forEach(m => { m.hidden = true; }); });
 addEventListener('hashchange', () => { if (S.user && S.c) go(location.hash.slice(1)); });
