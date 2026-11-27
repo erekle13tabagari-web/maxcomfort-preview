@@ -315,7 +315,7 @@ export function card(db, p, { cls = '', eager = false, sale = false } = {}) {
   return `<article class="card ${cls}" data-id="${p.id}"${sale ? ' data-sale' : ''}>
   <div class="card__media">
     <a class="card__stage" href="${p.url}" tabindex="-1" aria-hidden="true">
-      <img class="card__img card__img--1 ${two ? 'has-2' : ''}" src="${p.src[0] || ''}" alt="" ${eager ? '' : 'loading="lazy"'} decoding="async">
+      <img class="card__img card__img--1 ${two ? 'has-2' : ''}" src="${p.src[0] || ''}" alt="${esc(p.title)}" ${eager ? '' : 'loading="lazy"'} decoding="async">
       ${two ? `<img class="card__img card__img--2" src="${p.src[1]}" alt="" loading="lazy" decoding="async">` : ''}
     </a>
     <div class="card__tags">${saleTag(p)}${e}${p.stock === false ? '<span class="tag">შეკვეთით</span>' : ''}</div>
@@ -598,7 +598,7 @@ function renderCart(db) {
   foot.hidden = false;
   body.innerHTML = lines.map(({ p, qty }) => `
     <div class="line" data-line="${p.id}">
-      <a class="line__img" href="${p.url}"><img src="${p.src[0]}" alt=""></a>
+      <a class="line__img" href="${p.url}"><img src="${p.src[0]}" alt="${esc(p.title)}"></a>
       <div><div class="line__brand">${esc(p.brandName)}</div><a class="line__name" href="${p.url}">${esc(p.title)}</a>
         ${p.color ? `<div class="line__var"><span class="sw" style="--c:${p.color.hex};width:12px;height:12px"></span>${esc(p.color.name)}</div>` : ''}
         <div class="line__row"><div class="qty"><button data-qty="-1" aria-label="ნაკლები">${ui('minus', 'ui--sm')}</button><input value="${qty}" inputmode="numeric" aria-label="რაოდენობა" data-qty-in><button data-qty="1" aria-label="მეტი">${ui('plus', 'ui--sm')}</button></div></div></div>
@@ -618,7 +618,7 @@ function renderFav(db) {
   const list = store.fav.map(id => db.byId.get(id)).filter(Boolean), body = $('[data-fav-body]');
   body.innerHTML = list.length ? list.map(p => `
     <div class="line" data-line="${p.id}">
-      <a class="line__img" href="${p.url}"><img src="${p.src[0]}" alt=""></a>
+      <a class="line__img" href="${p.url}"><img src="${p.src[0]}" alt="${esc(p.title)}"></a>
       <div><div class="line__brand">${esc(p.brandName)}</div><a class="line__name" href="${p.url}">${esc(p.title)}</a><div style="margin-top:6px">${priceHTML(p)}</div>
         <div class="line__row">${buyable(p) ? `<button class="btn btn--sm" data-add="${p.id}">${ui('bag', 'ui--sm')}კალათაში</button>` : `<button class="btn btn--sm btn--ghost" data-ask="${p.id}">${askLabel(p)}</button>`}</div></div>
       <div><button class="line__rm" data-fav="${p.id}">წაშლა</button></div>

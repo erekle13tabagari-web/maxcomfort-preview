@@ -176,15 +176,17 @@ function related() {
 }
 
 function ld() {
+  let s = $('#ld');
+  if (s && s.dataset.id === String(p.id)) return;   // written by the server for this product (api/page.php), with its breadcrumbs
   const data = {
     '@context': 'https://schema.org', '@type': 'Product', name: p.title, sku: p.sku || undefined,
     brand: p.brandName ? { '@type': 'Brand', name: p.brandName } : undefined,
     image: p.src.map(s => new URL(s, location.href).href), category: p.catName + ' / ' + p.subName,
     offers: p.price != null ? { '@type': 'Offer', price: p.price, priceCurrency: 'GEL', priceValidUntil: p.sale ? p.sale.until : undefined, availability: p.stock == null ? undefined : 'https://schema.org/' + (p.stock ? 'InStock' : 'BackOrder'), url: location.href } : undefined
   };
-  let s = $('#ld');
   if (!s) { s = document.createElement('script'); s.type = 'application/ld+json'; s.id = 'ld'; document.head.appendChild(s); }
   s.textContent = JSON.stringify(data);
+  delete s.dataset.id;
 }
 
 function render() {
